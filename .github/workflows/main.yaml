@@ -1,4 +1,4 @@
-name: Deploy Rustee Policy + Fork Gate v3.5.3
+name: Rustee ABI + Policy Recovery v3.6
 
 on:
   push:
@@ -12,11 +12,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v353-pages
+  group: rustee-v36-pages
   cancel-in-progress: true
 
 jobs:
-  simulate-and-deploy:
+  recover-and-deploy:
     runs-on: ubuntu-latest
 
     environment:
@@ -24,579 +24,272 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build current NVDA target
+      - name: Recover live ABI behavior
         shell: bash
         run: |
           set -euo pipefail
-
           mkdir -p data
 
           python3 <<'PY'
-          import json
-          import urllib.request
-          import pathlib
-          import time
-          import datetime
+          import json, urllib.request, datetime, hashlib
 
-          ASSETS_URL = "https://api.robinhood.com/rhj/assets"
-          PRICE_URL = "https://api.robinhood.com/rhj/prices/NVDA"
+          RPC = "https://rpc.mainnet.chain.robinhood.com"
+          CHAIN = 4663
 
-          EXPECTED_NVDA = (
-              "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC"
-          )
+          OWNER = "0x8fC320c8582f812695b6f62b2b5d13B14475B955"
+          NFT = "0x4523467c4ddc6d775c7ead4dce7656dce54e7f60"
+          TBA = "0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"
+          IMPL = "0x7599fd8a10e626ddb5e03207389e89991578d735"
+          REGISTRY = "0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199"
 
-          def get_json(url):
-              last = None
-
-              for attempt in range(4):
-                  try:
-                      req = urllib.request.Request(
-                          url,
-                          headers={
-                              "Accept": "application/json",
-                              "User-Agent":
-                                  "Rustee-Broker-Fork-Verifier/3.5.3"
-                          }
-                      )
-
-                      with urllib.request.urlopen(
-                          req,
-                          timeout=20
-                      ) as response:
-                          return json.loads(
-                              response.read().decode("utf-8")
-                          )
-
-                  except Exception as exc:
-                      last = exc
-
-                      if attempt < 3:
-                          time.sleep(2 ** attempt)
-
-              raise RuntimeError(
-                  f"Robinhood API failed: {last}"
-              )
-
-          assets_json = get_json(ASSETS_URL)
-          prices_json = get_json(PRICE_URL)
-
-          assets = assets_json.get("assets", [])
-          quotes = prices_json.get("quotes", [])
-
-          asset = next(
-              x for x in assets
-              if x.get("tokenSymbol") == "NVDA"
-          )
-
-          quote = next(
-              x for x in quotes
-              if x.get("tokenSymbol") == "NVDA"
-          )
-
-          deployment = next(
-              d for d in asset["deployments"]
-              if int(d["chainId"]) == 4663
-          )
-
-          if (
-              deployment["contractAddress"].lower()
-              != EXPECTED_NVDA.lower()
-          ):
-              raise RuntimeError(
-                  "Canonical NVDA address mismatch"
-              )
-
-          if asset["status"] != "ASSET_STATUS_ACTIVE":
-              raise RuntimeError(
-                  "NVDA is not active"
-              )
-
-          if quote["isTradingHalt"] is True:
-              raise RuntimeError(
-                  "NVDA is halted"
-              )
-
-          ask = float(quote["ask"])
-
-          if ask <= 0:
-              raise RuntimeError(
-                  "Invalid NVDA ask"
-              )
-
-          # Conservative dry-run target:
-          # 99.5% of the $5 Rustee trade ceiling.
-          target = int(
-              (4.975 / ask) * 10**18
-          )
-
-          snapshot = {
-              "ok": True,
-              "generatedAt":
-                  datetime.datetime.now(
-                      datetime.timezone.utc
-                  ).isoformat(),
-              "chainId": 4663,
-              "ask": ask,
-              "targetNvdaWei": str(target),
-              "asset": asset,
-              "quote": quote
-          }
-
-          pathlib.Path(
-              "data/nvda-snapshot.json"
-          ).write_text(
-              json.dumps(
-                  snapshot,
-                  indent=2
-              )
-          )
-
-          pathlib.Path(
-              "data/target.env"
-          ).write_text(
-              f"TARGET_NVDA_WEI={target}\n"
-          )
-
-          print(
-              f"PASS: NVDA ask = {ask}"
-          )
-
-          print(
-              f"PASS: target = {target}"
-          )
-          PY
-
-      - name: Generate Foundry project
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          mkdir -p test
-          mkdir -p data
-
-          cat > foundry.toml <<'EOF'
-          [profile.default]
-          src = "src"
-          test = "test"
-          solc_version = "0.8.26"
-          evm_version = "cancun"
-          optimizer = true
-          optimizer_runs = 200
-          via_ir = true
-          fs_permissions = [
-            { access = "read-write", path = "./data" }
+          SELECTORS = [
+              "0x01ffc9a7","0x150b7a02","0x1626ba7e","0x444a9e4a",
+              "0x4991b554","0x523e3260","0x6c606ce7","0x777dc9b0",
+              "0x7b103999","0x819d4cc6","0x8da5cb5b","0x9e281a98",
+              "0xbc197c81","0xc19d93fb","0xf14210a6","0xf23a6e61",
+              "0xfc0c546a"
           ]
-          EOF
 
-          mkdir -p src
-
-          cat > src/Placeholder.sol <<'EOF'
-          // SPDX-License-Identifier: MIT
-          pragma solidity ^0.8.26;
-
-          contract Placeholder {}
-          EOF
-
-          cat > test/RusteeFork.t.sol <<'EOF'
-          // SPDX-License-Identifier: MIT
-          pragma solidity ^0.8.26;
-
-          interface Vm {
-              function deal(
-                  address who,
-                  uint256 newBalance
-              ) external;
-
-              function startPrank(
-                  address msgSender
-              ) external;
-
-              function stopPrank()
-                  external;
-
-              function envUint(
-                  string calldata name
-              ) external returns (uint256);
-
-              function writeFile(
-                  string calldata path,
-                  string calldata data
-              ) external;
-
-              function toString(
-                  uint256 value
-              ) external pure returns (string memory);
-          }
-
-          interface IWETH {
-              function deposit()
-                  external
-                  payable;
-
-              function approve(
-                  address spender,
-                  uint256 amount
-              ) external returns (bool);
-
-              function balanceOf(
-                  address who
-              ) external view returns (uint256);
-          }
-
-          interface IERC20 {
-              function balanceOf(
-                  address who
-              ) external view returns (uint256);
-          }
-
-          interface IQuoterV2 {
-              struct QuoteExactOutputSingleParams {
-                  address tokenIn;
-                  address tokenOut;
-                  uint256 amount;
-                  uint24 fee;
-                  uint160 sqrtPriceLimitX96;
-              }
-
-              function quoteExactOutputSingle(
-                  QuoteExactOutputSingleParams memory params
+          def rpc(method, params):
+              payload=json.dumps({
+                  "jsonrpc":"2.0","id":1,
+                  "method":method,"params":params
+              }).encode()
+              req=urllib.request.Request(
+                  RPC,data=payload,
+                  headers={"Content-Type":"application/json",
+                           "User-Agent":"Rustee-ABI-Recovery/3.6"}
               )
-                  external
-                  returns (
-                      uint256 amountIn,
-                      uint160 sqrtPriceX96After,
-                      uint32 initializedTicksCrossed,
-                      uint256 gasEstimate
-                  );
-          }
+              with urllib.request.urlopen(req,timeout=30) as r:
+                  j=json.loads(r.read())
+              if "error" in j:
+                  return {"error":j["error"]}
+              return {"result":j["result"]}
 
-          interface ISwapRouter02 {
-              struct ExactOutputSingleParams {
-                  address tokenIn;
-                  address tokenOut;
-                  uint24 fee;
-                  address recipient;
-                  uint256 amountOut;
-                  uint256 amountInMaximum;
-                  uint160 sqrtPriceLimitX96;
+          def eth_call(to,data,frm=None):
+              tx={"to":to,"data":data}
+              if frm: tx["from"]=frm
+              return rpc("eth_call",[tx,"latest"])
+
+          def word(v):
+              return hex(int(v))[2:].rjust(64,"0")
+
+          def aw(a):
+              return a.lower().replace("0x","").rjust(64,"0")
+
+          def classify(sel):
+              known={
+                "0x01ffc9a7":"supportsInterface(bytes4)",
+                "0x150b7a02":"ERC721 receiver hook",
+                "0x1626ba7e":"ERC1271 signature validation",
+                "0x523e3260":"POLICY-CANDIDATE selector collision; address + bytes ABI",
+                "0x7b103999":"registry pointer getter",
+                "0x819d4cc6":"recoverERC721(address,uint256) public-signature match",
+                "0x8da5cb5b":"owner()",
+                "0x9e281a98":"two-word token recovery/withdrawal path",
+                "0xbc197c81":"ERC1155 batch receiver hook",
+                "0xc19d93fb":"state()",
+                "0xf14210a6":"one-word ETH withdrawal/recovery path",
+                "0xf23a6e61":"ERC1155 receiver hook",
+                "0xfc0c546a":"token()"
               }
+              if sel=="0x444a9e4a":
+                  return ("one-uint mapping getter; storage slot 2","high")
+              if sel=="0x4991b554":
+                  return ("one-uint mapping getter; storage slot 1","high")
+              if sel=="0x6c606ce7":
+                  return ("owner-gated ERC1155-style withdrawal path; dynamic bytes argument","medium")
+              if sel=="0x777dc9b0":
+                  return ("owner-gated ERC721 transfer/recovery path","medium")
+              if sel in known:
+                  return (known[sel],"high" if sel not in ("0x523e3260","0x9e281a98","0xf14210a6") else "medium")
+              return ("unresolved","low")
 
-              function exactOutputSingle(
-                  ExactOutputSingleParams calldata params
+          code = rpc("eth_getCode",[IMPL,"latest"])
+          if "error" in code: raise RuntimeError(code["error"])
+          runtime=code["result"]
+          runtime_bytes=(len(runtime)-2)//2
+
+          chain = int(rpc("eth_chainId",[])["result"],16)
+          if chain != CHAIN: raise RuntimeError("wrong chain")
+
+          # Binding reads.
+          owner_ret=eth_call(TBA,"0x8da5cb5b")
+          token_ret=eth_call(TBA,"0xfc0c546a")
+          registry_ret=eth_call(TBA,"0x7b103999")
+
+          def ret_addr(ret):
+              if "result" not in ret or len(ret["result"]) < 66: return None
+              return "0x"+ret["result"][-40:].lower()
+
+          owner_actual=ret_addr(owner_ret)
+
+          token_words=[]
+          if "result" in token_ret:
+              h=token_ret["result"][2:]
+              token_words=[h[i:i+64] for i in range(0,len(h),64)]
+
+          token_chain=int(token_words[0],16) if len(token_words)>=3 else None
+          token_contract=("0x"+token_words[1][-40:]).lower() if len(token_words)>=3 else None
+          token_id=int(token_words[2],16) if len(token_words)>=3 else None
+          registry_actual=ret_addr(registry_ret)
+
+          binding_pass=(
+              owner_actual==OWNER.lower() and
+              token_chain==CHAIN and
+              token_contract==NFT.lower() and
+              token_id==1 and
+              registry_actual==REGISTRY.lower()
+          )
+
+          # Shape probes. These are eth_call only.
+          probes=[]
+          for sel in SELECTORS:
+              classification,confidence=classify(sel)
+
+              candidates=[
+                  ("selector-only",sel),
+                  ("one-zero-word",sel+word(0)),
+                  ("address+zero",sel+aw(OWNER)+word(0)),
+              ]
+
+              obs=[]
+              for label,data in candidates:
+                  try:
+                      out=eth_call(TBA,data,OWNER)
+                      if "result" in out:
+                          obs.append(f"{label}:return:{out['result'][:74]}")
+                      else:
+                          e=out["error"]
+                          obs.append(f"{label}:revert:{e.get('data','')}:{e.get('message','')}")
+                  except Exception as exc:
+                      obs.append(f"{label}:transport:{exc}")
+
+              probes.append({
+                  "selector":sel,
+                  "classification":classification,
+                  "confidence":confidence,
+                  "observation":" | ".join(obs)
+              })
+
+          # ABI-correct address,bytes encoding for 0x523e3260.
+          # head = address + offset(0x40), then bytes length + padded data.
+          context_probes=[]
+          for n in [0,32,64,96,128,160,192,224,256,320]:
+              payload=("00"*n)
+              padded=payload
+              if n%32:
+                  padded += "00"*(32-(n%32))
+              data=(
+                  "0x523e3260"+
+                  aw(OWNER)+
+                  word(64)+
+                  word(n)+
+                  padded
               )
-                  external
-                  payable
-                  returns (uint256 amountIn);
+              out=eth_call(TBA,data,OWNER)
+              if "result" in out:
+                  context_probes.append({
+                      "contextBytes":n,
+                      "success":True,
+                      "returnData":out["result"]
+                  })
+              else:
+                  e=out["error"]
+                  context_probes.append({
+                      "contextBytes":n,
+                      "success":False,
+                      "error":e.get("message"),
+                      "revertData":e.get("data")
+                  })
+
+          # The runtime body behind 0x523e3260 is materially larger than a
+          # standard signer-view path and includes policy/accounting/external
+          # call behavior. Keep name inference separate from behavior.
+          policy_candidate={
+              "selector":"0x523e3260",
+              "candidate":True,
+              "publicSignatureCollision":"isValidSigner(address,bytes)",
+              "classification":"STATEFUL POLICY CANDIDATE",
+              "observedAbiShape":"address, bytes",
+              "exactSchemaRecovered":False,
+              "contextProbes":context_probes,
+              "warning":
+                  "Do not invoke live. Public signature labels are not sufficient "
+                  "to describe deployed behavior."
           }
 
-          contract RusteeForkTest {
-              Vm constant vm = Vm(
-                  address(
-                      uint160(
-                          uint256(
-                              keccak256(
-                                  "hevm cheat code"
-                              )
-                          )
-                      )
-                  )
-              );
-
-              // Construct from raw 20-byte values so Solidity does not
-              // apply EIP-55 checksum validation to address literals.
-              address constant TBA =
-                  address(bytes20(
-                      hex"522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"
-                  ));
-
-              address constant WETH =
-                  address(bytes20(
-                      hex"0bd7d308f8e1639fab988df18a8011f41eacad73"
-                  ));
-
-              address constant NVDA =
-                  address(bytes20(
-                      hex"d0601ce157db5bdc3162bbac2a2c8af5320d9eec"
-                  ));
-
-              address constant ROUTER =
-                  address(bytes20(
-                      hex"caf681a66d020601342297493863e78c959e5cb2"
-                  ));
-
-              address constant QUOTER =
-                  address(bytes20(
-                      hex"33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7"
-                  ));
-
-              function testForkedFundedClassicRoute()
-                  public
-              {
-                  uint256 target =
-                      vm.envUint(
-                          "TARGET_NVDA_WEI"
-                      );
-
-                  (
-                      uint256 in500,
-                      ,
-                      ,
-                  ) =
-                      IQuoterV2(
-                          QUOTER
-                      ).quoteExactOutputSingle(
-                          IQuoterV2
-                              .QuoteExactOutputSingleParams(
-                                  WETH,
-                                  NVDA,
-                                  target,
-                                  500,
-                                  0
-                              )
-                      );
-
-                  (
-                      uint256 in3000,
-                      ,
-                      ,
-                  ) =
-                      IQuoterV2(
-                          QUOTER
-                      ).quoteExactOutputSingle(
-                          IQuoterV2
-                              .QuoteExactOutputSingleParams(
-                                  WETH,
-                                  NVDA,
-                                  target,
-                                  3000,
-                                  0
-                              )
-                      );
-
-                  uint24 fee =
-                      in500 <= in3000
-                          ? 500
-                          : 3000;
-
-                  uint256 quoted =
-                      in500 <= in3000
-                          ? in500
-                          : in3000;
-
-                  uint256 maxIn =
-                      (
-                          quoted * 1005
-                          + 999
-                      ) / 1000;
-
-                  vm.deal(
-                      TBA,
-                      maxIn
-                      + 0.01 ether
-                  );
-
-                  vm.startPrank(
-                      TBA
-                  );
-
-                  IWETH(
-                      WETH
-                  ).deposit{
-                      value: maxIn
-                  }();
-
-                  bool approved =
-                      IWETH(
-                          WETH
-                      ).approve(
-                          ROUTER,
-                          maxIn
-                      );
-
-                  require(
-                      approved,
-                      "approve failed"
-                  );
-
-                  uint256 beforeNvda =
-                      IERC20(
-                          NVDA
-                      ).balanceOf(
-                          TBA
-                      );
-
-                  uint256 used =
-                      ISwapRouter02(
-                          ROUTER
-                      ).exactOutputSingle(
-                          ISwapRouter02
-                              .ExactOutputSingleParams({
-                                  tokenIn: WETH,
-                                  tokenOut: NVDA,
-                                  fee: fee,
-                                  recipient: TBA,
-                                  amountOut: target,
-                                  amountInMaximum: maxIn,
-                                  sqrtPriceLimitX96: 0
-                              })
-                      );
-
-                  uint256 afterNvda =
-                      IERC20(
-                          NVDA
-                      ).balanceOf(
-                          TBA
-                      );
-
-                  vm.stopPrank();
-
-                  uint256 received =
-                      afterNvda
-                      - beforeNvda;
-
-                  require(
-                      received >= target,
-                      "NVDA output missing"
-                  );
-
-                  require(
-                      used <= maxIn,
-                      "WETH max exceeded"
-                  );
-
-                  string memory report =
-                      string.concat(
-                          "{",
-                          '"ok":true,',
-                          '"chainId":4663,',
-                          '"simulatedFunding":true,',
-                          '"simulatedApproval":true,',
-                          '"routerExecutionSucceeded":true,',
-                          '"bestFeeBps":',
-                          vm.toString(
-                              uint256(fee)
-                          ),
-                          ",",
-                          '"quotedWethInWei":"',
-                          vm.toString(
-                              quoted
-                          ),
-                          '",',
-                          '"maxWethInWei":"',
-                          vm.toString(
-                              maxIn
-                          ),
-                          '",',
-                          '"wethActuallyUsedWei":"',
-                          vm.toString(
-                              used
-                          ),
-                          '",',
-                          '"targetNvdaWei":"',
-                          vm.toString(
-                              target
-                          ),
-                          '",',
-                          '"nvdaReceivedWei":"',
-                          vm.toString(
-                              received
-                          ),
-                          '"',
-                          "}"
-                      );
-
-                  vm.writeFile(
-                      "data/fork-simulation.json",
-                      report
-                  );
-              }
-          }
-          EOF
-
-          echo "PASS: Foundry files generated"
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
-
-      - name: Run fork simulation
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          source data/target.env
-          export TARGET_NVDA_WEI
-
-          forge test \
-            --fork-url \
-            https://rpc.mainnet.chain.robinhood.com \
-            --match-test \
-            testForkedFundedClassicRoute \
-            -vv
-
-      - name: Validate fork simulation report
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          test -s data/fork-simulation.json
-
-          python3 <<'PY'
-          import json
-
-          report = json.load(
-              open(
-                  "data/fork-simulation.json"
-              )
-          )
-
-          assert report["ok"] is True
-
-          assert (
-              report["chainId"]
-              == 4663
-          )
-
-          assert (
-              report[
-                  "simulatedFunding"
-              ]
-              is True
-          )
-
-          assert (
-              report[
-                  "simulatedApproval"
-              ]
-              is True
-          )
-
-          assert (
-              report[
-                  "routerExecutionSucceeded"
-              ]
-              is True
-          )
-
-          assert (
-              int(
-                  report[
-                      "nvdaReceivedWei"
+          report={
+              "project":"Rustee Broker ABI + Policy Recovery v3.6",
+              "network":"Robinhood Chain Mainnet",
+              "chainId":CHAIN,
+              "generatedAt":datetime.datetime.now(
+                  datetime.timezone.utc
+              ).isoformat(),
+              "addresses":{
+                  "owner":OWNER,"nft":NFT,"registry":REGISTRY,
+                  "trading":TBA,"implementation":IMPL
+              },
+              "runtimeBytes":runtime_bytes,
+              "runtimeSha256":hashlib.sha256(
+                  bytes.fromhex(runtime[2:])
+              ).hexdigest(),
+              "binding":{
+                  "pass":binding_pass,
+                  "owner":owner_actual,
+                  "token":{
+                      "chainId":token_chain,
+                      "tokenContract":token_contract,
+                      "tokenId":token_id
+                  },
+                  "registry":registry_actual
+              },
+              "selectorProbes":probes,
+              "policyCandidate":policy_candidate,
+              "executionGate":{
+                  "ready":False,
+                  "verdict":"ABI/POLICY RECOVERY IN PROGRESS",
+                  "assetFundingAllowed":False,
+                  "approvalAllowed":False,
+                  "unpauseAllowed":False,
+                  "broadcastAllowed":False,
+                  "blockers":[
+                      "Recover exact bytes context/order schema behind 0x523e3260",
+                      "Simulate owner → Trading TBA → policy candidate → router on fork",
+                      "Confirm valuation/oracle verification is enforced in that path"
                   ]
-              )
-              > 0
-          )
+              }
+          }
 
-          print(
-              "PASS: fork-simulation.json"
-          )
+          with open("data/abi-recovery.json","w") as f:
+              json.dump(report,f,indent=2)
+
+          print("PASS runtime bytes:",runtime_bytes)
+          print("PASS binding:",binding_pass)
+          print("PASS report generated")
           PY
 
-      - name: Configure GitHub Pages
+      - name: Validate ABI recovery report
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s data/abi-recovery.json
+          python3 - <<'PY'
+          import json
+          p=json.load(open("data/abi-recovery.json"))
+          assert p["chainId"] == 4663
+          assert p["runtimeBytes"] > 1000
+          assert p["binding"]["pass"] is True
+          assert p["policyCandidate"]["selector"] == "0x523e3260"
+          assert len(p["policyCandidate"]["contextProbes"]) >= 8
+          assert p["executionGate"]["broadcastAllowed"] is False
+          print("PASS v3.6 validation")
+          PY
+
+      - name: Configure Pages
         uses: actions/configure-pages@v5
 
       - name: Upload site
@@ -604,6 +297,6 @@ jobs:
         with:
           path: .
 
-      - name: Deploy GitHub Pages
+      - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
