@@ -1,32 +1,21 @@
-# Rustee Broker Trade ABI Recovery v3.7
+# Rustee Broker Differential ABI Recovery v3.8
 
-v3.7 corrects the v3.6 interpretation of selector `0x523e3260`.
-The successful context probes are consistent with ERC-6551
-`isValidSigner(address,bytes)` returning its magic value.
+v3.7 established that a six-word dynamic region is accepted by the
+`0x6c606ce7` parser, with zero values reaching custom error `0x02b874a6`.
 
-The leading guarded trade candidate is `0x6c606ce7`, based on the actual
-deployed runtime control flow: it enters a large owner-gated path with registry
-reads, policy checks, balance accounting and external calls.
+v3.8 performs differential probing of those six struct fields.
 
-This phase sends only `eth_call` and optionally `debug_traceCall`.
-It never sends a transaction.
+It changes one field at a time to:
+- known addresses (WETH, NVDA, router, owner, registry, TBA)
+- useful numeric values (1, fee 500, known $5-size target/output values,
+  and a future deadline)
 
-The report is written to:
+It then tests plausible field combinations.
 
-`data/trade-abi-recovery.json`
+A change in revert selector is treated only as evidence that execution moved
+to another validation stage. It is not treated as proof of a complete ABI.
 
-The page includes Copy JSON and Download JSON buttons.
+All calls are `eth_call`. No live transaction is sent.
 
-
-## v3.7.1 Pages fix
-
-GitHub Pages is now deployed from a dedicated `site/` directory.
-
-The workflow explicitly copies:
-
-- `index.html`
-- `data/trade-abi-recovery.json`
-
-into the Pages artifact and verifies both files exist before upload.
-
-This fixes the prior green-workflow / 404-report mismatch.
+Pages is deployed from a deterministic `site/` directory to avoid the
+previous artifact-path 404 problem.

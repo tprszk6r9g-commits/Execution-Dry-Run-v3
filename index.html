@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Trade ABI Recovery v3.7</title>
+<title>Rustee Differential ABI Recovery v3.8</title>
 <style>
 :root{--bg:#041914;--card:#082b23;--deep:#051f1a;--line:#2f6a5c;--text:#effff9;--muted:#9bbdb5;--green:#7defaf;--teal:#41dfc4;--amber:#ffb357;--red:#ff8585}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#02110e,var(--bg));color:var(--text);font-family:system-ui,-apple-system,sans-serif}
-main{max-width:950px;margin:auto;padding:24px 16px 110px}h1{font-size:clamp(36px,8vw,62px);line-height:1.03}h2{font-size:29px}
+main{max-width:960px;margin:auto;padding:24px 16px 110px}h1{font-size:clamp(36px,8vw,62px);line-height:1.03}h2{font-size:29px}
 .pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:9px 14px;color:var(--teal)}
 .card{background:linear-gradient(145deg,var(--card),#06231d);border:1px solid var(--line);border-radius:24px;padding:21px;margin:18px 0}
 .warn{background:#2b1c0d;border-left:7px solid var(--amber);border-radius:16px;padding:16px;line-height:1.5}
@@ -13,66 +13,39 @@ button{font:inherit;font-weight:800;border:1px solid #3b7a6c;border-radius:14px;
 button.primary{background:var(--teal);border:0;color:#022018}.row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:13px 0;border-bottom:1px solid #235044}
 .tiny{color:var(--muted);font-size:12px;word-break:break-all;margin-top:5px}.pass{color:var(--green)}.fail{color:var(--red)}.info{color:var(--amber)}
 pre,textarea{width:100%;background:#03130f;color:var(--text);border:1px solid var(--line);border-radius:14px;padding:14px;white-space:pre-wrap;word-break:break-all;font:12px ui-monospace,SFMono-Regular,Menlo,monospace}
-pre{max-height:580px;overflow:auto}textarea{min-height:190px}.footer{position:sticky;bottom:8px;background:#070b0a;border:1px solid var(--teal);border-radius:15px;padding:13px}
-</style></head>
-<body><main>
-<span class="pill">Robinhood Chain 4663 · v3.7 · trade ABI recovery</span>
-<h1>Rustee Guarded Trade Recovery</h1>
-<p>Read-only probing of the deployed Trading TBA selector <code>0x6c606ce7</code>.</p>
-<div class="warn"><b>Correction from v3.6:</b> <code>0x523e3260</code> consistently returns the ERC-6551 signer magic value and is no longer considered the trade path. <code>0x6c606ce7</code> is the leading guarded-execution candidate from the actual runtime control flow.</div>
+pre{max-height:620px;overflow:auto}textarea{min-height:190px}.footer{position:sticky;bottom:8px;background:#070b0a;border:1px solid var(--teal);border-radius:15px;padding:13px}
+</style></head><body><main>
+<span class="pill">Robinhood Chain 4663 · v3.8 · differential field recovery</span>
+<h1>Rustee Six-Word Policy Struct</h1>
+<p>v3.8 mutates the six accepted struct words behind <code>0x6c606ce7</code>, rather than changing only the outer address.</p>
+<div class="warn"><b>Read-only only:</b> every test is <code>eth_call</code>. The system remains paused, unfunded and unapproved. No transaction can be broadcast from this page.</div>
 
-<div class="card"><h2>1. Latest recovery report</h2>
-<button class="primary" id="load">Load v3.7 report</button>
-<div id="summary"></div></div>
-
-<div class="card"><h2>2. 0x6c606ce7 shape matrix</h2>
-<div id="matrix"></div></div>
-
-<div class="card"><h2>3. Owner vs outsider behavior</h2>
-<div id="auth"></div></div>
-
-<div class="card"><h2>4. Trace evidence</h2>
-<div id="trace"></div></div>
-
-<div class="card"><h2>5. Output</h2>
-<button class="primary" id="copy">Copy JSON</button>
-<button id="download">Download JSON</button>
-<textarea id="copyArea" readonly></textarea>
-<pre id="raw">No report loaded.</pre></div>
-
-<div class="footer">Read-only recovery · no funding, approvals, unpause, signatures, or broadcast.</div>
+<div class="card"><h2>1. Load differential report</h2>
+<button class="primary" id="load">Load v3.8 report</button><div id="summary"></div></div>
+<div class="card"><h2>2. Single-field mutations</h2><div id="single"></div></div>
+<div class="card"><h2>3. Pair + amount mutations</h2><div id="pairs"></div></div>
+<div class="card"><h2>4. Revert transitions</h2><div id="transitions"></div></div>
+<div class="card"><h2>5. JSON output</h2>
+<button class="primary" id="copy">Copy JSON</button><button id="download">Download JSON</button>
+<textarea id="copyArea" readonly></textarea><pre id="raw">No report loaded.</pre></div>
+<div class="footer">ABI recovery only · funding/approval/unpause/broadcast remain false.</div>
 
 <script>
 const $=x=>document.getElementById(x);let latest=null;
 const row=(n,v,p,info=false)=>`<div class="row"><div><b>${n}</b><div class="tiny">${v}</div></div><div class="${info?'info':p?'pass':'fail'}">${info?'INFO':p?'PASS':'FAIL'}</div></div>`;
 async function load(){
- const r=await fetch('./data/trade-abi-recovery.json?ts='+Date.now(),{cache:'no-store'});
- if(!r.ok)throw Error('report HTTP '+r.status);
- latest=await r.json(); const s=JSON.stringify(latest,null,2);
- $('raw').textContent=s;$('copyArea').value=s;
+ const r=await fetch('./data/differential-abi-recovery.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('report HTTP '+r.status);
+ latest=await r.json();const s=JSON.stringify(latest,null,2);$('raw').textContent=s;$('copyArea').value=s;
  $('summary').innerHTML=
-   row('Binding',latest.binding.pass?'owner/NFT/registry intact':'mismatch',latest.binding.pass)+
-   row('v3.6 signer correction','0x523e3260 = signer validation',true)+
-   row('Trade candidate','0x6c606ce7',true)+
-   row('Exact ABI recovered',latest.recovery.exactAbiRecovered?'YES':'Not yet',latest.recovery.exactAbiRecovered);
- $('matrix').innerHTML=latest.probes.map(x=>row(x.name,x.observation,x.interesting,x.interesting?false:true)).join('');
- $('auth').innerHTML=
-   row('Owner call behavior',latest.authorization.ownerObservation,true,true)+
-   row('Outsider call behavior',latest.authorization.outsiderObservation,latest.authorization.outsiderRejected);
- $('trace').innerHTML=
-   row('debug_traceCall supported',String(latest.trace.supported),latest.trace.supported)+
-   row('Trace summary',latest.trace.summary||'RPC does not expose debug_traceCall',latest.trace.supported,true);
+   row('Binding',latest.binding.pass?'intact':'mismatch',latest.binding.pass)+
+   row('Baseline 6-word revert',latest.baseline.revertSelector||latest.baseline.observation,true,true)+
+   row('Fields causing transition',String(latest.analysis.transitionFields.length),latest.analysis.transitionFields.length>0)+
+   row('Execution gate','LOCKED',false);
+ $('single').innerHTML=latest.singleFieldProbes.map(x=>row(x.name,x.observation,x.changedFromBaseline,x.changedFromBaseline?false:true)).join('');
+ $('pairs').innerHTML=latest.combinationProbes.map(x=>row(x.name,x.observation,x.changedFromBaseline,x.changedFromBaseline?false:true)).join('');
+ $('transitions').innerHTML=latest.analysis.transitions.map(x=>row(x.name,`${x.from} → ${x.to}`,true,true)).join('') || row('No transition yet','All probes stayed at baseline revert',false);
 }
 $('load').onclick=()=>load().catch(e=>alert(e.message));
-$('copy').onclick=async()=>{
- if(!latest)return alert('Load report first');
- const s=JSON.stringify(latest,null,2);
- try{await navigator.clipboard.writeText(s);alert('Copied');}
- catch(e){$('copyArea').focus();$('copyArea').select();document.execCommand('copy');alert('Copied/selectable below');}
-};
-$('download').onclick=()=>{
- if(!latest)return alert('Load report first');
- const b=new Blob([JSON.stringify(latest,null,2)],{type:'application/json'});
- const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='rustee-trade-abi-v3.7.json';a.click();
-};
+$('copy').onclick=async()=>{if(!latest)return alert('Load first');const s=JSON.stringify(latest,null,2);try{await navigator.clipboard.writeText(s);alert('Copied')}catch(e){$('copyArea').focus();$('copyArea').select();document.execCommand('copy')}};
+$('download').onclick=()=>{if(!latest)return alert('Load first');const b=new Blob([JSON.stringify(latest,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='rustee-differential-abi-v3.8.json';a.click()};
 </script></main></body></html>
