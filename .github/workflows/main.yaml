@@ -1,4 +1,4 @@
-name: Rustee STONKBROKER TWAP Manipulation Analysis v4.5
+name: Rustee STONKBROKER TWAP Math Correction v4.5.2
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-stonkbroker-v45
+  group: rustee-stonkbroker-v452
   cancel-in-progress: true
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
         with:
           version: stable
 
-      - name: Read canonical pool state and TWAP observations
+      - name: Read canonical pool state
         shell: bash
         run: |
           set -euo pipefail
@@ -45,141 +45,307 @@ jobs:
           TOKEN1="$(cast call "$POOL" 'token1()(address)' --rpc-url "$RPC")"
           FEE="$(cast call "$POOL" 'fee()(uint24)' --rpc-url "$RPC" | awk '{print $1}')"
           LIQ="$(cast call "$POOL" 'liquidity()(uint128)' --rpc-url "$RPC" | awk '{print $1}')"
-          SLOT0="$(cast call "$POOL" 'slot0()(uint160,int24,uint16,uint16,uint16,uint8,bool)' --rpc-url "$RPC")"
+          DEC0="$(cast call "$TOKEN0" 'decimals()(uint8)' --rpc-url "$RPC" | awk '{print $1}')"
+          DEC1="$(cast call "$TOKEN1" 'decimals()(uint8)' --rpc-url "$RPC" | awk '{print $1}')"
 
           printf '%s\n' "$TOKEN0" > data/token0.txt
           printf '%s\n' "$TOKEN1" > data/token1.txt
           printf '%s\n' "$FEE" > data/fee.txt
           printf '%s\n' "$LIQ" > data/liquidity.txt
-          printf '%s\n' "$SLOT0" > data/slot0.txt
-
-          for W in 300 900 1800 3600; do
-            cast call \
-              "$POOL" \
-              'observe(uint32[])(int56[],uint160[])' \
-              "[$W,0]" \
-              --rpc-url "$RPC" \
-              > "data/observe-$W.txt"
-            test -s "data/observe-$W.txt"
-          done
+          printf '%s\n' "$DEC0" > data/dec0.txt
+          printf '%s\n' "$DEC1" > data/dec1.txt
 
           python3 <<'PY'
           from pathlib import Path
-          import re, json
+          import json
 
           token0=Path("data/token0.txt").read_text().strip().lower()
           token1=Path("data/token1.txt").read_text().strip().lower()
           weth="0x0bd7d308f8e1639fab988df18a8011f41eacad73"
           stonk="0xe934e36a439c94017b64a3fece66af12099abf50"
 
-          assert {token0,token1} == {weth,stonk}
-          assert int(Path("data/liquidity.txt").read_text().strip()) > 0
+          assert {token0, token1} == {weth, stonk}
+          liquidity=int(Path("data/liquidity.txt").read_text().strip())
+          assert liquidity > 0
 
           Path("data/pool-binding.json").write_text(json.dumps({
             "pool":"0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594",
             "token0":token0,
             "token1":token1,
+            "token0Decimals":int(Path("data/dec0.txt").read_text().strip()),
+            "token1Decimals":int(Path("data/dec1.txt").read_text().strip()),
             "fee":int(Path("data/fee.txt").read_text().strip()),
-            "liquidity":Path("data/liquidity.txt").read_text().strip(),
+            "liquidity":str(liquidity),
             "pairMatches":True,
             "liquidityNonZero":True
           },indent=2))
           PY
 
-      - name: Analyze 5m 15m 30m 60m TWAP dispersion
+      - name: Read and ABI-decode observe results safely
         shell: bash
         run: |
           set -euo pipefail
 
           python3 <<'PY'
-          from decimal import Decimal, getcontext
+          import json, urllib.request
           from pathlib import Path
-          import json, re, datetime
 
-          getcontext().prec=80
+          RPC="https://rpc.mainnet.chain.robinhood.com"
+          POOL="0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594"
+          # keccak256("observe(uint32[])")[:4]
+          SELECTOR="0x883bdbfd"
+
+          def word(n):
+              return int(n).to_bytes(32, "big").hex()
+
+          def rpc(method, params):
+              body=json.dumps({
+                  "jsonrpc":"2.0","id":1,"method":method,"params":params
+              }).encode()
+              req=urllib.request.Request(
+                  RPC,
+                  data=body,
+                  headers={"content-type":"application/json",
+                           "user-agent":"Rustee-v4.5.2"}
+              )
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  out=json.loads(r.read().decode())
+              if "error" in out:
+                  raise RuntimeError(out["error"])
+              return out["result"]
+
+          def calldata(window):
+              # ABI encode uint32[] [window, 0]:
+              # head offset 0x20, then len=2, then two 32-byte elements.
+              return SELECTOR + word(32) + word(2) + word(window) + word(0)
+
+          def u256(buf, off):
+              return int.from_bytes(buf[off:off+32], "big")
+
+          def signed_from_word(buf, off, bits):
+              raw=u256(buf, off)
+              mask=(1 << bits)-1
+              v=raw & mask
+              if v & (1 << (bits-1)):
+                  v -= (1 << bits)
+              return v
+
+          def decode_observe(hexdata):
+              b=bytes.fromhex(hexdata[2:])
+              if len(b) < 64:
+                  raise RuntimeError("observe return too short")
+              off_ticks=u256(b,0)
+              off_spl=u256(b,32)
+
+              n_ticks=u256(b,off_ticks)
+              ticks=[
+                  signed_from_word(b, off_ticks+32+32*i, 56)
+                  for i in range(n_ticks)
+              ]
+
+              n_spl=u256(b,off_spl)
+              spl=[
+                  u256(b, off_spl+32+32*i) & ((1<<160)-1)
+                  for i in range(n_spl)
+              ]
+
+              if len(ticks) != 2 or len(spl) != 2:
+                  raise RuntimeError(
+                      f"Unexpected observe lengths: {len(ticks)}, {len(spl)}"
+                  )
+              return ticks, spl
+
+          results={}
+          for w in (300,900,1800,3600):
+              raw=rpc("eth_call", [{
+                  "to":POOL,
+                  "data":calldata(w)
+              }, "latest"])
+              ticks,spl=decode_observe(raw)
+              results[str(w)]={
+                  "tickCumulatives":[str(x) for x in ticks],
+                  "secondsPerLiquidityCumulativeX128":[str(x) for x in spl]
+              }
+
+          Path("data/observe-decoded.json").write_text(
+              json.dumps(results, indent=2)
+          )
+          print("PASS: observe() ABI decoded without cast pretty-print parsing")
+          PY
+
+      - name: Analyze corrected 5m 15m 30m 60m TWAP dispersion
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 <<'PY'
+          from decimal import Decimal, getcontext, ROUND_FLOOR
+          from pathlib import Path
+          import json, datetime, math
+
+          getcontext().prec=100
 
           token0=Path("data/token0.txt").read_text().strip().lower()
           token1=Path("data/token1.txt").read_text().strip().lower()
+          dec0=int(Path("data/dec0.txt").read_text().strip())
+          dec1=int(Path("data/dec1.txt").read_text().strip())
+
           weth="0x0bd7d308f8e1639fab988df18a8011f41eacad73"
           stonk="0xe934e36a439c94017b64a3fece66af12099abf50"
+          obs=json.load(open("data/observe-decoded.json"))
 
-          def first_ints(text):
-              # Cast output contains decimal values; first returned array is the
-              # tick-cumulative array. Extract signed integers before the second array.
-              lines=[x.strip() for x in text.splitlines() if x.strip()]
-              first=lines[0] if lines else ""
-              nums=[int(x) for x in re.findall(r'-?\d+', first)]
-              if len(nums) < 2:
-                  # Fallback for multiline cast formatting.
-                  nums=[int(x) for x in re.findall(r'-?\d+', text)]
-              if len(nums) < 2:
-                  raise RuntimeError("Could not parse observe output: "+text[:300])
-              return nums[0],nums[1]
+          MIN_TICK=-887272
+          MAX_TICK=887272
 
-          def floor_mean(delta,window):
-              # Solidity/Uniswap-style arithmetic mean tick: division rounds
-              # toward zero, then negative non-divisible values round down.
+          def arithmetic_mean_tick(delta, window):
+              # Uniswap OracleLibrary semantics:
+              # Solidity signed division truncates toward zero, then if delta
+              # is negative and not exactly divisible, decrement to floor.
               q=abs(delta)//window
-              q=-q if delta<0 else q
-              if delta<0 and delta % window != 0:
-                  q-=1
+              q=-q if delta < 0 else q
+              if delta < 0 and abs(delta) % window != 0:
+                  q -= 1
               return q
 
-          windows=[300,900,1800,3600]
-          rows=[]
-          for w in windows:
-              a,b=first_ints(Path(f"data/observe-{w}.txt").read_text())
-              delta=b-a
-              tick=floor_mean(delta,w)
+          def raw_token1_per_token0(tick):
+              # Safe here because tick is range-checked to Uniswap bounds.
+              return Decimal("1.0001") ** Decimal(tick)
 
-              token1_per_token0 = Decimal("1.0001") ** Decimal(tick)
+          rows=[]
+          for w in (300,900,1800,3600):
+              ticks=[int(x) for x in obs[str(w)]["tickCumulatives"]]
+              delta=ticks[1]-ticks[0]
+              tick=arithmetic_mean_tick(delta,w)
+
+              if not (MIN_TICK <= tick <= MAX_TICK):
+                  raise RuntimeError(
+                      f"Mean tick out of Uniswap V3 bounds for {w}s: "
+                      f"{tick}; cumulative delta={delta}"
+                  )
+
+              raw_ratio=raw_token1_per_token0(tick)
+              # Adjust raw-unit ratio to whole-token ratio.
+              token1_per_token0 = raw_ratio * (
+                  Decimal(10) ** Decimal(dec0-dec1)
+              )
 
               if token0==weth and token1==stonk:
-                  weth_per_stonk = Decimal(1) / token1_per_token0
+                  weth_per_stonk=Decimal(1)/token1_per_token0
               elif token0==stonk and token1==weth:
-                  weth_per_stonk = token1_per_token0
+                  weth_per_stonk=token1_per_token0
               else:
-                  raise RuntimeError("Unexpected pair")
+                  raise RuntimeError("Unexpected token ordering")
+
+              if not weth_per_stonk.is_finite() or weth_per_stonk <= 0:
+                  raise RuntimeError("Non-finite or non-positive TWAP price")
+
+              wei18=int(
+                  (weth_per_stonk * Decimal(10)**18)
+                  .to_integral_value(rounding=ROUND_FLOOR)
+              )
 
               rows.append({
-                "windowSeconds":w,
-                "meanTick":tick,
-                "wethPerStonk":format(weth_per_stonk,"f")
+                  "windowSeconds":w,
+                  "tickCumulativePast":str(ticks[0]),
+                  "tickCumulativeNow":str(ticks[1]),
+                  "tickDelta":str(delta),
+                  "meanTick":tick,
+                  "wethPerStonk":format(weth_per_stonk, ".30g"),
+                  "wethPerStonkWei18":str(wei18)
               })
 
           reference=next(r for r in rows if r["windowSeconds"]==3600)
           ref=Decimal(reference["wethPerStonk"])
+
           for r in rows:
               p=Decimal(r["wethPerStonk"])
-              r["deviationFrom60mBps"]=float(
-                  (p/ref-Decimal(1))*Decimal(10000)
-              )
+              dev=(p/ref-Decimal(1))*Decimal(10000)
+              if not dev.is_finite():
+                  raise RuntimeError("Non-finite deviation")
+              r["deviationFrom60mBps"]=float(dev)
 
           vals=[Decimal(r["wethPerStonk"]) for r in rows]
           vmax=max(vals); vmin=min(vals)
-          dispersion_bps=float((vmax/vmin-Decimal(1))*Decimal(10000))
+          dispersion=(vmax/vmin-Decimal(1))*Decimal(10000)
+          if not dispersion.is_finite():
+              raise RuntimeError("Non-finite dispersion")
+          dispersion_bps=float(dispersion)
 
-          # Conservative recommendation logic. This is an engineering signal,
-          # not a claim that a window is manipulation-proof.
           if dispersion_bps <= 50:
               candidate=1800
-              reason="5m-60m TWAP dispersion is <= 50 bps; 30m is a reasonable latency/resistance candidate pending adversarial review."
+              reason=(
+                  "Corrected 5m-60m TWAP dispersion is <= 50 bps; "
+                  "30m is a latency/resistance candidate pending "
+                  "historical and adversarial manipulation review."
+              )
           elif dispersion_bps <= 150:
               candidate=3600
-              reason="TWAP dispersion is between 50 and 150 bps; use the longer 60m candidate pending adversarial review."
+              reason=(
+                  "Corrected TWAP dispersion is 50-150 bps; "
+                  "60m is the conservative candidate pending "
+                  "historical and adversarial manipulation review."
+              )
           else:
               candidate=None
-              reason="TWAP dispersion exceeds 150 bps; no production TWAP window is recommended from this snapshot."
+              reason=(
+                  "Corrected TWAP dispersion exceeds 150 bps; "
+                  "no production TWAP window is nominated from this snapshot."
+              )
 
           analysis={
-            "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "windows":rows,
-            "crossWindowDispersionBps":dispersion_bps,
-            "candidateWindowSeconds":candidate,
-            "candidateReason":reason,
-            "importantCaveat":"Single-snapshot cross-window dispersion does not prove manipulation resistance. Production selection still requires historical liquidity and adversarial cost analysis."
+              "version":"v4.5.2",
+              "generatedAt":datetime.datetime.now(
+                  datetime.timezone.utc
+              ).isoformat(),
+              "mathCorrection":{
+                  "castPrettyPrintParsingRemoved":True,
+                  "observeReturnAbiDecodedFromRawEthCall":True,
+                  "signedInt56Decode":True,
+                  "meanTickDividesTickDeltaByWindow":True,
+                  "negativeRoundingMatchesUniswapOracleLibrary":True,
+                  "tickBoundsEnforced":[MIN_TICK,MAX_TICK],
+                  "nonFiniteOutputRejected":True
+              },
+              "windows":rows,
+              "crossWindowDispersionBps":dispersion_bps,
+              "candidateWindowSeconds":candidate,
+              "candidateReason":reason,
+              "importantCaveat":(
+                  "Single-snapshot cross-window dispersion does not prove "
+                  "manipulation resistance. Production selection still "
+                  "requires historical liquidity/depth and adversarial-cost analysis."
+              )
           }
-          Path("data/twap-analysis.json").write_text(json.dumps(analysis,indent=2))
+
+          Path("data/twap-analysis.json").write_text(
+              json.dumps(analysis,indent=2,allow_nan=False)
+          )
+          print(json.dumps(analysis,indent=2,allow_nan=False))
+          PY
+
+      - name: Validate corrected TWAP mathematics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import json, math
+
+          a=json.load(open("data/twap-analysis.json"))
+          assert a["version"] == "v4.5.2"
+          assert len(a["windows"]) == 4
+          assert math.isfinite(a["crossWindowDispersionBps"])
+
+          for r in a["windows"]:
+              assert -887272 <= r["meanTick"] <= 887272
+              assert int(r["wethPerStonkWei18"]) >= 0
+              assert math.isfinite(r["deviationFrom60mBps"])
+              expected_delta=(
+                  int(r["tickCumulativeNow"])
+                  - int(r["tickCumulativePast"])
+              )
+              assert expected_delta == int(r["tickDelta"])
+
+          print("PASS: corrected TWAP math is bounded and finite")
           PY
 
       - name: Record authoritative Robinhood and Chainlink evidence
@@ -206,7 +372,7 @@ jobs:
             },
             "wethUsdConclusion":{
               "authoritativeAggregatorV3AddressResolvedByThisWorkflow":False,
-              "reason":"Robinhood documents Chainlink support/Data Streams, but v4.5 does not invent an AggregatorV3 WETH/USD address. Production value must come from an authoritative feed listing or a reviewed signed-report adapter."
+              "reason":"Robinhood documents Chainlink support/Data Streams, but v4.5.2 does not invent an AggregatorV3 WETH/USD address. Production value must come from an authoritative feed listing or a reviewed signed-report adapter."
             }
           }
           Path("data/authoritative-evidence.json").write_text(json.dumps(evidence,indent=2))
@@ -267,7 +433,7 @@ jobs:
           PY
           fi
 
-      - name: Build v4.5 report
+      - name: Build v4.5.2 report
         shell: bash
         run: |
           set -euo pipefail
@@ -300,7 +466,7 @@ jobs:
           ]
 
           report={
-            "project":"Rustee STONKBROKER Production Oracle Analysis v4.5",
+            "project":"Rustee STONKBROKER Production Oracle Analysis v4.5.2",
             "network":"Robinhood Chain Mainnet",
             "chainId":4663,
             "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -324,21 +490,21 @@ jobs:
               "mainnetTradeAllowed":False,
               "mainnetUnpauseAllowed":False,
               "mainnetBroadcastAllowed":False,
-              "verdict":"V4.5 TWAP WINDOW ANALYSIS COMPLETE; PRODUCTION WETH/USD PROVENANCE, HISTORICAL MANIPULATION ANALYSIS, SEQUENCER COMPATIBILITY, AND SECURITY REVIEW STILL REQUIRED"
+              "verdict":"V4.5.2 CORRECTED TWAP WINDOW ANALYSIS COMPLETE; PRODUCTION WETH/USD PROVENANCE, HISTORICAL MANIPULATION ANALYSIS, SEQUENCER COMPATIBILITY, AND SECURITY REVIEW STILL REQUIRED"
             }
           }
 
-          Path("data/stonkbroker-v45.json").write_text(json.dumps(report,indent=2))
-          Path("stonkbroker-v45.json").write_text(json.dumps(report,indent=2))
+          Path("data/stonkbroker-v452.json").write_text(json.dumps(report,indent=2))
+          Path("stonkbroker-v452.json").write_text(json.dumps(report,indent=2))
           PY
 
-      - name: Validate v4.5 report
+      - name: Validate v4.5.2 report
         shell: bash
         run: |
           set -euo pipefail
           python3 <<'PY'
           import json
-          p=json.load(open("data/stonkbroker-v45.json"))
+          p=json.load(open("data/stonkbroker-v452.json"))
           assert p["chainId"]==4663
           assert p["pool"]["pairMatches"] is True
           assert p["pool"]["liquidityNonZero"] is True
@@ -347,7 +513,7 @@ jobs:
           print("PASS v4.5")
           PY
 
-      - name: Embed v4.5 report into page
+      - name: Embed v4.5.2 report into page
         shell: bash
         run: |
           set -euo pipefail
@@ -355,7 +521,7 @@ jobs:
           from pathlib import Path
           import json, html
 
-          report_path = Path("stonkbroker-v45.json")
+          report_path = Path("stonkbroker-v452.json")
           index_path = Path("index.html")
 
           report = json.loads(report_path.read_text())
@@ -382,7 +548,7 @@ jobs:
 
           index_path.write_text(before + embedded + after)
 
-          print("PASS: embedded v4.5 report into index.html")
+          print("PASS: embedded v4.5.2 report into index.html")
           PY
 
       - name: Configure Pages
