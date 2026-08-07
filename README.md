@@ -1,21 +1,20 @@
-# Rustee Broker Execution Dry-Run v3.2
+# Rustee Broker Execution Dry-Run v3.3
 
-v3.2 adds a fail-closed Classic Uniswap route probe.
+This release hardens the Robinhood NVDA snapshot pipeline.
 
-Why:
-- Official UniswapX Robinhood documentation says the V3 Dutch Reactor and OrderQuoter are deployed, but SDK/service wiring is still pending.
-- The same official playbook says classic routing surfaces are deployed on Robinhood Chain, including Uniswap v3/v4 and SwapRouter02.
-- This verifier therefore checks both paths without sending transactions.
+The workflow:
+1. Fetches Robinhood's official read-only `/rhj/assets`.
+2. Fetches `/rhj/prices/NVDA`.
+3. Validates the canonical chain-4663 NVDA address.
+4. Requires active status, a valid bid/ask, and no trading halt.
+5. Writes one atomic `data/nvda-snapshot.json`.
+6. Deploys that exact generated file with GitHub Pages.
 
-New read-only checks:
-- WETH bytecode
-- SwapRouter02 bytecode
-- V3 QuoterV2 bytecode
-- V4 PoolManager bytecode
-- SwapRouter02.factory() discovery
-- Direct NVDA/WETH V3 pool discovery at fee tiers 0.01%, 0.05%, 0.30%, and 1.00%
+The browser no longer falls back to a cross-origin Robinhood fetch. It fails closed
+if the generated snapshot is missing, invalid, or over 20 minutes old.
 
-Important:
-A discovered pool is NOT treated as an executable quote. Funding remains locked until an actual route quote and full eth_call simulation from the Trading TBA context succeed.
+The 20-minute threshold is for this read-only dry-run UI only. It is NOT suitable
+as a future execution-price freshness standard. A real execution path should use
+a fresh executable DEX quote/simulation immediately before signing.
 
 No approvals, funding, unpause, signatures, or trades are sent.
