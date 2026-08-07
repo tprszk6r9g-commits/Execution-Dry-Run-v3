@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee STONKBROKER Fork Trade Gate v4.0.1</title>
+<title>Rustee STONKBROKER Fork Trade Gate v4.0.2</title>
 <style>
 body{margin:0;background:#061914;color:#ecfff8;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:900px;margin:auto;padding:28px 18px 90px}
@@ -9,11 +9,11 @@ h1{font-size:clamp(38px,7vw,62px)}
 .warn{border-left:8px solid #ff9a36;background:#2a1908;padding:18px 20px;border-radius:16px}
 pre{white-space:pre-wrap;word-break:break-word;background:#03110e;border:1px solid #25574d;border-radius:16px;padding:18px;max-height:1100px;overflow:auto}
 </style></head><body><main>
-<h1>Rustee $STONKBROKER Fork Trade Gate v4.0.1</h1>
+<h1>Rustee $STONKBROKER Fork Trade Gate v4.0.2</h1>
 <div class="warn"><b>No real trade.</b> This page reports a Foundry fork-only WETH → STONKBROKER route proof.</div>
-<div class="card"><pre id="report">Loading v4.0.1 report…</pre></div>
+<div class="card"><pre id="report">Loading v4.0.2 report…</pre></div>
 <script>
-fetch('./stonkbroker-v401.json',{cache:'no-store'})
+fetch('./stonkbroker-v402.json',{cache:'no-store'})
 .then(r=>{if(!r.ok)throw new Error('report not generated');return r.json()})
 .then(j=>document.getElementById('report').textContent=JSON.stringify(j,null,2))
 .catch(e=>document.getElementById('report').textContent='ERROR: '+e.message);
