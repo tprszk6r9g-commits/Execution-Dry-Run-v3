@@ -125,6 +125,9 @@ jobs:
           test = "test"
           solc_version = "0.8.26"
           evm_version = "cancun"
+          optimizer = true
+          optimizer_runs = 200
+          via_ir = true
           fs_permissions = [
             { access = "read-write", path = "./data" }
           ]
