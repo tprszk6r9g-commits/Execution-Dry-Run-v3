@@ -71,3 +71,15 @@ hard-coded 20-byte addresses in the generated Solidity harness as numeric
 
 This changes no address values, protocol logic, policy settings, fork behavior,
 or safety gates.
+
+## v3.9.3 compile correction
+
+Solidity 0.8.26 also applies address-literal checksum rules to a 40-hex-digit
+literal even when it appears inside `uint160(...)`.
+
+v3.9.3 removes hexadecimal address literals from the generated Solidity
+entirely. Every hard-coded address is represented as its exact **decimal
+160-bit integer** and then converted with `address(uint160(...))`.
+
+This preserves the exact address bytes while avoiding Solidity's address
+checksum parser altogether. No protocol behavior or safety gate changed.
