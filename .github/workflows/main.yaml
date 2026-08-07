@@ -347,6 +347,44 @@ jobs:
           print("PASS v4.5")
           PY
 
+      - name: Embed v4.5 report into page
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          import json, html
+
+          report_path = Path("stonkbroker-v45.json")
+          index_path = Path("index.html")
+
+          report = json.loads(report_path.read_text())
+          pretty = json.dumps(report, indent=2)
+
+          page = index_path.read_text()
+
+          start = "<!--RUSTEE_REPORT_START-->"
+          end = "<!--RUSTEE_REPORT_END-->"
+
+          if start not in page or end not in page:
+              raise RuntimeError("Report embed markers missing from index.html")
+
+          before = page.split(start, 1)[0]
+          after = page.split(end, 1)[1]
+
+          embedded = (
+              start
+              + "\n<pre id=\"report\">"
+              + html.escape(pretty)
+              + "</pre>\n"
+              + end
+          )
+
+          index_path.write_text(before + embedded + after)
+
+          print("PASS: embedded v4.5 report into index.html")
+          PY
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
