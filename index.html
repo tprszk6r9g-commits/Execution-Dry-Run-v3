@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee STONKBROKER Live Configuration Preflight v4.2.1</title>
+<title>Rustee STONKBROKER Live Configuration Preflight v4.2.2</title>
 <style>
 :root{--bg:#041914;--panel:#082b22;--line:#2d675b;--text:#ecfff8;--muted:#9cc0b7;--teal:#39dec4;--orange:#ff9a36}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#061914,#032019);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -19,20 +19,20 @@ pre{white-space:pre-wrap;word-break:break-word;background:#03110e;border:1px sol
 </head>
 <body>
 <main>
-<span class="pill">Robinhood Chain · v4.2.1 · PRE-FLIGHT ONLY</span>
+<span class="pill">Robinhood Chain · v4.2.2 · PRE-FLIGHT ONLY</span>
 <h1>Rustee $STONKBROKER Live Configuration Preflight</h1>
-<div class="warn"><b>No mainnet writes.</b> v4.2.1 replays the real Rustee TBA policy architecture on a fresh fork, adds adversarial boundary tests, compiles the candidate production adapter, and generates the proposed production configuration sequence. It never deploys, configures, funds, approves, trades, or broadcasts on live mainnet.</div>
+<div class="warn"><b>No mainnet writes.</b> v4.2.2 replays the real Rustee TBA policy architecture on a fresh fork, adds adversarial boundary tests, compiles the candidate production adapter, and generates the proposed production configuration sequence. It never deploys, configures, funds, approves, trades, or broadcasts on live mainnet.</div>
 <div class="card">
-<h2>What v4.2.1 adds</h2>
+<h2>What v4.2.2 adds</h2>
 <p>Owner authorization, the $5 ceiling, one-trade-per-day rule, adapter/venue/spender allowlists, stale-oracle rejection, sequencer-down rejection, slippage protection and allowance cleanup are all exercised on fork state. Production oracle and adapter inputs remain explicit blockers rather than guessed values.</p>
 </div>
 <div class="card">
-<h2>v4.2.1 report</h2>
-<pre id="report">Loading v4.2.1 report…</pre>
+<h2>v4.2.2 report</h2>
+<pre id="report">Loading v4.2.2 report…</pre>
 </div>
 <script>
 fetch('./stonkbroker-v42.json',{cache:'no-store'})
-.then(r=>{if(!r.ok)throw new Error('v4.2.1 report has not been generated yet');return r.json()})
+.then(r=>{if(!r.ok)throw new Error('v4.2.2 report has not been generated yet');return r.json()})
 .then(j=>document.getElementById('report').textContent=JSON.stringify(j,null,2))
 .catch(e=>document.getElementById('report').textContent='ERROR: '+e.message);
 </script>
