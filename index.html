@@ -23,13 +23,11 @@ pre{white-space:pre-wrap;word-break:break-word;background:#03110e;border:1px sol
 <h2>What this phase decides</h2>
 <p>The report calculates WETH-per-STONKBROKER from the canonical pool at four averaging windows. It uses the 60-minute result as a reference and treats cross-window dispersion only as an engineering signal. A low-dispersion snapshot can nominate a candidate window, but does not prove manipulation resistance.</p>
 </div>
-<div class="card"><h2>v4.5 report</h2><pre id="report">Loading v4.5 report…</pre></div>
-<script>
-fetch('./stonkbroker-v45.json',{cache:'no-store'})
-.then(r=>{if(!r.ok)throw new Error('v4.5 report not generated yet');return r.json()})
-.then(j=>document.getElementById('report').textContent=JSON.stringify(j,null,2))
-.catch(e=>document.getElementById('report').textContent='ERROR: '+e.message);
-</script>
+<div class="card"><h2>v4.5 report</h2>
+<!--RUSTEE_REPORT_START-->
+<pre id="report">v4.5 report will be embedded by the successful GitHub Actions workflow.</pre>
+<!--RUSTEE_REPORT_END-->
+</div>
 </main>
 </body>
 </html>
