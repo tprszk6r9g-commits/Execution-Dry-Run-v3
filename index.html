@@ -1,1 +1,20 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Rustee Data Feed Resolution v3.15</title><style>:root{--panel:#082b22;--line:#2d675b;--text:#ecfff8;--muted:#99beb4;--teal:#38dec4;--orange:#ff9a36}*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#061914,#05251d);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:920px;margin:auto;padding:28px 18px 90px}h1{font-size:clamp(38px,7vw,62px);line-height:1.03}p{color:var(--muted);font-size:17px;line-height:1.6}.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:10px 15px;color:var(--teal)}.card{background:linear-gradient(145deg,var(--panel),#072019);border:1px solid var(--line);border-radius:24px;padding:24px;margin:20px 0}.warn{border-left:8px solid var(--orange);background:#2a1908;padding:18px 20px;border-radius:16px}pre{white-space:pre-wrap;word-break:break-word;background:#03110e;border:1px solid #25574d;border-radius:16px;padding:18px;overflow:auto;max-height:1100px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}</style></head><body><main><span class="pill">Robinhood Chain · v3.15 · READ ONLY</span><h1>Rustee Data Feed vs Data Streams Resolution</h1><div class="warn"><b>No live writes.</b> This phase tests the simpler Chainlink Data Feeds path because Rustee's existing Registry already expects an AggregatorV3-style oracle. It never guesses an address.</div><div class="card"><p>Set authoritative Robinhood Chain Chainlink addresses as repository variables <code>NVDA_USD_FEED_ADDRESS</code> and <code>ETH_USD_FEED_ADDRESS</code>. The workflow checks bytecode, decimals, latestRoundData(), and whether NVDA's onchain value matches Robinhood's raw quote multiplied by the current corporate-action multiplier.</p></div><div class="card"><h2>v3.15 report</h2><pre id="report">Run the v3.15 workflow to generate the report.</pre></div></main></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rustee Authoritative Feed Gate v3.16</title>
+<style>
+:root{--panel:#082b22;--line:#2d675b;--text:#ecfff8;--muted:#99beb4;--teal:#38dec4;--orange:#ff9a36}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#061914,#05251d);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:920px;margin:auto;padding:28px 18px 90px}
+h1{font-size:clamp(38px,7vw,62px);line-height:1.03}
+p{color:var(--muted);font-size:17px;line-height:1.6}
+.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:10px 15px;color:var(--teal)}
+.card{background:linear-gradient(145deg,var(--panel),#072019);border:1px solid var(--line);border-radius:24px;padding:24px;margin:20px 0}
+.warn{border-left:8px solid var(--orange);background:#2a1908;padding:18px 20px;border-radius:16px}
+pre{white-space:pre-wrap;word-break:break-word;background:#03110e;border:1px solid #25574d;border-radius:16px;padding:18px;overflow:auto;max-height:1200px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}
+</style></head><body><main>
+<span class="pill">Robinhood Chain · v3.16 · READ ONLY</span>
+<h1>Rustee Authoritative Feed Gate</h1>
+<div class="warn"><b>No live writes.</b> Chainlink publicly lists NVDA/USD and ETH/USD for Robinhood Chain, but v3.16 still refuses to guess their contract addresses. Supply only addresses copied from Chainlink's authoritative Price Feed Addresses surface.</div>
+<div class="card"><p>Set <code>NVDA_USD_FEED_ADDRESS</code>, <code>ETH_USD_FEED_ADDRESS</code>, plus provenance URLs in <code>NVDA_FEED_SOURCE_URL</code> and <code>ETH_FEED_SOURCE_URL</code>. The workflow verifies bytecode, AggregatorV3 reads, freshness metadata, and NVDA multiplier semantics.</p></div>
+<div class="card"><h2>v3.16 report</h2><pre id="report">Run the v3.16 workflow to generate the report.</pre></div>
+</main></body></html>
