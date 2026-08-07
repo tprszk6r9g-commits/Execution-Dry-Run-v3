@@ -2,54 +2,54 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rustee Broker Fork Policy Path v3.9</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rustee Broker Mainnet Readiness v3.10</title>
 <style>
-:root{--bg:#061713;--panel:#0b2a23;--line:#2d675b;--text:#eafff8;--muted:#94b8af;--teal:#37dfc3;--orange:#ff9a36;--green:#82f1b5}
+:root{--bg:#041611;--panel:#082b22;--line:#2d675b;--text:#ecfff8;--muted:#99beb4;--teal:#38dec4;--orange:#ff9a36;--green:#82f1b5}
 *{box-sizing:border-box}
-body{margin:0;background:linear-gradient(160deg,#071914,#052019);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
-main{max-width:900px;margin:auto;padding:28px 18px 90px}
-h1{font-size:clamp(34px,7vw,58px);line-height:1.03}
-.card{background:linear-gradient(145deg,var(--panel),#08231d);border:1px solid var(--line);border-radius:24px;padding:24px;margin:18px 0}
-.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:9px 14px;color:var(--teal)}
-.warn{border-left:7px solid var(--orange);background:#2b1b0b;padding:17px;border-radius:14px}
+body{margin:0;background:linear-gradient(160deg,#061914,#05251d);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:920px;margin:auto;padding:28px 18px 90px}
+h1{font-size:clamp(38px,7vw,62px);line-height:1.02;margin:16px 0}
+h2{font-size:clamp(25px,5vw,38px)}
+p{color:var(--muted);font-size:17px;line-height:1.6}
+.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:10px 15px;color:var(--teal)}
+.card{background:linear-gradient(145deg,var(--panel),#072019);border:1px solid var(--line);border-radius:24px;padding:24px;margin:20px 0}
+.warn{border-left:8px solid var(--orange);background:#2a1908;padding:18px 20px;border-radius:16px}
 .good{color:var(--green)}
-pre{white-space:pre-wrap;word-break:break-word;background:#04120f;border:1px solid #25574d;border-radius:16px;padding:16px;overflow:auto;max-height:620px}
-button{background:var(--teal);border:0;color:#04211b;font-weight:800;padding:14px 18px;border-radius:14px}
-p{color:var(--muted);line-height:1.55}
+pre{white-space:pre-wrap;word-break:break-word;background:#03110e;border:1px solid #25574d;border-radius:16px;padding:18px;overflow:auto;max-height:800px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}
 </style>
 </head>
-<body><main>
-<span class="pill">Robinhood Chain · Fork only · v3.9</span>
-<h1>Rustee Broker Fork Policy Path</h1>
-<div class="warn"><b>No mainnet writes.</b> This phase configures and unpauses the deployed Rustee contracts only inside a Foundry fork. It never funds, approves, unpauses, or broadcasts on live mainnet.</div>
+<body>
+<main>
+<span class="pill">Robinhood Chain Mainnet · v3.10 · READ ONLY</span>
+<h1>Rustee Broker Mainnet Readiness</h1>
 
-<div class="card">
-<h2>What v3.8 actually proved</h2>
-<p>The unchanged revert selector <code>0x02b874a6</code> is <b>TradingPaused()</b>. That means the selector and calldata shape were already valid enough to enter <code>executeTrade</code>; execution was stopping at the policy pause before any request-field validation.</p>
-<p>The exact ABI is <code>executeTrade(address,(address,address,uint256,uint256,uint256,bytes))</code>, selector <code>0x6c606ce7</code>.</p>
+<div class="warn">
+<b>No live writes in v3.10.</b> This phase reads the deployed mainnet contracts,
+verifies the NFT/TBA binding and canonical NVDA state, records the successful
+v3.9 fork proof, and identifies the production configuration still required
+before any mainnet authorization.
 </div>
 
 <div class="card">
-<h2>v3.9 objective</h2>
-<p>On a fork, impersonate the NFT owner, configure temporary price/sequencer feeds, enable WETH + NVDA, allow a live-router adapter/venue/spender, unpause the $5 policy, simulate WETH funding, and execute the real guarded TBA trade path against the live forked router liquidity. The test also verifies that router allowance is cleared after execution.</p>
+<h2>v3.9 milestone</h2>
+<p>The guarded <code>executeTrade</code> path passed end-to-end on a Robinhood
+Chain mainnet fork and the router allowance returned to zero after execution.
+v3.10 does not repeat or broadcast that trade.</p>
 </div>
 
 <div class="card">
-<h2>Generated report</h2>
-<button id="load">Load v3.9 report</button>
-<pre id="out">Run the GitHub Action first. The result will appear at data/v39-policy-path.json.</pre>
+<h2>What v3.10 checks</h2>
+<p>Chain ID, deployed bytecode, ERC-6551 ownership/registry/token binding,
+current mainnet policy, router venue/spender status, and Robinhood's canonical
+NVDA deployment/status are read directly. Production oracle and adapter
+addresses remain explicit blockers until independently selected and verified.</p>
 </div>
 
-<script>
-document.getElementById('load').onclick=async()=>{
-  const out=document.getElementById('out');
-  try{
-    const r=await fetch('data/v39-policy-path.json?'+Date.now());
-    if(!r.ok)throw Error('Report not generated yet');
-    const j=await r.json();
-    out.textContent=JSON.stringify(j,null,2);
-  }catch(e){out.textContent='ERROR: '+e.message}
-};
-</script>
-</main></body></html>
+<div class="card">
+<h2>Mainnet readiness report</h2>
+<pre id="report">Run the v3.10 GitHub Action to generate the embedded readiness report.</pre>
+</div>
+</main>
+</body>
+</html>
