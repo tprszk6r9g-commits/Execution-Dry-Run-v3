@@ -1,22 +1,19 @@
-# Rustee Broker Policy + Fork Gate v3.5
+# Rustee Broker ABI + Policy Recovery v3.6
 
-v3.5 adds a true forked funded execution test with **no real funds**.
+This phase does not trade.
 
-GitHub Actions:
-- fetches the current Robinhood NVDA ask;
-- builds a conservative $4.975 NVDA target;
-- forks Robinhood Chain mainnet;
-- queries QuoterV2;
-- temporarily impersonates the Trading TBA inside the fork only;
-- gives that forked address simulated ETH/WETH;
-- approves SwapRouter02 only inside the fork;
-- executes the best 0.05% or 0.30% exact-output route;
-- verifies NVDA arrived;
-- writes `data/fork-simulation.json`.
+It reads the deployed Trading TBA and implementation on Robinhood Chain
+mainnet and generates `data/abi-recovery.json`.
 
-This proves router/pool settlement mechanics, but it intentionally does **not**
-claim the real Rustee policy path is complete. The fork impersonation bypasses
-the Trading TBA's own execution wrapper, so the final owner → TBA → policy →
-router call still must be identified and simulated.
+The primary target is selector `0x523e3260`. Although that selector is widely
+associated with `isValidSigner(address,bytes)`, Rustee's deployed runtime
+behind the selector exhibits a substantially larger policy/accounting/external
+call path. v3.6 therefore records observed behavior rather than trusting a
+public selector label.
 
-No live-chain approval, funding, unpause, signature, or trade occurs.
+The workflow also probes the remaining dispatcher selectors and sends
+ABI-correct `address,bytes` calls with zero-filled contexts of increasing
+length to expose parser/revert boundaries.
+
+All probes use `eth_call`. There are no approvals, funding, unpause calls,
+signatures, or transaction broadcasts.
