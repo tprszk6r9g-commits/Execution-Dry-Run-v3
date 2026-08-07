@@ -1,51 +1,55 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Differential ABI Recovery v3.8</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rustee Broker Fork Policy Path v3.9</title>
 <style>
-:root{--bg:#041914;--card:#082b23;--deep:#051f1a;--line:#2f6a5c;--text:#effff9;--muted:#9bbdb5;--green:#7defaf;--teal:#41dfc4;--amber:#ffb357;--red:#ff8585}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#02110e,var(--bg));color:var(--text);font-family:system-ui,-apple-system,sans-serif}
-main{max-width:960px;margin:auto;padding:24px 16px 110px}h1{font-size:clamp(36px,8vw,62px);line-height:1.03}h2{font-size:29px}
-.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:9px 14px;color:var(--teal)}
-.card{background:linear-gradient(145deg,var(--card),#06231d);border:1px solid var(--line);border-radius:24px;padding:21px;margin:18px 0}
-.warn{background:#2b1c0d;border-left:7px solid var(--amber);border-radius:16px;padding:16px;line-height:1.5}
-button{font:inherit;font-weight:800;border:1px solid #3b7a6c;border-radius:14px;background:#0b352c;color:var(--text);padding:14px 17px;margin:4px}
-button.primary{background:var(--teal);border:0;color:#022018}.row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:13px 0;border-bottom:1px solid #235044}
-.tiny{color:var(--muted);font-size:12px;word-break:break-all;margin-top:5px}.pass{color:var(--green)}.fail{color:var(--red)}.info{color:var(--amber)}
-pre,textarea{width:100%;background:#03130f;color:var(--text);border:1px solid var(--line);border-radius:14px;padding:14px;white-space:pre-wrap;word-break:break-all;font:12px ui-monospace,SFMono-Regular,Menlo,monospace}
-pre{max-height:620px;overflow:auto}textarea{min-height:190px}.footer{position:sticky;bottom:8px;background:#070b0a;border:1px solid var(--teal);border-radius:15px;padding:13px}
-</style></head><body><main>
-<span class="pill">Robinhood Chain 4663 · v3.8 · differential field recovery</span>
-<h1>Rustee Six-Word Policy Struct</h1>
-<p>v3.8 mutates the six accepted struct words behind <code>0x6c606ce7</code>, rather than changing only the outer address.</p>
-<div class="warn"><b>Read-only only:</b> every test is <code>eth_call</code>. The system remains paused, unfunded and unapproved. No transaction can be broadcast from this page.</div>
+:root{--bg:#061713;--panel:#0b2a23;--line:#2d675b;--text:#eafff8;--muted:#94b8af;--teal:#37dfc3;--orange:#ff9a36;--green:#82f1b5}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(160deg,#071914,#052019);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:900px;margin:auto;padding:28px 18px 90px}
+h1{font-size:clamp(34px,7vw,58px);line-height:1.03}
+.card{background:linear-gradient(145deg,var(--panel),#08231d);border:1px solid var(--line);border-radius:24px;padding:24px;margin:18px 0}
+.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:9px 14px;color:var(--teal)}
+.warn{border-left:7px solid var(--orange);background:#2b1b0b;padding:17px;border-radius:14px}
+.good{color:var(--green)}
+pre{white-space:pre-wrap;word-break:break-word;background:#04120f;border:1px solid #25574d;border-radius:16px;padding:16px;overflow:auto;max-height:620px}
+button{background:var(--teal);border:0;color:#04211b;font-weight:800;padding:14px 18px;border-radius:14px}
+p{color:var(--muted);line-height:1.55}
+</style>
+</head>
+<body><main>
+<span class="pill">Robinhood Chain · Fork only · v3.9</span>
+<h1>Rustee Broker Fork Policy Path</h1>
+<div class="warn"><b>No mainnet writes.</b> This phase configures and unpauses the deployed Rustee contracts only inside a Foundry fork. It never funds, approves, unpauses, or broadcasts on live mainnet.</div>
 
-<div class="card"><h2>1. Load differential report</h2>
-<button class="primary" id="load">Load v3.8 report</button><div id="summary"></div></div>
-<div class="card"><h2>2. Single-field mutations</h2><div id="single"></div></div>
-<div class="card"><h2>3. Pair + amount mutations</h2><div id="pairs"></div></div>
-<div class="card"><h2>4. Revert transitions</h2><div id="transitions"></div></div>
-<div class="card"><h2>5. JSON output</h2>
-<button class="primary" id="copy">Copy JSON</button><button id="download">Download JSON</button>
-<textarea id="copyArea" readonly></textarea><pre id="raw">No report loaded.</pre></div>
-<div class="footer">ABI recovery only · funding/approval/unpause/broadcast remain false.</div>
+<div class="card">
+<h2>What v3.8 actually proved</h2>
+<p>The unchanged revert selector <code>0x02b874a6</code> is <b>TradingPaused()</b>. That means the selector and calldata shape were already valid enough to enter <code>executeTrade</code>; execution was stopping at the policy pause before any request-field validation.</p>
+<p>The exact ABI is <code>executeTrade(address,(address,address,uint256,uint256,uint256,bytes))</code>, selector <code>0x6c606ce7</code>.</p>
+</div>
+
+<div class="card">
+<h2>v3.9 objective</h2>
+<p>On a fork, impersonate the NFT owner, configure temporary price/sequencer feeds, enable WETH + NVDA, allow a live-router adapter/venue/spender, unpause the $5 policy, simulate WETH funding, and execute the real guarded TBA trade path against the live forked router liquidity. The test also verifies that router allowance is cleared after execution.</p>
+</div>
+
+<div class="card">
+<h2>Generated report</h2>
+<button id="load">Load v3.9 report</button>
+<pre id="out">Run the GitHub Action first. The result will appear at data/v39-policy-path.json.</pre>
+</div>
 
 <script>
-const $=x=>document.getElementById(x);let latest=null;
-const row=(n,v,p,info=false)=>`<div class="row"><div><b>${n}</b><div class="tiny">${v}</div></div><div class="${info?'info':p?'pass':'fail'}">${info?'INFO':p?'PASS':'FAIL'}</div></div>`;
-async function load(){
- const r=await fetch('./data/differential-abi-recovery.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('report HTTP '+r.status);
- latest=await r.json();const s=JSON.stringify(latest,null,2);$('raw').textContent=s;$('copyArea').value=s;
- $('summary').innerHTML=
-   row('Binding',latest.binding.pass?'intact':'mismatch',latest.binding.pass)+
-   row('Baseline 6-word revert',latest.baseline.revertSelector||latest.baseline.observation,true,true)+
-   row('Fields causing transition',String(latest.analysis.transitionFields.length),latest.analysis.transitionFields.length>0)+
-   row('Execution gate','LOCKED',false);
- $('single').innerHTML=latest.singleFieldProbes.map(x=>row(x.name,x.observation,x.changedFromBaseline,x.changedFromBaseline?false:true)).join('');
- $('pairs').innerHTML=latest.combinationProbes.map(x=>row(x.name,x.observation,x.changedFromBaseline,x.changedFromBaseline?false:true)).join('');
- $('transitions').innerHTML=latest.analysis.transitions.map(x=>row(x.name,`${x.from} → ${x.to}`,true,true)).join('') || row('No transition yet','All probes stayed at baseline revert',false);
-}
-$('load').onclick=()=>load().catch(e=>alert(e.message));
-$('copy').onclick=async()=>{if(!latest)return alert('Load first');const s=JSON.stringify(latest,null,2);try{await navigator.clipboard.writeText(s);alert('Copied')}catch(e){$('copyArea').focus();$('copyArea').select();document.execCommand('copy')}};
-$('download').onclick=()=>{if(!latest)return alert('Load first');const b=new Blob([JSON.stringify(latest,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='rustee-differential-abi-v3.8.json';a.click()};
-</script></main></body></html>
+document.getElementById('load').onclick=async()=>{
+  const out=document.getElementById('out');
+  try{
+    const r=await fetch('data/v39-policy-path.json?'+Date.now());
+    if(!r.ok)throw Error('Report not generated yet');
+    const j=await r.json();
+    out.textContent=JSON.stringify(j,null,2);
+  }catch(e){out.textContent='ERROR: '+e.message}
+};
+</script>
+</main></body></html>

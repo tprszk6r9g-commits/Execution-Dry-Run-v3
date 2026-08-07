@@ -1,21 +1,55 @@
-# Rustee Broker Differential ABI Recovery v3.8
+# Rustee Broker Fork Policy Path v3.9
 
-v3.7 established that a six-word dynamic region is accepted by the
-`0x6c606ce7` parser, with zero values reaching custom error `0x02b874a6`.
+## Key correction from v3.8
 
-v3.8 performs differential probing of those six struct fields.
+`0x02b874a6` is the custom error selector for `TradingPaused()` in the deployed
+`StockTradingAccount`.
 
-It changes one field at a time to:
-- known addresses (WETH, NVDA, router, owner, registry, TBA)
-- useful numeric values (1, fee 500, known $5-size target/output values,
-  and a future deadline)
+The v3.8 probes all reached that same error because `executeTrade` checks the
+registry pause flag *before* request validity, asset allowlists, adapter
+allowlists, quotes, balances, or venue execution.
 
-It then tests plausible field combinations.
+Therefore ABI recovery is no longer the blocker.
 
-A change in revert selector is treated only as evidence that execution moved
-to another validation stage. It is not treated as proof of a complete ABI.
+Exact function ABI:
 
-All calls are `eth_call`. No live transaction is sent.
+`executeTrade(address,(address,address,uint256,uint256,uint256,bytes))`
 
-Pages is deployed from a deterministic `site/` directory to avoid the
-previous artifact-path 404 problem.
+Selector:
+
+`0x6c606ce7`
+
+TradeRequest:
+
+1. `address tokenIn`
+2. `address tokenOut`
+3. `uint256 amountIn`
+4. `uint256 minAmountOut`
+5. `uint256 deadline`
+6. `bytes venueData`
+
+## What v3.9 does
+
+The GitHub Action runs a **Foundry mainnet fork only**. It:
+
+- verifies a live NVDA target,
+- deploys fork-local mock price/sequencer feeds,
+- configures WETH and NVDA in the deployed registry on the fork,
+- deploys a fork-local adapter that targets the live router,
+- allows adapter / venue / spender on the fork,
+- unpauses the existing $5 / $10 / 1-trade policy on the fork,
+- simulates WETH funding of the trading TBA,
+- calls the actual deployed `StockTradingAccount.executeTrade`,
+- verifies NVDA receipt,
+- verifies WETH spend stays within the request maximum,
+- verifies router allowance is cleared back to zero.
+
+It writes:
+
+`data/v39-policy-path.json`
+
+## Safety gate
+
+This package does **not** authorize or perform live-mainnet funding, approvals,
+registry configuration, unpausing, or trade broadcasting. Those remain false in
+the report's execution gate.
