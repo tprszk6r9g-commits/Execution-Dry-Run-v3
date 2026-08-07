@@ -357,7 +357,11 @@ jobs:
               address constant ROUTER =
                   0xCaf681a66D020601342297493863E78C959E5cb2;
               address constant QUOTER =
-                  0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7;
+                  address(
+                      uint160(
+                          0x0033e885ed0ec9bf04ecfb19341582aadcb4c8a9e7
+                      )
+                  );
 
               function _tryQuote(
                   uint24 fee,
