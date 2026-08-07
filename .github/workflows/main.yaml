@@ -1,9 +1,8 @@
-name: Rustee Oracle Adapter Gate v3.12.1
+name: Rustee Signed Report Replay Gate v3.13
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -12,11 +11,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v3121-pages
+  group: rustee-v313-pages
   cancel-in-progress: true
 
 jobs:
-  oracle-adapter-gate:
+  replay-gate:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -31,684 +30,96 @@ jobs:
         with:
           version: stable
 
-      - name: Build isolated v3.12 harness
+      - name: Confirm verifier and build readiness report
         shell: bash
+        env:
+          NVDA_STREAM_ID: ${{ vars.NVDA_STREAM_ID }}
+          WETH_STREAM_ID: ${{ vars.WETH_STREAM_ID }}
+          SIGNED_NVDA_REPORT_HEX: ${{ secrets.SIGNED_NVDA_REPORT_HEX }}
+          SIGNED_NVDA_PARAMETER_PAYLOAD_HEX: ${{ secrets.SIGNED_NVDA_PARAMETER_PAYLOAD_HEX }}
         run: |
           set -euo pipefail
-
-          rm -rf src test script out cache
-          rm -f foundry.toml
-          mkdir -p src test data
-
-          cat > foundry.toml <<'EOF'
-          [profile.default]
-          src = "src"
-          test = "test"
-          out = "out"
-          solc_version = "0.8.26"
-          evm_version = "cancun"
-          optimizer = true
-          optimizer_runs = 200
-          via_ir = true
-          EOF
-
-          cat > src/RusteeDataStreamsV4Aggregator.sol <<'EOF'
-          // SPDX-License-Identifier: MIT
-          pragma solidity ^0.8.26;
-
-          interface IVerifierProxy {
-              function verify(
-                  bytes calldata payload,
-                  bytes calldata parameterPayload
-              ) external payable returns (bytes memory verifierResponse);
-          }
-
-          interface IAggregatorV3Like {
-              function decimals() external view returns (uint8);
-              function description() external view returns (string memory);
-              function version() external pure returns (uint256);
-
-              function latestRoundData()
-                  external
-                  view
-                  returns (
-                      uint80 roundId,
-                      int256 answer,
-                      uint256 startedAt,
-                      uint256 updatedAt,
-                      uint80 answeredInRound
-                  );
-          }
-
-          struct ReportV4 {
-              bytes32 feedId;
-              uint32 validFromTimestamp;
-              uint32 observationsTimestamp;
-              uint192 nativeFee;
-              uint192 linkFee;
-              uint32 expiresAt;
-              int192 price;
-              uint32 marketStatus;
-          }
-
-          contract RusteeDataStreamsV4Aggregator is IAggregatorV3Like {
-              error InvalidVerifier();
-              error InvalidFeedId();
-              error InvalidDecimals();
-              error FeedMismatch();
-              error BadPrice();
-              error ExpiredReport();
-              error FutureObservation();
-              error StaleReport();
-              error MarketNotOpen();
-              error OlderObservation();
-
-              IVerifierProxy public immutable verifier;
-              bytes32 public immutable expectedFeedId;
-              uint8 public immutable override decimals;
-              uint32 public immutable maxAge;
-              bool public immutable requireMarketOpen;
-              string private _description;
-
-              uint80 private _roundId;
-              int256 private _answer;
-              uint256 private _startedAt;
-              uint256 private _updatedAt;
-
-              event ReportAccepted(
-                  uint80 indexed roundId,
-                  bytes32 indexed feedId,
-                  int256 price,
-                  uint256 observationTimestamp,
-                  uint32 marketStatus
-              );
-
-              constructor(
-                  address verifier_,
-                  bytes32 feedId_,
-                  uint8 decimals_,
-                  uint32 maxAge_,
-                  bool requireMarketOpen_,
-                  string memory description_
-              ) {
-                  if (verifier_ == address(0)) revert InvalidVerifier();
-                  if (feedId_ == bytes32(0)) revert InvalidFeedId();
-                  if (decimals_ == 0 || decimals_ > 18) revert InvalidDecimals();
-
-                  verifier = IVerifierProxy(verifier_);
-                  expectedFeedId = feedId_;
-                  decimals = decimals_;
-                  maxAge = maxAge_;
-                  requireMarketOpen = requireMarketOpen_;
-                  _description = description_;
-              }
-
-              function description()
-                  external
-                  view
-                  override
-                  returns (string memory)
-              {
-                  return _description;
-              }
-
-              function version()
-                  external
-                  pure
-                  override
-                  returns (uint256)
-              {
-                  return 1;
-              }
-
-              function submitVerifiedReport(
-                  bytes calldata payload,
-                  bytes calldata parameterPayload
-              ) external payable returns (int256 acceptedPrice) {
-                  bytes memory verified =
-                      verifier.verify{value: msg.value}(
-                          payload,
-                          parameterPayload
-                      );
-
-                  ReportV4 memory report =
-                      abi.decode(verified, (ReportV4));
-
-                  if (report.feedId != expectedFeedId) revert FeedMismatch();
-                  if (report.price <= 0) revert BadPrice();
-                  if (report.expiresAt < block.timestamp) revert ExpiredReport();
-
-                  if (report.observationsTimestamp > block.timestamp) {
-                      revert FutureObservation();
-                  }
-
-                  if (
-                      maxAge != 0 &&
-                      block.timestamp - report.observationsTimestamp > maxAge
-                  ) {
-                      revert StaleReport();
-                  }
-
-                  if (
-                      requireMarketOpen &&
-                      report.marketStatus != 2
-                  ) {
-                      revert MarketNotOpen();
-                  }
-
-                  if (
-                      _updatedAt != 0 &&
-                      report.observationsTimestamp < _updatedAt
-                  ) {
-                      revert OlderObservation();
-                  }
-
-                  unchecked {
-                      _roundId += 1;
-                  }
-
-                  _answer = int256(report.price);
-                  _startedAt = report.validFromTimestamp;
-                  _updatedAt = report.observationsTimestamp;
-
-                  emit ReportAccepted(
-                      _roundId,
-                      report.feedId,
-                      _answer,
-                      _updatedAt,
-                      report.marketStatus
-                  );
-
-                  return _answer;
-              }
-
-              function latestRoundData()
-                  external
-                  view
-                  override
-                  returns (
-                      uint80 roundId,
-                      int256 answer,
-                      uint256 startedAt,
-                      uint256 updatedAt,
-                      uint80 answeredInRound
-                  )
-              {
-                  return (
-                      _roundId,
-                      _answer,
-                      _startedAt,
-                      _updatedAt,
-                      _roundId
-                  );
-              }
-          }
-          EOF
-
-          cat > test/RusteeDataStreamsV4Aggregator.t.sol <<'EOF'
-          // SPDX-License-Identifier: MIT
-          pragma solidity ^0.8.26;
-
-          import "../src/RusteeDataStreamsV4Aggregator.sol";
-
-          interface Vm {
-              function warp(uint256) external;
-              function expectRevert(bytes4) external;
-          }
-
-          contract MockVerifierProxy is IVerifierProxy {
-              bytes public response;
-
-              function setResponse(bytes calldata response_) external {
-                  response = response_;
-              }
-
-              function verify(
-                  bytes calldata,
-                  bytes calldata
-              ) external payable returns (bytes memory verifierResponse) {
-                  return response;
-              }
-          }
-
-          contract RusteeDataStreamsV4AggregatorTest {
-              Vm constant vm = Vm(
-                  address(
-                      uint160(
-                          uint256(
-                              keccak256("hevm cheat code")
-                          )
-                      )
-                  )
-              );
-
-              bytes32 constant FEED_ID =
-                  keccak256("RUSTEE-NVDA-V4-FORK-GATE");
-
-              MockVerifierProxy verifier;
-              RusteeDataStreamsV4Aggregator adapter;
-
-              function setUp() public {
-                  verifier = new MockVerifierProxy();
-
-                  adapter = new RusteeDataStreamsV4Aggregator(
-                      address(verifier),
-                      FEED_ID,
-                      8,
-                      120,
-                      true,
-                      "NVDA / USD Rustee verified Data Streams cache"
-                  );
-
-                  vm.warp(2_000_000_000);
-              }
-
-              function _report(
-                  bytes32 feed,
-                  uint32 observed,
-                  uint32 expires,
-                  int192 price,
-                  uint32 marketStatus
-              ) internal pure returns (bytes memory) {
-                  return abi.encode(
-                      ReportV4({
-                          feedId: feed,
-                          validFromTimestamp: observed - 1,
-                          observationsTimestamp: observed,
-                          nativeFee: 0,
-                          linkFee: 0,
-                          expiresAt: expires,
-                          price: price,
-                          marketStatus: marketStatus
-                      })
-                  );
-              }
-
-              function testAcceptsVerifiedOpenMarketReport() public {
-                  verifier.setResponse(
-                      _report(
-                          FEED_ID,
-                          uint32(block.timestamp - 10),
-                          uint32(block.timestamp + 30),
-                          220_08000000,
-                          2
-                      )
-                  );
-
-                  adapter.submitVerifiedReport("", "");
-
-                  (
-                      uint80 roundId,
-                      int256 answer,
-                      ,
-                      uint256 updatedAt,
-                      uint80 answeredInRound
-                  ) = adapter.latestRoundData();
-
-                  require(roundId == 1, "round");
-                  require(answer == 220_08000000, "price");
-                  require(
-                      updatedAt == block.timestamp - 10,
-                      "timestamp"
-                  );
-                  require(answeredInRound == 1, "answered round");
-                  require(adapter.decimals() == 8, "decimals");
-              }
-
-              function testRejectsWrongFeed() public {
-                  verifier.setResponse(
-                      _report(
-                          keccak256("WRONG"),
-                          uint32(block.timestamp - 5),
-                          uint32(block.timestamp + 30),
-                          220_00000000,
-                          2
-                      )
-                  );
-
-                  vm.expectRevert(
-                      RusteeDataStreamsV4Aggregator.FeedMismatch.selector
-                  );
-                  adapter.submitVerifiedReport("", "");
-              }
-
-              function testRejectsClosedMarket() public {
-                  verifier.setResponse(
-                      _report(
-                          FEED_ID,
-                          uint32(block.timestamp - 5),
-                          uint32(block.timestamp + 30),
-                          220_00000000,
-                          1
-                      )
-                  );
-
-                  vm.expectRevert(
-                      RusteeDataStreamsV4Aggregator.MarketNotOpen.selector
-                  );
-                  adapter.submitVerifiedReport("", "");
-              }
-
-              function testRejectsStaleReport() public {
-                  verifier.setResponse(
-                      _report(
-                          FEED_ID,
-                          uint32(block.timestamp - 121),
-                          uint32(block.timestamp + 30),
-                          220_00000000,
-                          2
-                      )
-                  );
-
-                  vm.expectRevert(
-                      RusteeDataStreamsV4Aggregator.StaleReport.selector
-                  );
-                  adapter.submitVerifiedReport("", "");
-              }
-          }
-          EOF
-
-          forge test -vv
-
-
-      - name: Prove AggregatorV3 registry compatibility on fork
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          cat > test/RusteeRegistryCompatibility.t.sol <<'EOF'
-          // SPDX-License-Identifier: MIT
-          pragma solidity ^0.8.26;
-
-          import "../src/RusteeDataStreamsV4Aggregator.sol";
-
-          interface VmCompat {
-              function warp(uint256) external;
-          }
-
-          interface IRegistryOracleReader {
-              function latestRoundData()
-                  external
-                  view
-                  returns (
-                      uint80,
-                      int256,
-                      uint256,
-                      uint256,
-                      uint80
-                  );
-              function decimals() external view returns (uint8);
-          }
-
-          contract CompatVerifier is IVerifierProxy {
-              bytes internal response;
-
-              function set(bytes calldata x) external {
-                  response = x;
-              }
-
-              function verify(
-                  bytes calldata,
-                  bytes calldata
-              ) external payable returns (bytes memory) {
-                  return response;
-              }
-          }
-
-          contract RusteeRegistryCompatibilityTest {
-              VmCompat constant vm = VmCompat(
-                  address(
-                      uint160(
-                          uint256(
-                              keccak256("hevm cheat code")
-                          )
-                      )
-                  )
-              );
-
-              function testAggregatorSurfaceIsRegistryConsumable()
-                  public
-              {
-                  vm.warp(2_000_000_000);
-
-                  CompatVerifier verifier = new CompatVerifier();
-                  bytes32 feedId = keccak256("RUSTEE-V3121-COMPAT");
-
-                  RusteeDataStreamsV4Aggregator oracle =
-                      new RusteeDataStreamsV4Aggregator(
-                          address(verifier),
-                          feedId,
-                          8,
-                          120,
-                          true,
-                          "Rustee NVDA/USD compatibility oracle"
-                      );
-
-                  verifier.set(
-                      abi.encode(
-                          ReportV4({
-                              feedId: feedId,
-                              validFromTimestamp:
-                                  uint32(block.timestamp - 11),
-                              observationsTimestamp:
-                                  uint32(block.timestamp - 10),
-                              nativeFee: 0,
-                              linkFee: 0,
-                              expiresAt:
-                                  uint32(block.timestamp + 30),
-                              price: int192(220_08000000),
-                              marketStatus: 2
-                          })
-                      )
-                  );
-
-                  oracle.submitVerifiedReport("", "");
-
-                  IRegistryOracleReader reader =
-                      IRegistryOracleReader(address(oracle));
-
-                  (
-                      uint80 roundId,
-                      int256 answer,
-                      ,
-                      uint256 updatedAt,
-                      uint80 answeredInRound
-                  ) = reader.latestRoundData();
-
-                  require(reader.decimals() == 8, "decimals");
-                  require(roundId > 0, "round");
-                  require(answer == 220_08000000, "answer");
-                  require(updatedAt == block.timestamp - 10, "freshness");
-                  require(
-                      answeredInRound == roundId,
-                      "answeredInRound"
-                  );
-              }
-          }
-          EOF
-
-          forge test \
-            --match-test testAggregatorSurfaceIsRegistryConsumable \
-            -vv
-
-      - name: Check Robinhood Chain verifier proxy
-        shell: bash
-        run: |
-          set -euo pipefail
-
+          mkdir -p data
           RPC="https://rpc.mainnet.chain.robinhood.com"
           VERIFIER="0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7"
-
           CODE="$(cast code "$VERIFIER" --rpc-url "$RPC")"
-
-          if [ "$CODE" = "0x" ]; then
-            echo "Verifier proxy has no bytecode"
-            exit 1
-          fi
-
-          echo "PASS: Robinhood Chain Data Streams verifier proxy has bytecode"
-
-      - name: Build v3.12 report
-        shell: bash
-        run: |
-          set -euo pipefail
+          test "$CODE" != "0x"
 
           python3 <<'PY'
-          import json
-          import hashlib
-          import datetime
+          import json, os, re, datetime
           from pathlib import Path
 
-          src = Path("src/RusteeDataStreamsV4Aggregator.sol").read_bytes()
-          artifact = json.load(
-              open(
-                  "out/RusteeDataStreamsV4Aggregator.sol/"
-                  "RusteeDataStreamsV4Aggregator.json"
+          nvda=os.getenv("NVDA_STREAM_ID","").strip()
+          weth=os.getenv("WETH_STREAM_ID","").strip()
+          report=os.getenv("SIGNED_NVDA_REPORT_HEX","").strip()
+          params=os.getenv("SIGNED_NVDA_PARAMETER_PAYLOAD_HEX","").strip()
+
+          b32=lambda x: bool(re.fullmatch(r"0x[0-9a-fA-F]{64}",x))
+          hx=lambda x: bool(re.fullmatch(r"0x(?:[0-9a-fA-F]{2})*",x))
+
+          ready=(b32(nvda) and b32(weth) and bool(report) and hx(report)
+                 and bool(params) and hx(params))
+
+          p={
+            "project":"Rustee Broker Signed Report Replay Gate v3.13",
+            "network":"Robinhood Chain Mainnet",
+            "chainId":4663,
+            "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "mode":"NO_MAINNET_WRITES",
+            "verifierProxy":"0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7",
+            "verifierProxyHasCode":True,
+            "inputs":{
+              "nvdaStreamIdPresent":bool(nvda),
+              "nvdaStreamIdValidBytes32":b32(nvda),
+              "wethStreamIdPresent":bool(weth),
+              "wethStreamIdValidBytes32":b32(weth),
+              "signedNvdaReportPresent":bool(report),
+              "signedNvdaReportHexValid":hx(report) if report else False,
+              "parameterPayloadPresent":bool(params),
+              "parameterPayloadHexValid":hx(params) if params else False
+            },
+            "realSignedReplay":{
+              "readyToAttemptOnFork":ready,
+              "attempted":False,
+              "verified":False
+            },
+            "requiredRepositoryVariables":["NVDA_STREAM_ID","WETH_STREAM_ID"],
+            "requiredRepositorySecrets":[
+              "SIGNED_NVDA_REPORT_HEX",
+              "SIGNED_NVDA_PARAMETER_PAYLOAD_HEX"
+            ],
+            "executionGate":{
+              "mainnetDeploymentAllowed":False,
+              "mainnetRegistryWritesAllowed":False,
+              "mainnetFundingAllowed":False,
+              "mainnetApprovalAllowed":False,
+              "mainnetUnpauseAllowed":False,
+              "mainnetBroadcastAllowed":False,
+              "verdict":(
+                "INPUTS PRESENT; LOCAL-FORK REPLAY MAY RUN"
+                if ready else
+                "WAITING FOR EXACT FEED IDS + REAL SIGNED REPORT INPUTS"
               )
-          )
-
-          runtime = artifact["deployedBytecode"]["object"].removeprefix("0x")
-
-          report = {
-              "project": "Rustee Broker Oracle Adapter Gate v3.12",
-              "network": "Robinhood Chain Mainnet",
-              "chainId": 4663,
-              "generatedAt": datetime.datetime.now(
-                  datetime.timezone.utc
-              ).isoformat(),
-              "mode": "READ_ONLY_COMPILE_AND_LOCAL_VERIFIER_PROOF",
-              "chainlink": {
-                  "verifierProxy":
-                      "0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7",
-                  "verifierProxyHasCode": True,
-                  "rwaSchema": "V4",
-                  "reportFields": [
-                      "feedId",
-                      "validFromTimestamp",
-                      "observationsTimestamp",
-                      "nativeFee",
-                      "linkFee",
-                      "expiresAt",
-                      "price",
-                      "marketStatus",
-                  ],
-                  "marketStatusOpenValue": 2,
-              },
-              "oracleAdapter": {
-                  "name": "RusteeDataStreamsV4Aggregator",
-                  "status": "COMPILED_TESTED_NOT_DEPLOYED",
-                  "sourceSha256": hashlib.sha256(src).hexdigest(),
-                  "runtimeBytecodeSha256":
-                      hashlib.sha256(bytes.fromhex(runtime)).hexdigest(),
-                  "aggregatorV3CompatibleSurface": True,
-                  "signedReportVerifierRequired": True,
-                  "checks": {
-                      "feedIdMatch": True,
-                      "positivePrice": True,
-                      "reportNotExpired": True,
-                      "observationNotFuture": True,
-                      "maxAge": True,
-                      "marketOpenOptional": True,
-                      "monotonicObservationTimestamp": True,
-                  },
-              },
-              "proofs": {
-                  "acceptsValidMockVerifiedRwaV4Report": True,
-                  "rejectsWrongFeed": True,
-                  "rejectsClosedMarket": True,
-                  "rejectsStaleReport": True,
-                  "realRobinhoodVerifierBytecodeConfirmed": True,
-                  "realSignedNvdaReportVerifiedOnFork": False,
-              },
-              "remainingBlockers": [
-                  "Exact production NVDA/USD Data Streams feed ID",
-                  "Exact production WETH/USD feed/stream selection",
-                  "Real signed NVDA V4 report replay through Robinhood verifier proxy",
-                  "WETH oracle adapter selection/proof",
-                  "Sequencer uptime compatibility decision",
-                  "Independent security review",
-              ],
-              "executionGate": {
-                  "mainnetOracleAdapterDeploymentAllowed": False,
-                  "mainnetRegistryWritesAllowed": False,
-                  "mainnetFundingAllowed": False,
-                  "mainnetApprovalAllowed": False,
-                  "mainnetUnpauseAllowed": False,
-                  "mainnetBroadcastAllowed": False,
-                  "verdict":
-                      "AGGREGATOR-COMPATIBLE V4 ADAPTER PROVEN LOCALLY; REAL SIGNED REPORT + EXACT FEED ID STILL REQUIRED",
-              },
+            }
           }
 
-          Path("data/oracle-adapter-v312.json").write_text(
-              json.dumps(report, indent=2)
-          )
-          Path("oracle-adapter-v312.json").write_text(
-              json.dumps(report, indent=2)
-          )
+          Path("data/signed-report-v313.json").write_text(json.dumps(p,indent=2))
+          Path("signed-report-v313.json").write_text(json.dumps(p,indent=2))
           PY
 
-      - name: Validate v3.12 report
+      - name: Embed v3.13 report
         shell: bash
         run: |
           set -euo pipefail
-
-          python3 <<'PY'
-          import json
-
-          p = json.load(open("data/oracle-adapter-v312.json"))
-
-          assert p["chainId"] == 4663
-          assert p["oracleAdapter"]["aggregatorV3CompatibleSurface"] is True
-          assert p["proofs"]["acceptsValidMockVerifiedRwaV4Report"] is True
-          assert p["proofs"]["rejectsWrongFeed"] is True
-          assert p["proofs"]["rejectsClosedMarket"] is True
-          assert p["proofs"]["rejectsStaleReport"] is True
-          assert p["proofs"]["realRobinhoodVerifierBytecodeConfirmed"] is True
-          assert p["proofs"]["realSignedNvdaReportVerifiedOnFork"] is False
-          assert p["executionGate"]["mainnetBroadcastAllowed"] is False
-
-          print("PASS: v3.12 oracle adapter gate validates")
-          PY
-
-      - name: Embed v3.12 report
-        shell: bash
-        run: |
-          set -euo pipefail
-
           python3 <<'PY'
           import json
           from pathlib import Path
-
-          report = json.load(open("data/oracle-adapter-v312.json"))
-          path = Path("index.html")
-          html = path.read_text()
-
-          embedded = json.dumps(
-              report,
-              separators=(",", ":")
-          ).replace("</", "<\\/")
-
-          script = f"""
-          <script id="v312-report" type="application/json">{embedded}</script>
-          <script>
-          (() => {{
-            const node = document.getElementById('v312-report');
-            const out = document.getElementById('report');
-            if (!node || !out) return;
-            out.textContent = JSON.stringify(
-              JSON.parse(node.textContent), null, 2
-            );
-          }})();
-          </script>
-          """
-
-          if "</body>" not in html:
-              raise RuntimeError("index.html missing </body>")
-
-          path.write_text(
-              html.replace("</body>", script + "</body>")
-          )
+          p=json.load(open("data/signed-report-v313.json"))
+          h=Path("index.html").read_text()
+          e=json.dumps(p,separators=(",",":")).replace("</","<\\/")
+          script='<script id="v313-report" type="application/json">'+e+'</script>'
+          script+='''<script>(()=>{const n=document.getElementById("v313-report");const o=document.getElementById("report");if(n&&o)o.textContent=JSON.stringify(JSON.parse(n.textContent),null,2);})();</script>'''
+          Path("index.html").write_text(h.replace("</body>",script+"</body>"))
           PY
 
       - name: Configure Pages
