@@ -1,12 +1,10 @@
-name: Deploy Rustee Policy + Fork Gate v3.5
+name: Deploy Rustee Policy + Fork Gate v3.5.1
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
-  schedule:
-    - cron: "*/15 * * * *"
 
 permissions:
   contents: read
@@ -14,87 +12,576 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v35-pages
+  group: rustee-v351-pages
   cancel-in-progress: true
 
 jobs:
   simulate-and-deploy:
     runs-on: ubuntu-latest
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build atomic NVDA snapshot + target
+      - name: Build current NVDA target
         shell: bash
         run: |
           set -euo pipefail
+
           mkdir -p data
+
           python3 <<'PY'
-          import json, urllib.request, datetime, time, pathlib, os
-          A="https://api.robinhood.com/rhj/assets"
-          P="https://api.robinhood.com/rhj/prices/NVDA"
-          def get(u):
-              last=None
-              for i in range(4):
+          import json
+          import urllib.request
+          import pathlib
+          import time
+          import datetime
+
+          ASSETS_URL = "https://api.robinhood.com/rhj/assets"
+          PRICE_URL = "https://api.robinhood.com/rhj/prices/NVDA"
+
+          EXPECTED_NVDA = (
+              "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC"
+          )
+
+          def get_json(url):
+              last = None
+
+              for attempt in range(4):
                   try:
-                      req=urllib.request.Request(u,headers={"Accept":"application/json","User-Agent":"Rustee-v3.5"})
-                      with urllib.request.urlopen(req,timeout=20) as r:return json.loads(r.read())
-                  except Exception as e:
-                      last=e
-                      if i<3:time.sleep(2**i)
-              raise RuntimeError(last)
-          aj,pj=get(A),get(P)
-          assets=aj.get("assets",[]); quotes=pj.get("quotes",[])
-          asset=next(x for x in assets if x.get("tokenSymbol")=="NVDA")
-          quote=next(x for x in quotes if x.get("tokenSymbol")=="NVDA")
-          dep=next(d for d in asset["deployments"] if int(d["chainId"])==4663)
-          assert dep["contractAddress"].lower()=="0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC".lower()
-          assert asset["status"]=="ASSET_STATUS_ACTIVE"
-          assert quote["isTradingHalt"] is False
-          ask=float(quote["ask"])
-          target=int((4.975/ask)*1e18)
-          snap={"ok":True,"generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z"),"chainId":4663,"asset":asset,"quote":quote,"targetNvdaWei":str(target)}
-          pathlib.Path("data/nvda-snapshot.json").write_text(json.dumps(snap,indent=2))
-          pathlib.Path("data/target.env").write_text(f"TARGET_NVDA_WEI={target}\n")
-          print("TARGET_NVDA_WEI",target)
+                      req = urllib.request.Request(
+                          url,
+                          headers={
+                              "Accept": "application/json",
+                              "User-Agent":
+                                  "Rustee-Broker-Fork-Verifier/3.5.1"
+                          }
+                      )
+
+                      with urllib.request.urlopen(
+                          req,
+                          timeout=20
+                      ) as response:
+                          return json.loads(
+                              response.read().decode("utf-8")
+                          )
+
+                  except Exception as exc:
+                      last = exc
+
+                      if attempt < 3:
+                          time.sleep(2 ** attempt)
+
+              raise RuntimeError(
+                  f"Robinhood API failed: {last}"
+              )
+
+          assets_json = get_json(ASSETS_URL)
+          prices_json = get_json(PRICE_URL)
+
+          assets = assets_json.get("assets", [])
+          quotes = prices_json.get("quotes", [])
+
+          asset = next(
+              x for x in assets
+              if x.get("tokenSymbol") == "NVDA"
+          )
+
+          quote = next(
+              x for x in quotes
+              if x.get("tokenSymbol") == "NVDA"
+          )
+
+          deployment = next(
+              d for d in asset["deployments"]
+              if int(d["chainId"]) == 4663
+          )
+
+          if (
+              deployment["contractAddress"].lower()
+              != EXPECTED_NVDA.lower()
+          ):
+              raise RuntimeError(
+                  "Canonical NVDA address mismatch"
+              )
+
+          if asset["status"] != "ASSET_STATUS_ACTIVE":
+              raise RuntimeError(
+                  "NVDA is not active"
+              )
+
+          if quote["isTradingHalt"] is True:
+              raise RuntimeError(
+                  "NVDA is halted"
+              )
+
+          ask = float(quote["ask"])
+
+          if ask <= 0:
+              raise RuntimeError(
+                  "Invalid NVDA ask"
+              )
+
+          # Conservative dry-run target:
+          # 99.5% of the $5 Rustee trade ceiling.
+          target = int(
+              (4.975 / ask) * 10**18
+          )
+
+          snapshot = {
+              "ok": True,
+              "generatedAt":
+                  datetime.datetime.now(
+                      datetime.timezone.utc
+                  ).isoformat(),
+              "chainId": 4663,
+              "ask": ask,
+              "targetNvdaWei": str(target),
+              "asset": asset,
+              "quote": quote
+          }
+
+          pathlib.Path(
+              "data/nvda-snapshot.json"
+          ).write_text(
+              json.dumps(
+                  snapshot,
+                  indent=2
+              )
+          )
+
+          pathlib.Path(
+              "data/target.env"
+          ).write_text(
+              f"TARGET_NVDA_WEI={target}\n"
+          )
+
+          print(
+              f"PASS: NVDA ask = {ask}"
+          )
+
+          print(
+              f"PASS: target = {target}"
+          )
           PY
+
+      - name: Generate Foundry project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p test
+          mkdir -p data
+
+          cat > foundry.toml <<'EOF'
+          [profile.default]
+          src = "src"
+          test = "test"
+          solc_version = "0.8.26"
+          evm_version = "cancun"
+          fs_permissions = [
+            { access = "read-write", path = "./data" }
+          ]
+          EOF
+
+          mkdir -p src
+
+          cat > src/Placeholder.sol <<'EOF'
+          // SPDX-License-Identifier: MIT
+          pragma solidity ^0.8.26;
+
+          contract Placeholder {}
+          EOF
+
+          cat > test/RusteeFork.t.sol <<'EOF'
+          // SPDX-License-Identifier: MIT
+          pragma solidity ^0.8.26;
+
+          interface Vm {
+              function deal(
+                  address who,
+                  uint256 newBalance
+              ) external;
+
+              function startPrank(
+                  address msgSender
+              ) external;
+
+              function stopPrank()
+                  external;
+
+              function envUint(
+                  string calldata name
+              ) external returns (uint256);
+
+              function writeFile(
+                  string calldata path,
+                  string calldata data
+              ) external;
+
+              function toString(
+                  uint256 value
+              ) external pure returns (string memory);
+          }
+
+          interface IWETH {
+              function deposit()
+                  external
+                  payable;
+
+              function approve(
+                  address spender,
+                  uint256 amount
+              ) external returns (bool);
+
+              function balanceOf(
+                  address who
+              ) external view returns (uint256);
+          }
+
+          interface IERC20 {
+              function balanceOf(
+                  address who
+              ) external view returns (uint256);
+          }
+
+          interface IQuoterV2 {
+              struct QuoteExactOutputSingleParams {
+                  address tokenIn;
+                  address tokenOut;
+                  uint256 amount;
+                  uint24 fee;
+                  uint160 sqrtPriceLimitX96;
+              }
+
+              function quoteExactOutputSingle(
+                  QuoteExactOutputSingleParams memory params
+              )
+                  external
+                  returns (
+                      uint256 amountIn,
+                      uint160 sqrtPriceX96After,
+                      uint32 initializedTicksCrossed,
+                      uint256 gasEstimate
+                  );
+          }
+
+          interface ISwapRouter02 {
+              struct ExactOutputSingleParams {
+                  address tokenIn;
+                  address tokenOut;
+                  uint24 fee;
+                  address recipient;
+                  uint256 amountOut;
+                  uint256 amountInMaximum;
+                  uint160 sqrtPriceLimitX96;
+              }
+
+              function exactOutputSingle(
+                  ExactOutputSingleParams calldata params
+              )
+                  external
+                  payable
+                  returns (uint256 amountIn);
+          }
+
+          contract RusteeForkTest {
+              Vm constant vm = Vm(
+                  address(
+                      uint160(
+                          uint256(
+                              keccak256(
+                                  "hevm cheat code"
+                              )
+                          )
+                      )
+                  )
+              );
+
+              address constant TBA =
+                  0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654;
+
+              address constant WETH =
+                  0x0bd7d308f8e1639fab988df18a8011f41eacad73;
+
+              address constant NVDA =
+                  0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec;
+
+              address constant ROUTER =
+                  0xcaf681a66d020601342297493863e78c959e5cb2;
+
+              address constant QUOTER =
+                  0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7;
+
+              function testForkedFundedClassicRoute()
+                  public
+              {
+                  uint256 target =
+                      vm.envUint(
+                          "TARGET_NVDA_WEI"
+                      );
+
+                  (
+                      uint256 in500,
+                      ,
+                      ,
+                  ) =
+                      IQuoterV2(
+                          QUOTER
+                      ).quoteExactOutputSingle(
+                          IQuoterV2
+                              .QuoteExactOutputSingleParams(
+                                  WETH,
+                                  NVDA,
+                                  target,
+                                  500,
+                                  0
+                              )
+                      );
+
+                  (
+                      uint256 in3000,
+                      ,
+                      ,
+                  ) =
+                      IQuoterV2(
+                          QUOTER
+                      ).quoteExactOutputSingle(
+                          IQuoterV2
+                              .QuoteExactOutputSingleParams(
+                                  WETH,
+                                  NVDA,
+                                  target,
+                                  3000,
+                                  0
+                              )
+                      );
+
+                  uint24 fee =
+                      in500 <= in3000
+                          ? 500
+                          : 3000;
+
+                  uint256 quoted =
+                      in500 <= in3000
+                          ? in500
+                          : in3000;
+
+                  uint256 maxIn =
+                      (
+                          quoted * 1005
+                          + 999
+                      ) / 1000;
+
+                  vm.deal(
+                      TBA,
+                      maxIn
+                      + 0.01 ether
+                  );
+
+                  vm.startPrank(
+                      TBA
+                  );
+
+                  IWETH(
+                      WETH
+                  ).deposit{
+                      value: maxIn
+                  }();
+
+                  bool approved =
+                      IWETH(
+                          WETH
+                      ).approve(
+                          ROUTER,
+                          maxIn
+                      );
+
+                  require(
+                      approved,
+                      "approve failed"
+                  );
+
+                  uint256 beforeNvda =
+                      IERC20(
+                          NVDA
+                      ).balanceOf(
+                          TBA
+                      );
+
+                  uint256 used =
+                      ISwapRouter02(
+                          ROUTER
+                      ).exactOutputSingle(
+                          ISwapRouter02
+                              .ExactOutputSingleParams({
+                                  tokenIn: WETH,
+                                  tokenOut: NVDA,
+                                  fee: fee,
+                                  recipient: TBA,
+                                  amountOut: target,
+                                  amountInMaximum: maxIn,
+                                  sqrtPriceLimitX96: 0
+                              })
+                      );
+
+                  uint256 afterNvda =
+                      IERC20(
+                          NVDA
+                      ).balanceOf(
+                          TBA
+                      );
+
+                  vm.stopPrank();
+
+                  uint256 received =
+                      afterNvda
+                      - beforeNvda;
+
+                  require(
+                      received >= target,
+                      "NVDA output missing"
+                  );
+
+                  require(
+                      used <= maxIn,
+                      "WETH max exceeded"
+                  );
+
+                  string memory report =
+                      string.concat(
+                          "{",
+                          '"ok":true,',
+                          '"chainId":4663,',
+                          '"simulatedFunding":true,',
+                          '"simulatedApproval":true,',
+                          '"routerExecutionSucceeded":true,',
+                          '"bestFeeBps":',
+                          vm.toString(
+                              uint256(fee)
+                          ),
+                          ",",
+                          '"quotedWethInWei":"',
+                          vm.toString(
+                              quoted
+                          ),
+                          '",',
+                          '"maxWethInWei":"',
+                          vm.toString(
+                              maxIn
+                          ),
+                          '",',
+                          '"wethActuallyUsedWei":"',
+                          vm.toString(
+                              used
+                          ),
+                          '",',
+                          '"targetNvdaWei":"',
+                          vm.toString(
+                              target
+                          ),
+                          '",',
+                          '"nvdaReceivedWei":"',
+                          vm.toString(
+                              received
+                          ),
+                          '"',
+                          "}"
+                      );
+
+                  vm.writeFile(
+                      "data/fork-simulation.json",
+                      report
+                  );
+              }
+          }
+          EOF
+
+          echo "PASS: Foundry files generated"
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
 
-      - name: Run forked funded route simulation
+      - name: Run fork simulation
         shell: bash
         run: |
           set -euo pipefail
+
           source data/target.env
           export TARGET_NVDA_WEI
+
           forge test \
-            --fork-url https://rpc.mainnet.chain.robinhood.com \
-            --match-test testForkedFundedClassicRoute \
+            --fork-url \
+            https://rpc.mainnet.chain.robinhood.com \
+            --match-test \
+            testForkedFundedClassicRoute \
             -vv
 
-      - name: Validate fork report
+      - name: Validate fork simulation report
         shell: bash
         run: |
           set -euo pipefail
+
           test -s data/fork-simulation.json
+
           python3 <<'PY'
           import json
-          p=json.load(open("data/fork-simulation.json"))
-          assert p["ok"] is True
-          assert p["chainId"]==4663
-          assert p["routerExecutionSucceeded"] is True
-          assert int(p["nvdaReceivedWei"]) > 0
-          print("PASS: forked funded route simulation")
+
+          report = json.load(
+              open(
+                  "data/fork-simulation.json"
+              )
+          )
+
+          assert report["ok"] is True
+
+          assert (
+              report["chainId"]
+              == 4663
+          )
+
+          assert (
+              report[
+                  "simulatedFunding"
+              ]
+              is True
+          )
+
+          assert (
+              report[
+                  "simulatedApproval"
+              ]
+              is True
+          )
+
+          assert (
+              report[
+                  "routerExecutionSucceeded"
+              ]
+              is True
+          )
+
+          assert (
+              int(
+                  report[
+                      "nvdaReceivedWei"
+                  ]
+              )
+              > 0
+          )
+
+          print(
+              "PASS: fork-simulation.json"
+          )
           PY
 
-      - name: Configure Pages
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Upload site
@@ -102,6 +589,6 @@ jobs:
         with:
           path: .
 
-      - name: Deploy Pages
+      - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
