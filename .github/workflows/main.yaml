@@ -1,4 +1,4 @@
-name: Rustee ABI + Policy Recovery v3.6
+name: Rustee Trade ABI Recovery v3.7
 
 on:
   push:
@@ -12,13 +12,12 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v36-pages
+  group: rustee-v37-pages
   cancel-in-progress: true
 
 jobs:
   recover-and-deploy:
     runs-on: ubuntu-latest
-
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -27,266 +26,215 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Recover live ABI behavior
+      - name: Probe guarded trade candidate
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p data
 
           python3 <<'PY'
-          import json, urllib.request, datetime, hashlib
+          import json, urllib.request, datetime
 
-          RPC = "https://rpc.mainnet.chain.robinhood.com"
-          CHAIN = 4663
+          RPC="https://rpc.mainnet.chain.robinhood.com"
+          CHAIN=4663
+          OWNER="0x8fC320c8582f812695b6f62b2b5d13B14475B955"
+          OUTSIDER="0x000000000000000000000000000000000000dEaD"
+          NFT="0x4523467c4ddc6d775c7ead4dce7656dce54e7f60"
+          REGISTRY="0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199"
+          TBA="0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"
+          ROUTER="0xCaf681a66D020601342297493863E78C959E5cb2"
+          NVDA="0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC"
+          WETH="0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73"
+          SEL="0x6c606ce7"
 
-          OWNER = "0x8fC320c8582f812695b6f62b2b5d13B14475B955"
-          NFT = "0x4523467c4ddc6d775c7ead4dce7656dce54e7f60"
-          TBA = "0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"
-          IMPL = "0x7599fd8a10e626ddb5e03207389e89991578d735"
-          REGISTRY = "0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199"
-
-          SELECTORS = [
-              "0x01ffc9a7","0x150b7a02","0x1626ba7e","0x444a9e4a",
-              "0x4991b554","0x523e3260","0x6c606ce7","0x777dc9b0",
-              "0x7b103999","0x819d4cc6","0x8da5cb5b","0x9e281a98",
-              "0xbc197c81","0xc19d93fb","0xf14210a6","0xf23a6e61",
-              "0xfc0c546a"
-          ]
-
-          def rpc(method, params):
-              payload=json.dumps({
-                  "jsonrpc":"2.0","id":1,
-                  "method":method,"params":params
-              }).encode()
+          def rpc(method,params):
               req=urllib.request.Request(
-                  RPC,data=payload,
-                  headers={"Content-Type":"application/json",
-                           "User-Agent":"Rustee-ABI-Recovery/3.6"}
+                  RPC,
+                  data=json.dumps({"jsonrpc":"2.0","id":1,"method":method,"params":params}).encode(),
+                  headers={"content-type":"application/json","user-agent":"Rustee-v3.7"}
               )
-              with urllib.request.urlopen(req,timeout=30) as r:
-                  j=json.loads(r.read())
+              try:
+                  with urllib.request.urlopen(req,timeout=30) as r:
+                      j=json.loads(r.read())
+              except Exception as e:
+                  return {"transportError":str(e)}
+              return j
+
+          def call(data,frm):
+              return rpc("eth_call",[{"to":TBA,"from":frm,"data":data},"latest"])
+
+          def w(n): return hex(int(n))[2:].rjust(64,"0")
+          def aw(a): return a.lower().replace("0x","").rjust(64,"0")
+
+          def obs(j):
+              if "result" in j: return "return:"+j["result"]
               if "error" in j:
-                  return {"error":j["error"]}
-              return {"result":j["result"]}
+                  e=j["error"]
+                  d=e.get("data","")
+                  return "revert:"+str(d)+":"+e.get("message","")
+              return "transport:"+j.get("transportError","unknown")
 
-          def eth_call(to,data,frm=None):
-              tx={"to":to,"data":data}
-              if frm: tx["from"]=frm
-              return rpc("eth_call",[tx,"latest"])
+          # Confirm binding.
+          def read_addr(selector):
+              j=call(selector,OWNER)
+              if "result" not in j:return None
+              return "0x"+j["result"][-40:].lower()
 
-          def word(v):
-              return hex(int(v))[2:].rjust(64,"0")
-
-          def aw(a):
-              return a.lower().replace("0x","").rjust(64,"0")
-
-          def classify(sel):
-              known={
-                "0x01ffc9a7":"supportsInterface(bytes4)",
-                "0x150b7a02":"ERC721 receiver hook",
-                "0x1626ba7e":"ERC1271 signature validation",
-                "0x523e3260":"POLICY-CANDIDATE selector collision; address + bytes ABI",
-                "0x7b103999":"registry pointer getter",
-                "0x819d4cc6":"recoverERC721(address,uint256) public-signature match",
-                "0x8da5cb5b":"owner()",
-                "0x9e281a98":"two-word token recovery/withdrawal path",
-                "0xbc197c81":"ERC1155 batch receiver hook",
-                "0xc19d93fb":"state()",
-                "0xf14210a6":"one-word ETH withdrawal/recovery path",
-                "0xf23a6e61":"ERC1155 receiver hook",
-                "0xfc0c546a":"token()"
-              }
-              if sel=="0x444a9e4a":
-                  return ("one-uint mapping getter; storage slot 2","high")
-              if sel=="0x4991b554":
-                  return ("one-uint mapping getter; storage slot 1","high")
-              if sel=="0x6c606ce7":
-                  return ("owner-gated ERC1155-style withdrawal path; dynamic bytes argument","medium")
-              if sel=="0x777dc9b0":
-                  return ("owner-gated ERC721 transfer/recovery path","medium")
-              if sel in known:
-                  return (known[sel],"high" if sel not in ("0x523e3260","0x9e281a98","0xf14210a6") else "medium")
-              return ("unresolved","low")
-
-          code = rpc("eth_getCode",[IMPL,"latest"])
-          if "error" in code: raise RuntimeError(code["error"])
-          runtime=code["result"]
-          runtime_bytes=(len(runtime)-2)//2
-
-          chain = int(rpc("eth_chainId",[])["result"],16)
-          if chain != CHAIN: raise RuntimeError("wrong chain")
-
-          # Binding reads.
-          owner_ret=eth_call(TBA,"0x8da5cb5b")
-          token_ret=eth_call(TBA,"0xfc0c546a")
-          registry_ret=eth_call(TBA,"0x7b103999")
-
-          def ret_addr(ret):
-              if "result" not in ret or len(ret["result"]) < 66: return None
-              return "0x"+ret["result"][-40:].lower()
-
-          owner_actual=ret_addr(owner_ret)
-
-          token_words=[]
-          if "result" in token_ret:
-              h=token_ret["result"][2:]
-              token_words=[h[i:i+64] for i in range(0,len(h),64)]
-
-          token_chain=int(token_words[0],16) if len(token_words)>=3 else None
-          token_contract=("0x"+token_words[1][-40:]).lower() if len(token_words)>=3 else None
-          token_id=int(token_words[2],16) if len(token_words)>=3 else None
-          registry_actual=ret_addr(registry_ret)
-
+          owner_actual=read_addr("0x8da5cb5b")
+          registry_actual=read_addr("0x7b103999")
+          tok=call("0xfc0c546a",OWNER)
+          h=tok.get("result","0x")[2:]
+          words=[h[i:i+64] for i in range(0,len(h),64)] if h else []
+          token_chain=int(words[0],16) if len(words)>=3 else None
+          token_contract="0x"+words[1][-40:] if len(words)>=3 else None
+          token_id=int(words[2],16) if len(words)>=3 else None
           binding_pass=(
               owner_actual==OWNER.lower() and
+              registry_actual==REGISTRY.lower() and
               token_chain==CHAIN and
-              token_contract==NFT.lower() and
-              token_id==1 and
-              registry_actual==REGISTRY.lower()
+              token_contract.lower()==NFT.lower() and
+              token_id==1
           )
 
-          # Shape probes. These are eth_call only.
+          # Runtime shows selector expects:
+          # word0 = address
+          # word1 = offset to a dynamic object.
+          # Probe offsets and minimum payload sizes, while keeping all payload
+          # words zero. This safely exposes ABI parser thresholds.
           probes=[]
-          for sel in SELECTORS:
-              classification,confidence=classify(sel)
 
-              candidates=[
-                  ("selector-only",sel),
-                  ("one-zero-word",sel+word(0)),
-                  ("address+zero",sel+aw(OWNER)+word(0)),
-              ]
+          def dyn_call(first_addr, payload_words, offset=64, frm=OWNER):
+              payload="".join(w(x) for x in payload_words)
+              # Dynamic object at byte offset 64 from arguments start.
+              # The first dynamic word is treated as object content, not
+              # assumed to be a bytes length — we are recovering a dynamic
+              # tuple/struct shape.
+              data=SEL+aw(first_addr)+w(offset)+payload
+              return call(data,frm)
 
-              obs=[]
-              for label,data in candidates:
-                  try:
-                      out=eth_call(TBA,data,OWNER)
-                      if "result" in out:
-                          obs.append(f"{label}:return:{out['result'][:74]}")
-                      else:
-                          e=out["error"]
-                          obs.append(f"{label}:revert:{e.get('data','')}:{e.get('message','')}")
-                  except Exception as exc:
-                      obs.append(f"{label}:transport:{exc}")
+          cases=[
+              ("0 words / owner",OWNER,[]),
+              ("1 word / owner",OWNER,[0]),
+              ("2 words / owner",OWNER,[0,0]),
+              ("4 words / owner",OWNER,[0]*4),
+              ("6 words / owner",OWNER,[0]*6),
+              ("8 words / owner",OWNER,[0]*8),
+              ("10 words / owner",OWNER,[0]*10),
+              ("12 words / owner",OWNER,[0]*12),
+              ("16 words / owner",OWNER,[0]*16),
+              ("6 words / router",ROUTER,[0]*6),
+              ("6 words / NVDA",NVDA,[0]*6),
+              ("6 words / WETH",WETH,[0]*6),
+          ]
 
+          for name,a,p in cases:
+              o=obs(dyn_call(a,p))
               probes.append({
-                  "selector":sel,
-                  "classification":classification,
-                  "confidence":confidence,
-                  "observation":" | ".join(obs)
+                  "name":name,
+                  "firstAddress":a,
+                  "payloadWords":len(p),
+                  "observation":o,
+                  "interesting":("return:" in o or "revert:0x" in o and len(o)>20)
               })
 
-          # ABI-correct address,bytes encoding for 0x523e3260.
-          # head = address + offset(0x40), then bytes length + padded data.
-          context_probes=[]
-          for n in [0,32,64,96,128,160,192,224,256,320]:
-              payload=("00"*n)
-              padded=payload
-              if n%32:
-                  padded += "00"*(32-(n%32))
-              data=(
-                  "0x523e3260"+
-                  aw(OWNER)+
-                  word(64)+
-                  word(n)+
-                  padded
-              )
-              out=eth_call(TBA,data,OWNER)
-              if "result" in out:
-                  context_probes.append({
-                      "contextBytes":n,
-                      "success":True,
-                      "returnData":out["result"]
-                  })
-              else:
-                  e=out["error"]
-                  context_probes.append({
-                      "contextBytes":n,
-                      "success":False,
-                      "error":e.get("message"),
-                      "revertData":e.get("data")
-                  })
+          # Authorization comparison with the same structurally largest probe.
+          owner_o=obs(dyn_call(ROUTER,[0]*16,64,OWNER))
+          outsider_o=obs(dyn_call(ROUTER,[0]*16,64,OUTSIDER))
+          outsider_rejected=("revert:" in outsider_o)
 
-          # The runtime body behind 0x523e3260 is materially larger than a
-          # standard signer-view path and includes policy/accounting/external
-          # call behavior. Keep name inference separate from behavior.
-          policy_candidate={
-              "selector":"0x523e3260",
-              "candidate":True,
-              "publicSignatureCollision":"isValidSigner(address,bytes)",
-              "classification":"STATEFUL POLICY CANDIDATE",
-              "observedAbiShape":"address, bytes",
-              "exactSchemaRecovered":False,
-              "contextProbes":context_probes,
-              "warning":
-                  "Do not invoke live. Public signature labels are not sufficient "
-                  "to describe deployed behavior."
+          # Try traceCall gracefully. Some public RPCs disable it.
+          trace_req={
+              "to":TBA,
+              "from":OWNER,
+              "data":SEL+aw(ROUTER)+w(64)+("".join(w(0) for _ in range(16)))
           }
+          trace_raw=rpc("debug_traceCall",[trace_req,"latest",{"tracer":"callTracer"}])
+          trace_supported=("result" in trace_raw)
+          trace_summary=""
+          if trace_supported:
+              def walk(x,depth=0,out=None):
+                  if out is None: out=[]
+                  if isinstance(x,dict):
+                      if x.get("to"):
+                          out.append({
+                              "depth":depth,
+                              "from":x.get("from"),
+                              "to":x.get("to"),
+                              "input":x.get("input","")[:10],
+                              "error":x.get("error")
+                          })
+                      for c in x.get("calls",[]) or []:
+                          walk(c,depth+1,out)
+                  return out
+              calls=walk(trace_raw["result"])
+              trace_summary=json.dumps(calls[:40])
+          else:
+              trace_summary=str(trace_raw.get("error") or trace_raw.get("transportError"))
 
           report={
-              "project":"Rustee Broker ABI + Policy Recovery v3.6",
+              "project":"Rustee Broker Trade ABI Recovery v3.7",
               "network":"Robinhood Chain Mainnet",
               "chainId":CHAIN,
-              "generatedAt":datetime.datetime.now(
-                  datetime.timezone.utc
-              ).isoformat(),
-              "addresses":{
-                  "owner":OWNER,"nft":NFT,"registry":REGISTRY,
-                  "trading":TBA,"implementation":IMPL
+              "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              "selector":"0x6c606ce7",
+              "corrections":{
+                  "selector523e3260":"Consistent with ERC-6551 isValidSigner(address,bytes); removed as trade candidate."
               },
-              "runtimeBytes":runtime_bytes,
-              "runtimeSha256":hashlib.sha256(
-                  bytes.fromhex(runtime[2:])
-              ).hexdigest(),
               "binding":{
                   "pass":binding_pass,
                   "owner":owner_actual,
-                  "token":{
-                      "chainId":token_chain,
-                      "tokenContract":token_contract,
-                      "tokenId":token_id
-                  },
-                  "registry":registry_actual
+                  "registry":registry_actual,
+                  "token":{"chainId":token_chain,"tokenContract":token_contract,"tokenId":token_id}
               },
-              "selectorProbes":probes,
-              "policyCandidate":policy_candidate,
+              "probes":probes,
+              "authorization":{
+                  "ownerObservation":owner_o,
+                  "outsiderObservation":outsider_o,
+                  "outsiderRejected":outsider_rejected
+              },
+              "trace":{
+                  "supported":trace_supported,
+                  "summary":trace_summary
+              },
+              "recovery":{
+                  "candidateSelector":"0x6c606ce7",
+                  "observedTopLevelShape":"address + dynamic object",
+                  "minimumDynamicRegionSuggestedByRuntime":"at least 0xc0 bytes before nested dynamic validation",
+                  "exactAbiRecovered":False,
+                  "nextGoal":"Recover six-word core struct and nested dynamic bytes offsets; then replay exact policy path on a fork."
+              },
               "executionGate":{
                   "ready":False,
-                  "verdict":"ABI/POLICY RECOVERY IN PROGRESS",
+                  "verdict":"POLICY ABI RECOVERY IN PROGRESS",
                   "assetFundingAllowed":False,
                   "approvalAllowed":False,
                   "unpauseAllowed":False,
-                  "broadcastAllowed":False,
-                  "blockers":[
-                      "Recover exact bytes context/order schema behind 0x523e3260",
-                      "Simulate owner → Trading TBA → policy candidate → router on fork",
-                      "Confirm valuation/oracle verification is enforced in that path"
-                  ]
+                  "broadcastAllowed":False
               }
           }
 
-          with open("data/abi-recovery.json","w") as f:
+          with open("data/trade-abi-recovery.json","w") as f:
               json.dump(report,f,indent=2)
 
-          print("PASS runtime bytes:",runtime_bytes)
-          print("PASS binding:",binding_pass)
-          print("PASS report generated")
+          print("PASS binding",binding_pass)
+          print("PASS probes",len(probes))
+          print("TRACE supported",trace_supported)
           PY
 
-      - name: Validate ABI recovery report
+      - name: Validate report
         shell: bash
         run: |
           set -euo pipefail
-          test -s data/abi-recovery.json
-          python3 - <<'PY'
+          test -s data/trade-abi-recovery.json
+          python3 <<'PY'
           import json
-          p=json.load(open("data/abi-recovery.json"))
+          p=json.load(open("data/trade-abi-recovery.json"))
           assert p["chainId"] == 4663
-          assert p["runtimeBytes"] > 1000
           assert p["binding"]["pass"] is True
-          assert p["policyCandidate"]["selector"] == "0x523e3260"
-          assert len(p["policyCandidate"]["contextProbes"]) >= 8
+          assert p["selector"] == "0x6c606ce7"
+          assert len(p["probes"]) >= 10
           assert p["executionGate"]["broadcastAllowed"] is False
-          print("PASS v3.6 validation")
+          print("PASS v3.7")
           PY
 
       - name: Configure Pages
