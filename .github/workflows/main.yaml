@@ -285,12 +285,9 @@ jobs:
           }
 
           contract LiveRouterAdapter is IStockTokenVenueAdapter {
-              address constant WETH =
-                  0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73;
-              address constant NVDA =
-                  0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC;
-              address constant ROUTER =
-                  0xCaf681a66D020601342297493863E78C959E5cb2;
+              address constant WETH = address(uint160(0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73));
+              address constant NVDA = address(uint160(0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC));
+              address constant ROUTER = address(uint160(0xCaf681a66D020601342297493863E78C959E5cb2));
 
               uint24 public immutable fee;
 
@@ -344,24 +341,13 @@ jobs:
                   )
               );
 
-              address constant OWNER =
-                  0x8fC320c8582f812695b6f62b2b5d13B14475B955;
-              address constant REGISTRY =
-                  0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199;
-              address constant TBA =
-                  0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654;
-              address constant WETH =
-                  0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73;
-              address constant NVDA =
-                  0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC;
-              address constant ROUTER =
-                  0xCaf681a66D020601342297493863E78C959E5cb2;
-              address constant QUOTER =
-                  address(
-                      uint160(
-                          0x0033e885ed0ec9bf04ecfb19341582aadcb4c8a9e7
-                      )
-                  );
+              address constant OWNER = address(uint160(0x8fC320c8582f812695b6f62b2b5d13B14475B955));
+              address constant REGISTRY = address(uint160(0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199));
+              address constant TBA = address(uint160(0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654));
+              address constant WETH = address(uint160(0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73));
+              address constant NVDA = address(uint160(0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC));
+              address constant ROUTER = address(uint160(0xCaf681a66D020601342297493863E78C959E5cb2));
+              address constant QUOTER = address(uint160(0x0033e885ed0ec9bf04ecfb19341582aadcb4c8a9e7));
 
               function _tryQuote(
                   uint24 fee,
