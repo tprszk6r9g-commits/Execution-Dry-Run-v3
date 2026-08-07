@@ -1,4 +1,4 @@
-name: Rustee Trade ABI Recovery v3.7
+name: Rustee Trade ABI Recovery v3.7.1
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v37-pages
+  group: rustee-v371-pages
   cancel-in-progress: true
 
 jobs:
@@ -237,13 +237,32 @@ jobs:
           print("PASS v3.7")
           PY
 
+      - name: Build deterministic Pages artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf site
+          mkdir -p site/data
+
+          cp index.html site/index.html
+          cp data/trade-abi-recovery.json site/data/trade-abi-recovery.json
+
+          test -s site/index.html
+          test -s site/data/trade-abi-recovery.json
+
+          echo "=== site artifact ==="
+          find site -maxdepth 3 -type f -print
+          echo "=== report bytes ==="
+          wc -c site/data/trade-abi-recovery.json
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload site
+      - name: Upload deterministic site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: site
 
       - name: Deploy Pages
         id: deployment
