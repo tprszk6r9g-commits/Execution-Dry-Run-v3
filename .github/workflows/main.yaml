@@ -1,4 +1,4 @@
-name: Rustee STONKBROKER Fork Trade Gate v4.0.1
+name: Rustee STONKBROKER Fork Trade Gate v4.0.2
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-stonkbroker-v401
+  group: rustee-stonkbroker-v402
   cancel-in-progress: true
 
 jobs:
@@ -159,11 +159,11 @@ jobs:
           contract RusteeStonkbrokerForkTest {
               Vm constant vm=Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
-              address constant TBA=address(uint160(0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654));
-              address constant WETH=address(uint160(0x0bd7d308f8e1639fab988df18a8011f41eacad73));
-              address constant STONK=address(uint160(0xe934e36a439c94017b64a3fece66af12099abf50));
-              address constant ROUTER=address(uint160(0xcaf681a66d020601342297493863e78c959e5cb2));
-              address constant QUOTER=address(uint160(0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7));
+              address constant TBA=address(bytes20(hex"522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"));
+              address constant WETH=address(bytes20(hex"0bd7d308f8e1639fab988df18a8011f41eacad73"));
+              address constant STONK=address(bytes20(hex"e934e36a439c94017b64a3fece66af12099abf50"));
+              address constant ROUTER=address(bytes20(hex"caf681a66d020601342297493863e78c959e5cb2"));
+              address constant QUOTER=address(bytes20(hex"33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7"));
               uint24 constant FEE=uint24($FEE);
 
               function testTinyStonkbrokerRouteOnFork() public {
@@ -240,7 +240,7 @@ jobs:
           set -euo pipefail
           forge test             --fork-url https://rpc.mainnet.chain.robinhood.com             --match-test testTinyStonkbrokerRouteOnFork             -vv
 
-      - name: Build v4.0.1 report
+      - name: Build v4.0.2 report
         shell: bash
         run: |
           set -euo pipefail
@@ -252,7 +252,7 @@ jobs:
           trade=json.load(open("data/stonkbroker-fork-trade.json"))
 
           p={
-            "project":"Rustee STONKBROKER Fork Trade Gate v4.0.1",
+            "project":"Rustee STONKBROKER Fork Trade Gate v4.0.2",
             "network":"Robinhood Chain Mainnet Fork",
             "chainId":4663,
             "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -277,8 +277,8 @@ jobs:
             }
           }
 
-          Path("data/stonkbroker-v401.json").write_text(json.dumps(p,indent=2))
-          Path("stonkbroker-v401.json").write_text(json.dumps(p,indent=2))
+          Path("data/stonkbroker-v402.json").write_text(json.dumps(p,indent=2))
+          Path("stonkbroker-v402.json").write_text(json.dumps(p,indent=2))
           PY
 
       - name: Configure Pages
