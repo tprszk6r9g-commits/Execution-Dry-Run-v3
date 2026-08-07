@@ -3,31 +3,63 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee STONKBROKER v4.5</title>
+<title>Rustee STONKBROKER v4.6</title>
 <style>
-:root{--bg:#041914;--panel:#082b22;--line:#2d675b;--text:#ecfff8;--muted:#9abdb4;--teal:#38dec4;--orange:#ff9a36}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#061914,#05251d);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
-main{max-width:920px;margin:auto;padding:28px 18px 90px}h1{font-size:clamp(38px,7vw,62px);line-height:1.04}h2{font-size:clamp(25px,5vw,38px)}
-p{color:var(--muted);font-size:17px;line-height:1.6}.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:10px 15px;color:var(--teal)}
-.card{background:linear-gradient(145deg,var(--panel),#072019);border:1px solid var(--line);border-radius:24px;padding:24px;margin:20px 0}
-.warn{border-left:8px solid var(--orange);background:#2a1908;padding:18px 20px;border-radius:16px}
-pre{white-space:pre-wrap;word-break:break-word;background:#03110e;border:1px solid #25574d;border-radius:16px;padding:18px;max-height:1400px;overflow:auto;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}
+:root{--bg:#031b16;--panel:#073429;--line:#39776b;--text:#e9fff8;--muted:#a2c7bd;--teal:#39dcc3;--orange:#ff9c38}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#02130f,#043127);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:860px;margin:auto;padding:26px 18px 90px}.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:10px 15px;color:var(--teal)}
+h1{font-size:clamp(38px,8vw,64px);line-height:1.02;margin:18px 0}h2{font-size:clamp(28px,6vw,42px)}p{font-size:18px;line-height:1.6;color:var(--muted)}
+.card{border:1px solid var(--line);background:linear-gradient(145deg,var(--panel),#06271f);padding:25px;border-radius:26px;margin:20px 0}
+.warn{border-left:8px solid var(--orange);background:#35210e;padding:18px;border-radius:16px;color:#fff;line-height:1.55}
+pre{white-space:pre-wrap;word-break:break-word;background:#00140f;border:1px solid var(--line);border-radius:18px;padding:18px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;max-height:900px;overflow:auto}
+button{border:0;border-radius:15px;background:var(--teal);padding:15px 18px;font:inherit;font-weight:800;color:#032019}
+.metric{font:700 23px ui-monospace,monospace;color:var(--teal);word-break:break-word}
 </style>
 </head>
-<body>
-<main>
-<span class="pill">Robinhood Chain · v4.5 · READ ONLY</span>
-<h1>Rustee $STONKBROKER TWAP Math Correction</h1>
-<div class="warn"><b>No mainnet writes.</b> v4.5.2 correctly decodes and compares live 5m, 15m, 30m and 60m Uniswap V3 TWAPs, measures cross-window dispersion, validates any optional production WETH/USD candidate, and leaves deployment/trading locked.</div>
+<body><main>
+<span class="pill">Robinhood Chain · Fork analysis · v4.6</span>
+<h1>Rustee STONKBROKER Historical + Manipulation Analysis</h1>
+<div class="warn"><b>No mainnet writes.</b> This workflow reads historical/current pool state and performs simulated swaps only on a fresh Foundry fork. It does not deploy, configure, fund, approve, unpause, trade, or broadcast on live mainnet.</div>
+
 <div class="card">
-<h2>What v4.5.2 fixes and decides</h2>
-<p>The report ABI-decodes raw Uniswap V3 observe() results, computes the signed cumulative-tick delta, divides by each averaging window with Uniswap-compatible negative rounding, enforces valid tick bounds, then calculates WETH-per-STONKBROKER at four averaging windows. It uses the 60-minute result as a reference and treats cross-window dispersion only as an engineering signal. A low-dispersion snapshot can nominate a candidate window, but does not prove manipulation resistance.</p>
+<h2>What v4.6 adds</h2>
+<p>v4.5.2 established a valid 30-minute TWAP candidate with 34.06 bps cross-window dispersion. v4.6 now samples historical 30-minute TWAP/liquidity state and runs a forked WETH→STONKBROKER spot-shift stress grid. The resulting gross-WETH thresholds are explicitly treated as coarse stress brackets, not exact economic attack cost.</p>
 </div>
-<div class="card"><h2>v4.5.2 report</h2>
-<!--RUSTEE_REPORT_START-->
-<pre id="report">v4.5.2 report will be embedded by the successful GitHub Actions workflow.</pre>
-<!--RUSTEE_REPORT_END-->
+
+<div class="card">
+<h2>Decision</h2>
+<div class="metric" id="decision">Loading…</div>
+<p id="summary"></p>
 </div>
-</main>
-</body>
-</html>
+
+<div class="card">
+<h2>v4.6 report</h2>
+<button id="load">Load report</button>
+<pre id="report">__EMBEDDED_V46_REPORT__</pre>
+</div>
+
+<script>
+const el=id=>document.getElementById(id);
+async function load(){
+  let p;
+  try{
+    const r=await fetch('data/stonkbroker-v46.json?'+Date.now(),{cache:'no-store'});
+    if(!r.ok)throw Error('HTTP '+r.status);
+    p=await r.json();
+    el('report').textContent=JSON.stringify(p,null,2);
+  }catch(e){
+    try{p=JSON.parse(el('report').textContent)}catch(_){return}
+  }
+  const d=p.decision||{};
+  el('decision').textContent=d.candidate30mRetained?'30m candidate retained ✓':'30m candidate not yet retained';
+  const h=p.historicalAnalysis?.summary||{};
+  el('summary').textContent=
+    `Historical samples available: ${h.availableSamples??'—'}/${h.requestedSamples??'—'}. `+
+    `30m TWAP historical range: ${h.twap30mRangeBps??'—'} bps. `+
+    `Minimum sampled liquidity vs latest: ${h.liquidityMinVsLatestPct??'—'}%. `+
+    `Mainnet remains locked.`;
+}
+el('load').onclick=load;
+load();
+</script>
+</main></body></html>
