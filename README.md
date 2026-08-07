@@ -53,3 +53,11 @@ It writes:
 This package does **not** authorize or perform live-mainnet funding, approvals,
 registry configuration, unpausing, or trade broadcasting. Those remain false in
 the report's execution gate.
+
+## v3.9.1 compile correction
+
+The first v3.9 GitHub run stopped during Solidity compilation because Solidity
+0.8.26 treated the all-lowercase 20-byte Quoter literal as an address literal
+with an invalid checksum. v3.9.1 encodes the same Quoter address as a numeric
+`uint160` literal and casts it to `address`. No protocol logic or safety gate
+was changed.
