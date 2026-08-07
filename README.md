@@ -83,3 +83,19 @@ entirely. Every hard-coded address is represented as its exact **decimal
 
 This preserves the exact address bytes while avoiding Solidity's address
 checksum parser altogether. No protocol behavior or safety gate changed.
+
+## v3.9.4 stale-harness cleanup
+
+The latest GitHub error was **not** coming from the v3.9 policy harness.
+The compiler reported:
+
+`test/RusteeFork.t.sol:56`
+
+That is an older fork test left in the repository from a previous dry-run
+phase. Foundry compiles every Solidity file under `test/`, so the stale file
+failed checksum validation before `RusteePolicyPath.t.sol` could execute.
+
+v3.9.4 now deletes `src/`, `test/`, `out/`, `cache/`, and the prior
+`foundry.toml` before generating the isolated v3.9 harness.
+
+No Rustee contract logic, policy values, addresses, or safety gates changed.
