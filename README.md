@@ -1,114 +1,73 @@
-# Rustee Broker Fork Policy Path v3.9
+# Rustee STONKBROKER Production Oracle Analysis v4.5
 
-## Key correction from v3.8
+v4.5 is read-only.
 
-`0x02b874a6` is the custom error selector for `TradingPaused()` in the deployed
-`StockTradingAccount`.
+It analyzes the canonical STONKBROKER/WETH Uniswap V3 pool at:
 
-The v3.8 probes all reached that same error because `executeTrade` checks the
-registry pause flag *before* request validity, asset allowlists, adapter
-allowlists, quotes, balances, or venue execution.
+- 5 minutes
+- 15 minutes
+- 30 minutes
+- 60 minutes
 
-Therefore ABI recovery is no longer the blocker.
+It computes arithmetic-mean ticks, derives WETH-per-STONKBROKER, measures
+cross-window dispersion, and nominates a candidate production window only when
+the snapshot is sufficiently stable.
 
-Exact function ABI:
+It also validates optional production inputs:
 
-`executeTrade(address,(address,address,uint256,uint256,uint256,bytes))`
+- `WETH_USD_FEED_ADDRESS`
+- `WETH_USD_FEED_PROVENANCE_URL`
+- `WETH_HEARTBEAT_SECONDS`
 
-Selector:
+Missing values remain blockers. The workflow does not guess a feed address.
 
-`0x6c606ce7`
+Authoritative Robinhood documentation recorded by the phase:
 
-TradeRequest:
+- https://docs.robinhood.com/chain/data-streams/
+- https://docs.robinhood.com/chain/connecting/
+- https://docs.robinhood.com/chain/contracts/
 
-1. `address tokenIn`
-2. `address tokenOut`
-3. `uint256 amountIn`
-4. `uint256 minAmountOut`
-5. `uint256 deadline`
-6. `bytes venueData`
+Important: snapshot dispersion is not a complete manipulation-cost analysis.
+Historical liquidity/depth analysis and independent security review remain
+required before any production deployment or Registry write.
 
-## What v3.9 does
+No mainnet writes, approvals, funding, unpause, trade, or broadcast are enabled.
 
-The GitHub Action runs a **Foundry mainnet fork only**. It:
 
-- verifies a live NVDA target,
-- deploys fork-local mock price/sequencer feeds,
-- configures WETH and NVDA in the deployed registry on the fork,
-- deploys a fork-local adapter that targets the live router,
-- allows adapter / venue / spender on the fork,
-- unpauses the existing $5 / $10 / 1-trade policy on the fork,
-- simulates WETH funding of the trading TBA,
-- calls the actual deployed `StockTradingAccount.executeTrade`,
-- verifies NVDA receipt,
-- verifies WETH spend stays within the request maximum,
-- verifies router allowance is cleared back to zero.
+## v4.5.1 display fix
 
-It writes:
+The analysis logic is unchanged.
 
-`data/v39-policy-path.json`
+v4.5.1 removes the browser-side `fetch('./stonkbroker-v45.json')` dependency.
+After the workflow generates and validates the JSON report, GitHub Actions
+embeds that report directly into `index.html` before publishing Pages.
 
-## Safety gate
+This avoids iOS/in-app-browser URL parsing failures such as:
 
-This package does **not** authorize or perform live-mainnet funding, approvals,
-registry configuration, unpausing, or trade broadcasting. Those remain false in
-the report's execution gate.
+`The string did not match the expected pattern.`
 
-## v3.9.1 compile correction
+A green workflow now publishes a self-contained report page.
 
-The first v3.9 GitHub run stopped during Solidity compilation because Solidity
-0.8.26 treated the all-lowercase 20-byte Quoter literal as an address literal
-with an invalid checksum. v3.9.1 encodes the same Quoter address as a numeric
-`uint160` literal and casts it to `address`. No protocol logic or safety gate
-was changed.
 
-## v3.9.2 compile correction
+## v4.5.2 TWAP math correction
 
-The v3.9.1 run exposed the same Solidity 0.8.26 checksum enforcement on the TBA
-literal. v3.9.2 eliminates the entire class of failures by encoding **all**
-hard-coded 20-byte addresses in the generated Solidity harness as numeric
-`uint160` literals explicitly cast to `address`.
+v4.5.2 replaces the fragile parser that extracted integers from Foundry `cast`
+pretty-printed output. That formatting can include human-readable numeric
+annotations, causing the second parsed integer to be something other than the
+second tick cumulative.
 
-This changes no address values, protocol logic, policy settings, fork behavior,
-or safety gates.
+The corrected workflow:
 
-## v3.9.3 compile correction
+- calls `observe([window,0])` through raw JSON-RPC `eth_call`;
+- ABI-decodes the returned `int56[]` and `uint160[]` directly;
+- sign-decodes each `int56`;
+- computes `tickDelta = cumulativeNow - cumulativePast`;
+- divides by the requested window;
+- applies Uniswap OracleLibrary-compatible negative rounding;
+- rejects any mean tick outside [-887272, 887272];
+- rejects NaN/Infinity/non-finite outputs;
+- records raw cumulatives, tick delta, corrected mean tick, human WETH/STONK,
+  and WETH/STONK scaled to 1e18.
 
-Solidity 0.8.26 also applies address-literal checksum rules to a 40-hex-digit
-literal even when it appears inside `uint160(...)`.
-
-v3.9.3 removes hexadecimal address literals from the generated Solidity
-entirely. Every hard-coded address is represented as its exact **decimal
-160-bit integer** and then converted with `address(uint160(...))`.
-
-This preserves the exact address bytes while avoiding Solidity's address
-checksum parser altogether. No protocol behavior or safety gate changed.
-
-## v3.9.4 stale-harness cleanup
-
-The latest GitHub error was **not** coming from the v3.9 policy harness.
-The compiler reported:
-
-`test/RusteeFork.t.sol:56`
-
-That is an older fork test left in the repository from a previous dry-run
-phase. Foundry compiles every Solidity file under `test/`, so the stale file
-failed checksum validation before `RusteePolicyPath.t.sol` could execute.
-
-v3.9.4 now deletes `src/`, `test/`, `out/`, `cache/`, and the prior
-`foundry.toml` before generating the isolated v3.9 harness.
-
-No Rustee contract logic, policy values, addresses, or safety gates changed.
-
-## v3.9.5 compiler correction
-
-The v3.9.4 run reached the actual `RusteePolicyPath.t.sol` harness and failed
-with Solidity's `Stack too deep` compiler error around the `TradeRequest`
-construction.
-
-v3.9.5 enables the Solidity optimizer and `via_ir = true`, which is the
-standard compiler path for resolving this class of stack-pressure issue
-without changing the test's behavior.
-
-This is a compile-only change. No contract addresses, policy limits, fork
-actions, route logic, or mainnet safety gates changed.
+This is still read-only/fork-analysis infrastructure and authorizes no mainnet
+deployment, Registry write, funding, approval, unpause, trade, or broadcast.

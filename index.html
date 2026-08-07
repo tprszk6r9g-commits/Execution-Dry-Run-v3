@@ -17,15 +17,15 @@ pre{white-space:pre-wrap;word-break:break-word;background:#03110e;border:1px sol
 <body>
 <main>
 <span class="pill">Robinhood Chain · v4.5 · READ ONLY</span>
-<h1>Rustee $STONKBROKER TWAP Manipulation Analysis</h1>
-<div class="warn"><b>No mainnet writes.</b> v4.5 compares live 5m, 15m, 30m and 60m Uniswap V3 TWAPs, measures cross-window dispersion, validates any optional production WETH/USD candidate, and leaves deployment/trading locked.</div>
+<h1>Rustee $STONKBROKER TWAP Math Correction</h1>
+<div class="warn"><b>No mainnet writes.</b> v4.5.2 correctly decodes and compares live 5m, 15m, 30m and 60m Uniswap V3 TWAPs, measures cross-window dispersion, validates any optional production WETH/USD candidate, and leaves deployment/trading locked.</div>
 <div class="card">
-<h2>What this phase decides</h2>
-<p>The report calculates WETH-per-STONKBROKER from the canonical pool at four averaging windows. It uses the 60-minute result as a reference and treats cross-window dispersion only as an engineering signal. A low-dispersion snapshot can nominate a candidate window, but does not prove manipulation resistance.</p>
+<h2>What v4.5.2 fixes and decides</h2>
+<p>The report ABI-decodes raw Uniswap V3 observe() results, computes the signed cumulative-tick delta, divides by each averaging window with Uniswap-compatible negative rounding, enforces valid tick bounds, then calculates WETH-per-STONKBROKER at four averaging windows. It uses the 60-minute result as a reference and treats cross-window dispersion only as an engineering signal. A low-dispersion snapshot can nominate a candidate window, but does not prove manipulation resistance.</p>
 </div>
-<div class="card"><h2>v4.5 report</h2>
+<div class="card"><h2>v4.5.2 report</h2>
 <!--RUSTEE_REPORT_START-->
-<pre id="report">v4.5 report will be embedded by the successful GitHub Actions workflow.</pre>
+<pre id="report">v4.5.2 report will be embedded by the successful GitHub Actions workflow.</pre>
 <!--RUSTEE_REPORT_END-->
 </div>
 </main>
