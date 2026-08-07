@@ -1,4 +1,4 @@
-name: Deploy Rustee Policy + Fork Gate v3.5.2
+name: Deploy Rustee Policy + Fork Gate v3.5.3
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v352-pages
+  group: rustee-v353-pages
   cancel-in-progress: true
 
 jobs:
@@ -58,7 +58,7 @@ jobs:
                           headers={
                               "Accept": "application/json",
                               "User-Agent":
-                                  "Rustee-Broker-Fork-Verifier/3.5.2"
+                                  "Rustee-Broker-Fork-Verifier/3.5.3"
                           }
                       )
 
@@ -183,6 +183,9 @@ jobs:
           test = "test"
           solc_version = "0.8.26"
           evm_version = "cancun"
+          optimizer = true
+          optimizer_runs = 200
+          via_ir = true
           fs_permissions = [
             { access = "read-write", path = "./data" }
           ]
