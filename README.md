@@ -1,20 +1,24 @@
-# Rustee Broker Execution Dry-Run v3
+# Rustee Broker Execution Dry-Run v3.1
 
-This is the final read-only execution gate before funding.
+v3.1 fixes the iPhone/GitHub Pages `Load failed` problem by moving Robinhood REST
+reads into GitHub Actions.
 
-Important: Uniswap's own Robinhood Chain playbook currently says the V3 Dutch Reactor and OrderQuoter are deployed, but explorer verification and SDK/service wiring remain pending. Therefore this console intentionally will not call the system ready to fund or trade merely because the contracts have bytecode.
+The workflow fetches:
 
-It checks:
-- Rustee chain, ownership, paused policy, $5/$10/1-trade limits, owner/outsider authorization.
-- Robinhood read-only NVDA asset metadata and price snapshot.
-- NVDA canonical mainnet deployment.
-- Chainlink verifier, UniswapX reactor, OrderQuoter, Permit2 bytecode.
-- A $5 indicative NVDA intent based on Robinhood's read-only ask.
-- Exact-route blockers before funding.
+- `https://api.robinhood.com/rhj/assets`
+- `https://api.robinhood.com/rhj/prices/NVDA`
 
-It NEVER:
-- sends ETH or NVDA
-- approves Permit2
-- unpauses trading
-- signs an order
-- broadcasts a transaction
+and publishes them as same-origin static JSON files under `/data/`.
+
+The browser then reads those local snapshot files, avoiding CORS/browser-policy
+failures while remaining completely read-only.
+
+The workflow also refreshes the snapshot every 15 minutes and on every push or
+manual workflow run.
+
+Important: UniswapX contracts are deployed on Robinhood Chain, but the official
+UniswapX Robinhood playbook still says SDK/service wiring is pending. Therefore
+the final execution gate intentionally remains locked until a genuine chain-4663
+quote/order path can be demonstrated and simulated.
+
+No approvals, funding, unpause, signatures, or trades are sent by this site.
