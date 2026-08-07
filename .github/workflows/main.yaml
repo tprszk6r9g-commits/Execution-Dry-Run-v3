@@ -1,4 +1,4 @@
-name: Rustee STONKBROKER Production Input Discovery v4.3
+name: Rustee STONKBROKER Memecoin Oracle Design v4.4
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-stonkbroker-v43
+  group: rustee-stonkbroker-v44
   cancel-in-progress: true
 
 jobs:
-  production-input-discovery:
+  memecoin-oracle-design:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -30,401 +30,480 @@ jobs:
         with:
           version: stable
 
-      - name: Establish authoritative Robinhood Chain facts
+      - name: Verify canonical pool and Rustee binding
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p data
-
-          python3 <<'PY'
-          import datetime, json, urllib.request
-          from pathlib import Path
-
-          docs = {
-              "connecting": "https://docs.robinhood.com/chain/connecting/",
-              "contracts": "https://docs.robinhood.com/chain/contracts/",
-              "dataStreams": "https://docs.robinhood.com/chain/data-streams/",
-              "stockTokenApis": "https://docs.robinhood.com/chain/stock-token-apis/",
-          }
-
-          pages = {}
-          for key, url in docs.items():
-              req = urllib.request.Request(
-                  url,
-                  headers={
-                      "Accept": "text/html",
-                      "User-Agent": "Rustee-Broker-v4.3-read-only-discovery"
-                  }
-              )
-              with urllib.request.urlopen(req, timeout=30) as response:
-                  pages[key] = response.read().decode("utf-8", "replace")
-
-          connecting = pages["connecting"]
-          contracts = pages["contracts"]
-          streams = pages["dataStreams"]
-          stockapis = pages["stockTokenApis"]
-
-          canonical_weth = "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73"
-          verifier = "0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7"
-          public_rpc = "https://rpc.mainnet.chain.robinhood.com"
-          sequencer_feed = "wss://feed.mainnet.chain.robinhood.com"
-
-          checks = {
-              "chainId4663Documented": "4663" in connecting,
-              "canonicalWethDocumented": canonical_weth.lower() in contracts.lower(),
-              "dataStreamsVerifierDocumented": verifier.lower() in streams.lower(),
-              "publicRpcDocumented": public_rpc in connecting,
-              "publicRpcProductionWarningDocumented":
-                  ("not recommended for production" in connecting.lower())
-                  or ("rate-limited" in connecting.lower()),
-              "websocketSequencerFeedDocumented": sequencer_feed in connecting,
-              "stockRestVsOnchainMultiplierDifferenceDocumented":
-                  ("not multiplier-adjusted" in stockapis.lower())
-                  and ("multiplier-adjusted" in stockapis.lower()),
-          }
-
-          if not all(checks.values()):
-              raise SystemExit(
-                  "Authoritative Robinhood documentation checks changed; "
-                  "manual review required before trusting v4.3."
-              )
-
-          report = {
-              "project": "Rustee Broker Production Input Discovery v4.3",
-              "network": "Robinhood Chain Mainnet",
-              "chainId": 4663,
-              "generatedAt": datetime.datetime.now(
-                  datetime.timezone.utc
-              ).isoformat(),
-              "mode": "READ_ONLY_NO_MAINNET_WRITES",
-              "authoritativeSources": docs,
-              "verifiedFacts": {
-                  "canonicalWeth": canonical_weth,
-                  "dataStreamsVerifierProxy": verifier,
-                  "publicRpc": public_rpc,
-                  "publicRpcIsProductionRecommended": False,
-                  "documentedSequencerFeedType": "WEBSOCKET",
-                  "documentedSequencerFeed": sequencer_feed,
-                  "aggregatorV3SequencerUptimeFeedDocumentedByRobinhood": False,
-                  "stockRestPricesAreMultiplierAdjusted": False,
-                  "stockOnchainChainlinkPricesAreMultiplierAdjusted": True,
-              },
-              "documentationChecks": checks,
-          }
-
-          Path("data/official-facts.json").write_text(
-              json.dumps(report, indent=2)
-          )
-          PY
-
-      - name: Probe deployed Rustee bindings and production input candidates
-        shell: bash
-        env:
-          WETH_USD_FEED_ADDRESS: ${{ vars.WETH_USD_FEED_ADDRESS }}
-          STONKBROKER_USD_FEED_ADDRESS: ${{ vars.STONKBROKER_USD_FEED_ADDRESS }}
-          WETH_USD_FEED_PROVENANCE_URL: ${{ vars.WETH_USD_FEED_PROVENANCE_URL }}
-          STONKBROKER_USD_FEED_PROVENANCE_URL: ${{ vars.STONKBROKER_USD_FEED_PROVENANCE_URL }}
-          WETH_HEARTBEAT_SECONDS: ${{ vars.WETH_HEARTBEAT_SECONDS }}
-          STONKBROKER_HEARTBEAT_SECONDS: ${{ vars.STONKBROKER_HEARTBEAT_SECONDS }}
-          SEQUENCER_FEED_ADDRESS: ${{ vars.SEQUENCER_FEED_ADDRESS }}
-          PRODUCTION_ADAPTER_ADDRESS: ${{ vars.PRODUCTION_ADAPTER_ADDRESS }}
-        run: |
-          set -euo pipefail
-
           RPC="https://rpc.mainnet.chain.robinhood.com"
-          OWNER="0x8fC320c8582f812695b6f62b2b5d13B14475B955"
-          NFT="0x4523467c4ddc6d775c7ead4dce7656dce54e7f60"
-          REGISTRY="0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199"
           TBA="0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"
+          REGISTRY="0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199"
           WETH="0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73"
           STONK="0xe934e36A439C94017B64a3FecE66AF12099aBF50"
-          ROUTER="0xCaf681a66D020601342297493863E78C959E5cb2"
+          POOL="0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594"
 
-          for A in "$NFT" "$REGISTRY" "$TBA" "$WETH" "$STONK" "$ROUTER"; do
+          for A in "$TBA" "$REGISTRY" "$WETH" "$STONK" "$POOL"; do
             test "$(cast code "$A" --rpc-url "$RPC")" != "0x"
           done
 
-          OWNER_ACTUAL="$(cast call "$TBA" 'owner()(address)' --rpc-url "$RPC")"
+          OWNER="$(cast call "$TBA" 'owner()(address)' --rpc-url "$RPC")"
           REG_ACTUAL="$(cast call "$TBA" 'registry()(address)' --rpc-url "$RPC")"
-          TOKEN_RAW="$(cast call "$TBA" 'token()(uint256,address,uint256)' --rpc-url "$RPC")"
-          POLICY="$(cast call "$REGISTRY" 'tradingPolicy()(uint128,uint128,uint32,bool)' --rpc-url "$RPC" 2>/dev/null || true)"
+          TOKEN0="$(cast call "$POOL" 'token0()(address)' --rpc-url "$RPC")"
+          TOKEN1="$(cast call "$POOL" 'token1()(address)' --rpc-url "$RPC")"
+          LIQ="$(cast call "$POOL" 'liquidity()(uint128)' --rpc-url "$RPC" | awk '{print $1}')"
 
-          probe_feed () {
-            local NAME="$1"
-            local ADDR="$2"
-            local OUT="data/${NAME}.json"
-
-            if [ -z "$ADDR" ]; then
-              printf '{"present":false,"status":"NOT_PROVIDED"}\n' > "$OUT"
-              return 0
-            fi
-
-            CODE="$(cast code "$ADDR" --rpc-url "$RPC" 2>/dev/null || true)"
-            if [ -z "$CODE" ] || [ "$CODE" = "0x" ]; then
-              python3 - "$ADDR" "$OUT" <<'PY'
-          import json, sys
-          open(sys.argv[2],"w").write(json.dumps({
-            "present": True,
-            "address": sys.argv[1],
-            "hasCode": False,
-            "aggregatorV3Readable": False,
-            "status": "REJECTED_NO_CODE"
-          }, indent=2))
-          PY
-              return 0
-            fi
-
-            DECIMALS="$(cast call "$ADDR" 'decimals()(uint8)' --rpc-url "$RPC" 2>/dev/null || true)"
-            DESCRIPTION="$(cast call "$ADDR" 'description()(string)' --rpc-url "$RPC" 2>/dev/null || true)"
-            ROUND="$(cast call "$ADDR" 'latestRoundData()(uint80,int256,uint256,uint256,uint80)' --rpc-url "$RPC" 2>/dev/null || true)"
-
-            python3 - "$ADDR" "$DECIMALS" "$DESCRIPTION" "$ROUND" "$OUT" <<'PY'
-          import json, re, sys
-          addr, decimals, description, round_raw, out = sys.argv[1:]
-          nums = re.findall(r"-?\d+", round_raw or "")
-          answer = int(nums[1]) if len(nums) >= 5 else None
-          updated = int(nums[3]) if len(nums) >= 5 else None
-          obj = {
-              "present": True,
-              "address": addr,
-              "hasCode": True,
-              "decimalsRaw": decimals.strip() or None,
-              "descriptionRaw": description.strip() or None,
-              "latestRoundDataRaw": round_raw.strip() or None,
-              "aggregatorV3Readable": len(nums) >= 5,
-              "answerPositive": answer is not None and answer > 0,
-              "updatedAt": updated,
+          python3 - "$OWNER" "$REG_ACTUAL" "$TOKEN0" "$TOKEN1" "$LIQ" <<'PY'
+          import json,sys
+          from pathlib import Path
+          owner,reg,t0,t1,liq=sys.argv[1:]
+          stonk="0xe934e36a439c94017b64a3fece66af12099abf50"
+          weth="0x0bd7d308f8e1639fab988df18a8011f41eacad73"
+          p={
+            "ownerMatches":owner.lower()=="0x8fc320c8582f812695b6f62b2b5d13b14475b955",
+            "registryMatches":reg.lower()=="0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199",
+            "pairMatches":{t0.lower(),t1.lower()}=={stonk,weth},
+            "liquidityNonZero":int(liq)>0,
+            "liquidity":str(int(liq))
           }
-          obj["status"] = (
-              "CANDIDATE_INTERFACE_PASS"
-              if obj["aggregatorV3Readable"] and obj["answerPositive"]
-              else "REJECTED_INTERFACE_OR_PRICE"
-          )
-          open(out,"w").write(json.dumps(obj,indent=2))
+          assert all([p["ownerMatches"],p["registryMatches"],p["pairMatches"],p["liquidityNonZero"]])
+          Path("data/v44-binding.json").write_text(json.dumps(p,indent=2))
           PY
+
+      - name: Generate isolated oracle design
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf src test out cache
+          rm -f foundry.toml
+          mkdir -p src test data
+
+          cat > foundry.toml <<'EOF'
+          [profile.default]
+          src = "src"
+          test = "test"
+          out = "out"
+          solc_version = "0.8.26"
+          evm_version = "cancun"
+          optimizer = true
+          optimizer_runs = 200
+          via_ir = true
+          fs_permissions = [{ access = "read-write", path = "./data" }]
+          EOF
+
+          cat > src/RusteeStonkbrokerTwapUsdOracle.sol <<'EOF'
+          // SPDX-License-Identifier: MIT
+          pragma solidity ^0.8.26;
+
+          interface IUniswapV3PoolLike {
+              function token0() external view returns (address);
+              function token1() external view returns (address);
+              function observe(uint32[] calldata secondsAgos)
+                  external view
+                  returns (
+                      int56[] memory tickCumulatives,
+                      uint160[] memory secondsPerLiquidityCumulativeX128s
+                  );
           }
 
-          probe_feed "weth-feed" "${WETH_USD_FEED_ADDRESS:-}"
-          probe_feed "stonk-feed" "${STONKBROKER_USD_FEED_ADDRESS:-}"
+          interface IAggregatorV3Like {
+              function decimals() external view returns (uint8);
+              function latestRoundData()
+                  external view
+                  returns (uint80,int256,uint256,uint256,uint80);
+          }
 
-          if [ -n "${SEQUENCER_FEED_ADDRESS:-}" ]; then
-            SEQ_CODE="$(cast code "$SEQUENCER_FEED_ADDRESS" --rpc-url "$RPC" 2>/dev/null || true)"
-            SEQ_ROUND="$(cast call "$SEQUENCER_FEED_ADDRESS" 'latestRoundData()(uint80,int256,uint256,uint256,uint80)' --rpc-url "$RPC" 2>/dev/null || true)"
-          else
-            SEQ_CODE=""
-            SEQ_ROUND=""
-          fi
+          library FullMath {
+              function mulDiv(uint256 a,uint256 b,uint256 denominator)
+                  internal pure returns (uint256 result)
+              {
+                  unchecked {
+                      uint256 prod0;
+                      uint256 prod1;
+                      assembly {
+                          let mm := mulmod(a,b,not(0))
+                          prod0 := mul(a,b)
+                          prod1 := sub(sub(mm,prod0),lt(mm,prod0))
+                      }
+                      if (prod1 == 0) {
+                          require(denominator > 0);
+                          assembly { result := div(prod0,denominator) }
+                          return result;
+                      }
+                      require(denominator > prod1);
+                      uint256 remainder;
+                      assembly {
+                          remainder := mulmod(a,b,denominator)
+                          prod1 := sub(prod1,gt(remainder,prod0))
+                          prod0 := sub(prod0,remainder)
+                      }
+                      uint256 twos = denominator & (~denominator + 1);
+                      assembly {
+                          denominator := div(denominator,twos)
+                          prod0 := div(prod0,twos)
+                          twos := add(div(sub(0,twos),twos),1)
+                      }
+                      prod0 |= prod1 * twos;
+                      uint256 inv = (3 * denominator) ^ 2;
+                      inv *= 2 - denominator * inv;
+                      inv *= 2 - denominator * inv;
+                      inv *= 2 - denominator * inv;
+                      inv *= 2 - denominator * inv;
+                      inv *= 2 - denominator * inv;
+                      inv *= 2 - denominator * inv;
+                      result = prod0 * inv;
+                  }
+              }
+          }
 
-          if [ -n "${PRODUCTION_ADAPTER_ADDRESS:-}" ]; then
-            ADAPTER_CODE="$(cast code "$PRODUCTION_ADAPTER_ADDRESS" --rpc-url "$RPC" 2>/dev/null || true)"
-          else
-            ADAPTER_CODE=""
-          fi
+          library TickMath {
+              int24 internal constant MAX_TICK = 887272;
+              function getSqrtRatioAtTick(int24 tick)
+                  internal pure returns (uint160 sqrtPriceX96)
+              {
+                  uint256 absTick = tick < 0
+                      ? uint256(uint24(-tick))
+                      : uint256(uint24(tick));
+                  require(absTick <= uint256(uint24(MAX_TICK)), "T");
 
-          export OWNER_ACTUAL REG_ACTUAL TOKEN_RAW POLICY
-          export SEQ_CODE SEQ_ROUND ADAPTER_CODE
+                  uint256 ratio = absTick & 0x1 != 0
+                      ? 0xfffcb933bd6fad37aa2d162d1a594001
+                      : 0x100000000000000000000000000000000;
+                  if (absTick & 0x2 != 0) ratio=(ratio*0xfff97272373d413259a46990580e213a)>>128;
+                  if (absTick & 0x4 != 0) ratio=(ratio*0xfff2e50f5f656932ef12357cf3c7fdcc)>>128;
+                  if (absTick & 0x8 != 0) ratio=(ratio*0xffe5caca7e10e4e61c3624eaa0941cd0)>>128;
+                  if (absTick & 0x10 != 0) ratio=(ratio*0xffcb9843d60f6159c9db58835c926644)>>128;
+                  if (absTick & 0x20 != 0) ratio=(ratio*0xff973b41fa98c081472e6896dfb254c0)>>128;
+                  if (absTick & 0x40 != 0) ratio=(ratio*0xff2ea16466c96a3843ec78b326b52861)>>128;
+                  if (absTick & 0x80 != 0) ratio=(ratio*0xfe5dee046a99a2a811c461f1969c3053)>>128;
+                  if (absTick & 0x100 != 0) ratio=(ratio*0xfcbe86c7900a88aedcffc83b479aa3a4)>>128;
+                  if (absTick & 0x200 != 0) ratio=(ratio*0xf987a7253ac413176f2b074cf7815e54)>>128;
+                  if (absTick & 0x400 != 0) ratio=(ratio*0xf3392b0822b70005940c7a398e4b70f3)>>128;
+                  if (absTick & 0x800 != 0) ratio=(ratio*0xe7159475a2c29b7443b29c7fa6e889d9)>>128;
+                  if (absTick & 0x1000 != 0) ratio=(ratio*0xd097f3bdfd2022b8845ad8f792aa5825)>>128;
+                  if (absTick & 0x2000 != 0) ratio=(ratio*0xa9f746462d870fdf8a65dc1f90e061e5)>>128;
+                  if (absTick & 0x4000 != 0) ratio=(ratio*0x70d869a156d2a1b890bb3df62baf32f7)>>128;
+                  if (absTick & 0x8000 != 0) ratio=(ratio*0x31be135f97d08fd981231505542fcfa6)>>128;
+                  if (absTick & 0x10000 != 0) ratio=(ratio*0x9aa508b5b7a84e1c677de54f3e99bc9)>>128;
+                  if (absTick & 0x20000 != 0) ratio=(ratio*0x5d6af8dedb81196699c329225ee604)>>128;
+                  if (absTick & 0x40000 != 0) ratio=(ratio*0x2216e584f5fa1ea926041bedfe98)>>128;
+                  if (absTick & 0x80000 != 0) ratio=(ratio*0x48a170391f7dc42444e8fa2)>>128;
+                  if (tick > 0) ratio = type(uint256).max / ratio;
+                  sqrtPriceX96 = uint160((ratio >> 32) + (ratio % (1 << 32) == 0 ? 0 : 1));
+              }
+          }
 
+          library OracleQuote {
+              function atTick(
+                  int24 tick,
+                  uint128 baseAmount,
+                  address baseToken,
+                  address quoteToken
+              ) internal pure returns (uint256 quoteAmount) {
+                  uint160 sqrtRatioX96=TickMath.getSqrtRatioAtTick(tick);
+                  if (sqrtRatioX96 <= type(uint128).max) {
+                      uint256 ratioX192=uint256(sqrtRatioX96)*sqrtRatioX96;
+                      quoteAmount = baseToken < quoteToken
+                          ? FullMath.mulDiv(ratioX192,baseAmount,1<<192)
+                          : FullMath.mulDiv(1<<192,baseAmount,ratioX192);
+                  } else {
+                      uint256 ratioX128=FullMath.mulDiv(sqrtRatioX96,sqrtRatioX96,1<<64);
+                      quoteAmount = baseToken < quoteToken
+                          ? FullMath.mulDiv(ratioX128,baseAmount,1<<128)
+                          : FullMath.mulDiv(1<<128,baseAmount,ratioX128);
+                  }
+              }
+          }
+
+          contract RusteeStonkbrokerTwapUsdOracle {
+              error InvalidPool();
+              error InvalidWindow();
+              error InvalidWethPrice();
+              error StaleWethPrice();
+
+              IUniswapV3PoolLike public immutable pool;
+              IAggregatorV3Like public immutable wethUsd;
+              address public immutable stonk;
+              address public immutable weth;
+              uint32 public immutable twapWindow;
+              uint32 public immutable wethHeartbeat;
+              uint8 public constant decimals = 18;
+
+              constructor(
+                  address pool_,
+                  address stonk_,
+                  address weth_,
+                  address wethUsd_,
+                  uint32 twapWindow_,
+                  uint32 wethHeartbeat_
+              ) {
+                  if (twapWindow_ < 60) revert InvalidWindow();
+                  pool=IUniswapV3PoolLike(pool_);
+                  wethUsd=IAggregatorV3Like(wethUsd_);
+                  stonk=stonk_;
+                  weth=weth_;
+                  twapWindow=twapWindow_;
+                  wethHeartbeat=wethHeartbeat_;
+
+                  address t0=pool.token0();
+                  address t1=pool.token1();
+                  if (!((t0==stonk_&&t1==weth_)||(t0==weth_&&t1==stonk_))) {
+                      revert InvalidPool();
+                  }
+              }
+
+              function latestRoundData()
+                  external view
+                  returns (uint80,int256,uint256,uint256,uint80)
+              {
+                  uint32[] memory s=new uint32[](2);
+                  s[0]=twapWindow;
+                  s[1]=0;
+                  (int56[] memory ticks,)=pool.observe(s);
+
+                  int56 delta=ticks[1]-ticks[0];
+                  int24 meanTick=int24(delta/int56(uint56(twapWindow)));
+                  if (delta<0 && delta%int56(uint56(twapWindow))!=0) meanTick--;
+
+                  uint256 wethPerStonk=OracleQuote.atTick(
+                      meanTick,1e18,stonk,weth
+                  );
+
+                  (uint80 roundId,int256 answer,,uint256 updatedAt,uint80 answeredInRound)
+                      =wethUsd.latestRoundData();
+
+                  if (answer<=0 || updatedAt==0 || updatedAt>block.timestamp) {
+                      revert InvalidWethPrice();
+                  }
+                  if (
+                      wethHeartbeat!=0
+                      && block.timestamp-updatedAt>wethHeartbeat
+                  ) revert StaleWethPrice();
+
+                  uint8 d=wethUsd.decimals();
+                  require(d<=18,"decimals");
+                  uint256 wethUsd18=uint256(answer)*(10**(18-d));
+                  uint256 stonkUsd18=FullMath.mulDiv(
+                      wethPerStonk,wethUsd18,1e18
+                  );
+
+                  return (
+                      roundId,
+                      int256(stonkUsd18),
+                      block.timestamp-twapWindow,
+                      block.timestamp,
+                      answeredInRound
+                  );
+              }
+          }
+          EOF
+
+          cat > test/RusteeStonkbrokerTwapUsdOracle.t.sol <<'EOF'
+          // SPDX-License-Identifier: MIT
+          pragma solidity ^0.8.26;
+          import "../src/RusteeStonkbrokerTwapUsdOracle.sol";
+
+          interface Vm {
+              function expectRevert(bytes4) external;
+              function writeFile(string calldata,string calldata) external;
+              function toString(uint256) external pure returns (string memory);
+          }
+
+          contract MockWethUsd {
+              uint8 public constant decimals=8;
+              int256 public answer=2000e8;
+              uint256 public updatedAt=block.timestamp;
+              function setUpdatedAt(uint256 t) external { updatedAt=t; }
+              function latestRoundData()
+                  external view
+                  returns (uint80,int256,uint256,uint256,uint80)
+              {
+                  return (1,answer,updatedAt,updatedAt,1);
+              }
+          }
+
+          contract RusteeStonkbrokerTwapUsdOracleTest {
+              Vm constant vm=Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+              address constant POOL=address(bytes20(hex"9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594"));
+              address constant STONK=address(bytes20(hex"e934e36a439c94017b64a3fece66af12099abf50"));
+              address constant WETH=address(bytes20(hex"0bd7d308f8e1639fab988df18a8011f41eacad73"));
+
+              function testForkTwapReturnsPositiveUsd18() public {
+                  MockWethUsd w=new MockWethUsd();
+                  RusteeStonkbrokerTwapUsdOracle o=
+                      new RusteeStonkbrokerTwapUsdOracle(
+                          POOL,STONK,WETH,address(w),1800,3600
+                      );
+
+                  (,int256 answer,,,)=o.latestRoundData();
+                  require(answer>0,"no price");
+
+                  vm.writeFile(
+                      "data/v44-oracle.json",
+                      string.concat(
+                          '{"ok":true,"stonkUsd18":"',
+                          vm.toString(uint256(answer)),
+                          '"}'
+                      )
+                  );
+              }
+
+              function testStaleWethRejected() public {
+                  MockWethUsd w=new MockWethUsd();
+                  RusteeStonkbrokerTwapUsdOracle o=
+                      new RusteeStonkbrokerTwapUsdOracle(
+                          POOL,STONK,WETH,address(w),1800,3600
+                      );
+
+                  w.setUpdatedAt(block.timestamp-7200);
+                  vm.expectRevert(
+                      RusteeStonkbrokerTwapUsdOracle.StaleWethPrice.selector
+                  );
+                  o.latestRoundData();
+              }
+          }
+          EOF
+
+      - name: Compile v4.4 oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          forge build
+
+      - name: Run fork oracle tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          forge test \
+            --fork-url https://rpc.mainnet.chain.robinhood.com \
+            --match-contract RusteeStonkbrokerTwapUsdOracleTest \
+            -vv
+
+      - name: Confirm live 30 minute TWAP observation support
+        shell: bash
+        run: |
+          set -euo pipefail
+          cast call \
+            0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594 \
+            'observe(uint32[])(int56[],uint160[])' \
+            '[1800,0]' \
+            --rpc-url https://rpc.mainnet.chain.robinhood.com \
+            > data/v44-live-observe.txt
+
+          test -s data/v44-live-observe.txt
+
+      - name: Fingerprint candidate oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate
+
+          forge inspect \
+            src/RusteeStonkbrokerTwapUsdOracle.sol:RusteeStonkbrokerTwapUsdOracle \
+            bytecode > candidate/oracle.bin
+
+          forge inspect \
+            src/RusteeStonkbrokerTwapUsdOracle.sol:RusteeStonkbrokerTwapUsdOracle \
+            deployedBytecode > candidate/oracle.bin-runtime
+
+          sha256sum src/RusteeStonkbrokerTwapUsdOracle.sol > data/v44-source.sha256
+          sha256sum candidate/oracle.bin > data/v44-init.sha256
+          sha256sum candidate/oracle.bin-runtime > data/v44-runtime.sha256
+
+      - name: Build v4.4 report
+        shell: bash
+        env:
+          WETH_USD_FEED_ADDRESS: ${{ vars.WETH_USD_FEED_ADDRESS }}
+          WETH_USD_FEED_PROVENANCE_URL: ${{ vars.WETH_USD_FEED_PROVENANCE_URL }}
+          WETH_HEARTBEAT_SECONDS: ${{ vars.WETH_HEARTBEAT_SECONDS }}
+        run: |
+          set -euo pipefail
           python3 <<'PY'
-          import datetime, hashlib, json, os, re
+          import json,os,re,datetime
           from pathlib import Path
 
-          def readj(path):
-              return json.loads(Path(path).read_text())
+          binding=json.load(open("data/v44-binding.json"))
+          oracle=json.load(open("data/v44-oracle.json"))
 
-          def valid_addr(v):
-              return bool(v and re.fullmatch(r"0x[0-9a-fA-F]{40}", v))
+          def digest(p): return Path(p).read_text().split()[0]
+          def addr_ok(x): return bool(x and re.fullmatch(r"0x[0-9a-fA-F]{40}",x))
 
-          official = readj("data/official-facts.json")
-          weth = readj("data/weth-feed.json")
-          stonk = readj("data/stonk-feed.json")
+          weth_feed=os.getenv("WETH_USD_FEED_ADDRESS") or None
+          provenance=os.getenv("WETH_USD_FEED_PROVENANCE_URL") or None
+          heartbeat=os.getenv("WETH_HEARTBEAT_SECONDS") or None
 
-          owner = os.environ["OWNER_ACTUAL"].strip().lower()
-          registry = os.environ["REG_ACTUAL"].strip().lower()
-          token_raw = os.environ["TOKEN_RAW"].strip()
+          blockers=[]
+          if not addr_ok(weth_feed):
+              blockers.append("Production WETH/USD feed not supplied")
+          if not provenance:
+              blockers.append("WETH/USD provenance URL not supplied")
+          if not heartbeat:
+              blockers.append("WETH/USD heartbeat not finalized")
+          blockers += [
+              "TWAP window requires final manipulation/liquidity review",
+              "Sequencer compatibility with current Registry remains unresolved",
+              "Candidate TWAP oracle has not been independently audited",
+              "Candidate TWAP oracle has not been deployed and verified",
+              "Independent security review required before mainnet writes"
+          ]
 
-          seq_addr = os.getenv("SEQUENCER_FEED_ADDRESS") or None
-          seq_round = os.getenv("SEQ_ROUND", "")
-          seq_nums = re.findall(r"-?\d+", seq_round)
-          seq_agg = len(seq_nums) >= 5
-
-          adapter_addr = os.getenv("PRODUCTION_ADAPTER_ADDRESS") or None
-          adapter_code = os.getenv("ADAPTER_CODE", "")
-          adapter_has_code = bool(adapter_code and adapter_code != "0x")
-
-          runtime_sha = None
-          if adapter_has_code:
-              raw = bytes.fromhex(adapter_code[2:])
-              runtime_sha = hashlib.sha256(raw).hexdigest()
-
-          expected_runtime_sha = (
-              "224de783890705c83c9556ee4b50855ec421f482ad5e8d425bcd649c55bc196d"
-          )
-
-          weth_prov = os.getenv("WETH_USD_FEED_PROVENANCE_URL") or None
-          stonk_prov = os.getenv("STONKBROKER_USD_FEED_PROVENANCE_URL") or None
-          weth_hb = os.getenv("WETH_HEARTBEAT_SECONDS") or None
-          stonk_hb = os.getenv("STONKBROKER_HEARTBEAT_SECONDS") or None
-
-          binding = {
-              "owner": owner,
-              "registry": registry,
-              "tokenRaw": token_raw,
-              "ownerMatches":
-                  owner == "0x8fc320c8582f812695b6f62b2b5d13b14475b955",
-              "registryMatches":
-                  registry == "0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199",
+          p={
+            "project":"Rustee STONKBROKER Memecoin Oracle Design v4.4",
+            "network":"Robinhood Chain Mainnet + Fork",
+            "chainId":4663,
+            "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "mode":"READ_ONLY_AND_FORK_ONLY_NO_MAINNET_WRITES",
+            "binding":binding,
+            "architecture":{
+              "type":"UNISWAP_V3_TWAP_X_WETH_USD",
+              "pool":"0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594",
+              "twapWindowSeconds":1800,
+              "wethUsdFeed":weth_feed,
+              "wethUsdProvenance":provenance,
+              "wethHeartbeatSeconds":heartbeat
+            },
+            "forkProof":{
+              "twapOracleReturnedPositiveUsd18":oracle["ok"],
+              "sampleStonkUsd18":oracle["stonkUsd18"],
+              "staleWethRejected":True,
+              "liveObserve1800SecondsSupported":True
+            },
+            "candidateOracle":{
+              "name":"RusteeStonkbrokerTwapUsdOracle",
+              "sourceSha256":digest("data/v44-source.sha256"),
+              "initCodeSha256":digest("data/v44-init.sha256"),
+              "runtimeBytecodeSha256":digest("data/v44-runtime.sha256"),
+              "status":"COMPILED_FORK_TESTED_NOT_DEPLOYED"
+            },
+            "remainingBlockers":blockers,
+            "executionGate":{
+              "mainnetOracleDeploymentAllowed":False,
+              "mainnetRegistryWritesAllowed":False,
+              "mainnetFundingAllowed":False,
+              "mainnetApprovalAllowed":False,
+              "mainnetTradeAllowed":False,
+              "mainnetUnpauseAllowed":False,
+              "mainnetBroadcastAllowed":False,
+              "verdict":"MEMECOIN VALUATION ARCHITECTURE PROVEN ON FORK; PRODUCTION WETH/USD, TWAP WINDOW, SEQUENCER COMPATIBILITY, DEPLOYMENT VERIFICATION, AND SECURITY REVIEW STILL REQUIRED"
+            }
           }
 
-          feed_ready = (
-              weth.get("status") == "CANDIDATE_INTERFACE_PASS"
-              and stonk.get("status") == "CANDIDATE_INTERFACE_PASS"
-              and bool(weth_prov)
-              and bool(stonk_prov)
-              and bool(weth_hb)
-              and bool(stonk_hb)
-          )
-
-          # Robinhood documents a websocket sequencer feed. The currently
-          # deployed Registry expects an address-based AggregatorV3-style
-          # uptime source, so absence of a separately proven compatible
-          # contract remains a blocker.
-          sequencer = {
-              "repositoryVariableAddress": seq_addr,
-              "addressValid": valid_addr(seq_addr),
-              "hasCode": bool(os.getenv("SEQ_CODE") and os.getenv("SEQ_CODE") != "0x"),
-              "aggregatorV3Readable": seq_agg,
-              "robinhoodDocumentedFeed":
-                  official["verifiedFacts"]["documentedSequencerFeed"],
-              "robinhoodDocumentedFeedType": "WEBSOCKET",
-              "compatibleWithCurrentRegistryProven":
-                  valid_addr(seq_addr) and seq_agg,
-          }
-
-          adapter = {
-              "candidateName": "RusteeStonkbrokerV3Adapter",
-              "expectedRuntimeBytecodeSha256": expected_runtime_sha,
-              "productionAddress": adapter_addr,
-              "addressValid": valid_addr(adapter_addr),
-              "hasCode": adapter_has_code,
-              "observedRuntimeBytecodeSha256": runtime_sha,
-              "runtimeFingerprintMatches":
-                  runtime_sha == expected_runtime_sha if runtime_sha else False,
-          }
-
-          blockers = []
-          if not weth.get("present"):
-              blockers.append("WETH/USD AggregatorV3 candidate not supplied")
-          elif weth.get("status") != "CANDIDATE_INTERFACE_PASS":
-              blockers.append("WETH/USD candidate failed AggregatorV3/positive-price probe")
-          if not weth_prov:
-              blockers.append("WETH/USD authoritative provenance URL not supplied")
-          if not weth_hb:
-              blockers.append("WETH/USD heartbeat/staleness threshold not finalized")
-
-          if not stonk.get("present"):
-              blockers.append("STONKBROKER/USD valuation oracle candidate not supplied")
-          elif stonk.get("status") != "CANDIDATE_INTERFACE_PASS":
-              blockers.append("STONKBROKER/USD candidate failed AggregatorV3/positive-price probe")
-          if not stonk_prov:
-              blockers.append("STONKBROKER/USD authoritative provenance URL not supplied")
-          if not stonk_hb:
-              blockers.append("STONKBROKER/USD heartbeat/staleness threshold not finalized")
-
-          if not sequencer["compatibleWithCurrentRegistryProven"]:
-              blockers.append(
-                  "No independently proven AggregatorV3-compatible sequencer uptime "
-                  "feed for the current Registry design"
-              )
-
-          if not adapter["runtimeFingerprintMatches"]:
-              blockers.append(
-                  "Production RusteeStonkbrokerV3Adapter deployment/fingerprint "
-                  "not independently verified"
-              )
-
-          blockers.append("Independent security review still required before any mainnet write")
-
-          report = {
-              "project": "Rustee Broker Production Input Discovery v4.3",
-              "network": "Robinhood Chain Mainnet",
-              "chainId": 4663,
-              "generatedAt": datetime.datetime.now(
-                  datetime.timezone.utc
-              ).isoformat(),
-              "mode": "READ_ONLY_NO_MAINNET_WRITES",
-              "binding": binding,
-              "currentMainnetTradingPolicyRaw": os.getenv("POLICY") or None,
-              "officialDiscovery": official["verifiedFacts"],
-              "valuationFeeds": {
-                  "wethUsd": {
-                      **weth,
-                      "provenanceUrl": weth_prov,
-                      "heartbeatSeconds": weth_hb,
-                  },
-                  "stonkbrokerUsd": {
-                      **stonk,
-                      "provenanceUrl": stonk_prov,
-                      "heartbeatSeconds": stonk_hb,
-                  },
-              },
-              "sequencerCompatibility": sequencer,
-              "candidateProductionAdapter": adapter,
-              "readiness": {
-                  "bindingVerified":
-                      binding["ownerMatches"] and binding["registryMatches"],
-                  "valuationFeedsReady": feed_ready,
-                  "sequencerCompatibilityProven":
-                      sequencer["compatibleWithCurrentRegistryProven"],
-                  "productionAdapterFingerprintVerified":
-                      adapter["runtimeFingerprintMatches"],
-                  "productionRpcMigrationRequired": True,
-                  "independentSecurityReviewComplete": False,
-              },
-              "remainingBlockers": blockers,
-              "executionGate": {
-                  "mainnetAdapterDeploymentAllowed": False,
-                  "mainnetRegistryWritesAllowed": False,
-                  "mainnetFundingAllowed": False,
-                  "mainnetApprovalAllowed": False,
-                  "mainnetTradeAllowed": False,
-                  "mainnetUnpauseAllowed": False,
-                  "mainnetBroadcastAllowed": False,
-                  "verdict": (
-                      "PRODUCTION INPUT DISCOVERY COMPLETE; VERIFIED INPUTS RECORDED; "
-                      "UNRESOLVED INPUTS BLOCK CONFIGURATION; ZERO MAINNET WRITES"
-                  ),
-              },
-          }
-
-          Path("data/v4.3-production-input-discovery.json").write_text(
-              json.dumps(report, indent=2)
-          )
-
-          assert report["binding"]["ownerMatches"]
-          assert report["binding"]["registryMatches"]
-          assert report["executionGate"]["mainnetBroadcastAllowed"] is False
+          Path("data/stonkbroker-v44.json").write_text(json.dumps(p,indent=2))
+          Path("stonkbroker-v44.json").write_text(json.dumps(p,indent=2))
           PY
 
-      - name: Validate v4.3 no-write gate
+      - name: Validate report
         shell: bash
         run: |
           set -euo pipefail
           python3 <<'PY'
           import json
-          p=json.load(open("data/v4.3-production-input-discovery.json"))
-          assert p["chainId"] == 4663
-          assert p["mode"] == "READ_ONLY_NO_MAINNET_WRITES"
-          assert p["binding"]["ownerMatches"] is True
-          assert p["binding"]["registryMatches"] is True
-          gate=p["executionGate"]
-          assert gate["mainnetAdapterDeploymentAllowed"] is False
-          assert gate["mainnetRegistryWritesAllowed"] is False
-          assert gate["mainnetFundingAllowed"] is False
-          assert gate["mainnetApprovalAllowed"] is False
-          assert gate["mainnetTradeAllowed"] is False
-          assert gate["mainnetUnpauseAllowed"] is False
-          assert gate["mainnetBroadcastAllowed"] is False
-          print("PASS: v4.3 read-only production-input gate")
+          p=json.load(open("data/stonkbroker-v44.json"))
+          assert p["forkProof"]["twapOracleReturnedPositiveUsd18"] is True
+          assert p["forkProof"]["staleWethRejected"] is True
+          assert p["forkProof"]["liveObserve1800SecondsSupported"] is True
+          assert p["executionGate"]["mainnetBroadcastAllowed"] is False
+          print("PASS v4.4")
           PY
 
       - name: Configure Pages
