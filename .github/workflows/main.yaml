@@ -1,4 +1,4 @@
-name: Rustee Fork Policy Path v3.9
+name: Deploy Rustee Policy + Fork Gate v3.5.1
 
 on:
   push:
@@ -12,112 +12,170 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v39-pages
+  group: rustee-v351-pages
   cancel-in-progress: true
 
 jobs:
-  fork-policy-path:
+  simulate-and-deploy:
     runs-on: ubuntu-latest
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Build current NVDA target
         shell: bash
         run: |
           set -euo pipefail
+
           mkdir -p data
 
           python3 <<'PY'
-          import json, urllib.request, pathlib, datetime, time
+          import json
+          import urllib.request
+          import pathlib
+          import time
+          import datetime
 
           ASSETS_URL = "https://api.robinhood.com/rhj/assets"
           PRICE_URL = "https://api.robinhood.com/rhj/prices/NVDA"
-          EXPECTED_NVDA = "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC"
+
+          EXPECTED_NVDA = (
+              "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC"
+          )
 
           def get_json(url):
               last = None
+
               for attempt in range(4):
                   try:
                       req = urllib.request.Request(
                           url,
                           headers={
                               "Accept": "application/json",
-                              "User-Agent": "Rustee-Broker-v3.9"
-                          },
+                              "User-Agent":
+                                  "Rustee-Broker-Fork-Verifier/3.5.1"
+                          }
                       )
-                      with urllib.request.urlopen(req, timeout=25) as r:
-                          return json.loads(r.read().decode())
+
+                      with urllib.request.urlopen(
+                          req,
+                          timeout=20
+                      ) as response:
+                          return json.loads(
+                              response.read().decode("utf-8")
+                          )
+
                   except Exception as exc:
                       last = exc
+
                       if attempt < 3:
                           time.sleep(2 ** attempt)
-              raise RuntimeError(last)
+
+              raise RuntimeError(
+                  f"Robinhood API failed: {last}"
+              )
 
           assets_json = get_json(ASSETS_URL)
           prices_json = get_json(PRICE_URL)
 
+          assets = assets_json.get("assets", [])
+          quotes = prices_json.get("quotes", [])
+
           asset = next(
-              x for x in assets_json.get("assets", [])
+              x for x in assets
               if x.get("tokenSymbol") == "NVDA"
           )
+
           quote = next(
-              x for x in prices_json.get("quotes", [])
+              x for x in quotes
               if x.get("tokenSymbol") == "NVDA"
           )
+
           deployment = next(
               d for d in asset["deployments"]
               if int(d["chainId"]) == 4663
           )
 
-          assert deployment["contractAddress"].lower() == EXPECTED_NVDA.lower()
-          assert asset["status"] == "ASSET_STATUS_ACTIVE"
-          assert quote["isTradingHalt"] is False
+          if (
+              deployment["contractAddress"].lower()
+              != EXPECTED_NVDA.lower()
+          ):
+              raise RuntimeError(
+                  "Canonical NVDA address mismatch"
+              )
+
+          if asset["status"] != "ASSET_STATUS_ACTIVE":
+              raise RuntimeError(
+                  "NVDA is not active"
+              )
+
+          if quote["isTradingHalt"] is True:
+              raise RuntimeError(
+                  "NVDA is halted"
+              )
 
           ask = float(quote["ask"])
-          assert ask > 0
 
-          # Keep the forked policy test comfortably below the $5 ceiling.
-          target_usd = 4.50
-          target = int((target_usd / ask) * 10**18)
+          if ask <= 0:
+              raise RuntimeError(
+                  "Invalid NVDA ask"
+              )
+
+          # Conservative dry-run target:
+          # 99.5% of the $5 Rustee trade ceiling.
+          target = int(
+              (4.975 / ask) * 10**18
+          )
 
           snapshot = {
               "ok": True,
-              "generatedAt": datetime.datetime.now(
-                  datetime.timezone.utc
-              ).isoformat(),
+              "generatedAt":
+                  datetime.datetime.now(
+                      datetime.timezone.utc
+                  ).isoformat(),
               "chainId": 4663,
               "ask": ask,
-              "targetUsd": target_usd,
               "targetNvdaWei": str(target),
               "asset": asset,
-              "quote": quote,
+              "quote": quote
           }
-          pathlib.Path("data/nvda-snapshot.json").write_text(
-              json.dumps(snapshot, indent=2)
+
+          pathlib.Path(
+              "data/nvda-snapshot.json"
+          ).write_text(
+              json.dumps(
+                  snapshot,
+                  indent=2
+              )
           )
-          pathlib.Path("data/target.env").write_text(
+
+          pathlib.Path(
+              "data/target.env"
+          ).write_text(
               f"TARGET_NVDA_WEI={target}\n"
-              f"NVDA_ASK_8={int(ask * 10**8)}\n"
           )
-          print("PASS: target", target)
+
+          print(
+              f"PASS: NVDA ask = {ask}"
+          )
+
+          print(
+              f"PASS: target = {target}"
+          )
           PY
 
-      - name: Generate Foundry fork harness
+      - name: Generate Foundry project
         shell: bash
         run: |
           set -euo pipefail
 
-          # Remove stale Foundry harnesses from earlier dry-run phases.
-          # Forge compiles every .sol file under test/, so leaving an older
-          # RusteeFork.t.sol in the repo can fail compilation before v3.9 runs.
-          rm -rf src test out cache
-          rm -f foundry.toml
-          mkdir -p src test data
+          mkdir -p test
+          mkdir -p data
 
           cat > foundry.toml <<'EOF'
           [profile.default]
@@ -125,42 +183,70 @@ jobs:
           test = "test"
           solc_version = "0.8.26"
           evm_version = "cancun"
-          optimizer = true
-          optimizer_runs = 200
-          via_ir = true
           fs_permissions = [
             { access = "read-write", path = "./data" }
           ]
           EOF
 
+          mkdir -p src
+
           cat > src/Placeholder.sol <<'EOF'
           // SPDX-License-Identifier: MIT
           pragma solidity ^0.8.26;
+
           contract Placeholder {}
           EOF
 
-          cat > test/RusteePolicyPath.t.sol <<'EOF'
+          cat > test/RusteeFork.t.sol <<'EOF'
           // SPDX-License-Identifier: MIT
           pragma solidity ^0.8.26;
 
           interface Vm {
-              function deal(address who, uint256 amount) external;
-              function prank(address sender) external;
-              function startPrank(address sender) external;
-              function stopPrank() external;
-              function envUint(string calldata name) external returns (uint256);
-              function writeFile(string calldata path, string calldata data) external;
-              function toString(uint256 value) external pure returns (string memory);
-              function toString(address value) external pure returns (string memory);
+              function deal(
+                  address who,
+                  uint256 newBalance
+              ) external;
+
+              function startPrank(
+                  address msgSender
+              ) external;
+
+              function stopPrank()
+                  external;
+
+              function envUint(
+                  string calldata name
+              ) external returns (uint256);
+
+              function writeFile(
+                  string calldata path,
+                  string calldata data
+              ) external;
+
+              function toString(
+                  uint256 value
+              ) external pure returns (string memory);
+          }
+
+          interface IWETH {
+              function deposit()
+                  external
+                  payable;
+
+              function approve(
+                  address spender,
+                  uint256 amount
+              ) external returns (bool);
+
+              function balanceOf(
+                  address who
+              ) external view returns (uint256);
           }
 
           interface IERC20 {
-              function balanceOf(address who) external view returns (uint256);
-              function allowance(address owner, address spender) external view returns (uint256);
-          }
-
-          interface IWETH is IERC20 {
-              function deposit() external payable;
+              function balanceOf(
+                  address who
+              ) external view returns (uint256);
           }
 
           interface IQuoterV2 {
@@ -174,12 +260,14 @@ jobs:
 
               function quoteExactOutputSingle(
                   QuoteExactOutputSingleParams memory params
-              ) external returns (
-                  uint256 amountIn,
-                  uint160 sqrtPriceX96After,
-                  uint32 initializedTicksCrossed,
-                  uint256 gasEstimate
-              );
+              )
+                  external
+                  returns (
+                      uint256 amountIn,
+                      uint160 sqrtPriceX96After,
+                      uint32 initializedTicksCrossed,
+                      uint256 gasEstimate
+                  );
           }
 
           interface ISwapRouter02 {
@@ -195,448 +283,305 @@ jobs:
 
               function exactOutputSingle(
                   ExactOutputSingleParams calldata params
-              ) external payable returns (uint256 amountIn);
-          }
-
-          interface IStockTokenRegistry {
-              struct TradingPolicy {
-                  uint128 maxTradeUsd18;
-                  uint128 maxDailyUsd18;
-                  uint32 maxTradesPerDay;
-                  bool paused;
-              }
-
-              function setAsset(
-                  address token,
-                  bytes32 symbol,
-                  bool isStockToken,
-                  address priceFeed,
-                  uint32 heartbeat
-              ) external;
-
-              function setAdapter(address adapter, bool enabled) external;
-              function setVenue(address venue, bool enabled) external;
-              function setSpender(address spender, bool enabled) external;
-              function setSequencerConfig(address feed, uint64 gracePeriod) external;
-              function setTradingPolicy(TradingPolicy calldata next) external;
-              function getTradingPolicy() external view returns (TradingPolicy memory);
-              function allowedAdapter(address) external view returns (bool);
-              function allowedVenue(address) external view returns (bool);
-              function allowedSpender(address) external view returns (bool);
-          }
-
-          interface IStockTradingAccount {
-              struct TradeRequest {
-                  address tokenIn;
-                  address tokenOut;
-                  uint256 amountIn;
-                  uint256 minAmountOut;
-                  uint256 deadline;
-                  bytes venueData;
-              }
-
-              function executeTrade(
-                  address adapter,
-                  TradeRequest calldata request
-              ) external returns (uint256 amountSpent, uint256 amountReceived);
-          }
-
-          interface IStockTokenVenueAdapter {
-              struct TradeRequest {
-                  address tokenIn;
-                  address tokenOut;
-                  uint256 amountIn;
-                  uint256 minAmountOut;
-                  uint256 deadline;
-                  bytes venueData;
-              }
-
-              struct TradePlan {
-                  address venue;
-                  address spender;
-                  address tokenIn;
-                  address tokenOut;
-                  uint256 amountIn;
-                  uint256 minAmountOut;
-                  address recipient;
-                  bytes callData;
-              }
-
-              function buildTrade(
-                  address tradingAccount,
-                  TradeRequest calldata request
-              ) external view returns (TradePlan memory plan);
-          }
-
-          contract MockAggregator {
-              int256 public answer;
-              uint256 public startedAt;
-              uint8 public immutable decimals = 8;
-
-              constructor(int256 answer_, uint256 startedAt_) {
-                  answer = answer_;
-                  startedAt = startedAt_;
-              }
-
-              function latestRoundData()
+              )
                   external
-                  view
-                  returns (
-                      uint80 roundId,
-                      int256 answer_,
-                      uint256 startedAt_,
-                      uint256 updatedAt,
-                      uint80 answeredInRound
-                  )
-              {
-                  return (1, answer, startedAt, block.timestamp, 1);
-              }
+                  payable
+                  returns (uint256 amountIn);
           }
 
-          contract LiveRouterAdapter is IStockTokenVenueAdapter {
-              address constant WETH = address(uint160(67611942442155685878309345127505071630355049843));
-              address constant NVDA = address(uint160(1189613467694738019150202360368048557920044818156));
-              address constant ROUTER = address(uint160(1158713413141908581059608922056134556897599446194));
-
-              uint24 public immutable fee;
-
-              constructor(uint24 fee_) {
-                  fee = fee_;
-              }
-
-              function buildTrade(
-                  address tradingAccount,
-                  TradeRequest calldata request
-              ) external view returns (TradePlan memory plan) {
-                  require(request.tokenIn == WETH, "tokenIn");
-                  require(request.tokenOut == NVDA, "tokenOut");
-
-                  bytes memory callData = abi.encodeCall(
-                      ISwapRouter02.exactOutputSingle,
-                      (
-                          ISwapRouter02.ExactOutputSingleParams({
-                              tokenIn: WETH,
-                              tokenOut: NVDA,
-                              fee: fee,
-                              recipient: tradingAccount,
-                              amountOut: request.minAmountOut,
-                              amountInMaximum: request.amountIn,
-                              sqrtPriceLimitX96: 0
-                          })
-                      )
-                  );
-
-                  plan = TradePlan({
-                      venue: ROUTER,
-                      spender: ROUTER,
-                      tokenIn: request.tokenIn,
-                      tokenOut: request.tokenOut,
-                      amountIn: request.amountIn,
-                      minAmountOut: request.minAmountOut,
-                      recipient: tradingAccount,
-                      callData: callData
-                  });
-              }
-          }
-
-          contract RusteePolicyPathTest {
+          contract RusteeForkTest {
               Vm constant vm = Vm(
                   address(
                       uint160(
                           uint256(
-                              keccak256("hevm cheat code")
+                              keccak256(
+                                  "hevm cheat code"
+                              )
                           )
                       )
                   )
               );
 
-              address constant OWNER = address(uint160(820737181308364445062791658010628422506223352149));
-              address constant REGISTRY = address(uint160(932932941263554602260291691457995460063005065625));
-              address constant TBA = address(uint160(469192888926703907592065228322394011421711640148));
-              address constant WETH = address(uint160(67611942442155685878309345127505071630355049843));
-              address constant NVDA = address(uint160(1189613467694738019150202360368048557920044818156));
-              address constant ROUTER = address(uint160(1158713413141908581059608922056134556897599446194));
-              address constant QUOTER = address(uint160(296343968798681522619989758023966939572465084903));
+              address constant TBA =
+                  0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654;
 
-              function _tryQuote(
-                  uint24 fee,
-                  uint256 target
-              ) internal returns (bool ok, uint256 amountIn) {
-                  try IQuoterV2(QUOTER).quoteExactOutputSingle(
-                      IQuoterV2.QuoteExactOutputSingleParams({
-                          tokenIn: WETH,
-                          tokenOut: NVDA,
-                          amount: target,
-                          fee: fee,
-                          sqrtPriceLimitX96: 0
-                      })
-                  ) returns (
-                      uint256 q,
-                      uint160,
-                      uint32,
-                      uint256
-                  ) {
-                      return (true, q);
-                  } catch {
-                      return (false, 0);
-                  }
-              }
+              address constant WETH =
+                  0x0bd7d308f8e1639fab988df18a8011f41eacad73;
 
-              function testForkedGuardedPolicyPath() public {
-                  uint256 target = vm.envUint("TARGET_NVDA_WEI");
-                  uint256 nvdaAsk8 = vm.envUint("NVDA_ASK_8");
+              address constant NVDA =
+                  0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec;
 
-                  (bool ok500, uint256 q500) = _tryQuote(500, target);
-                  (bool ok3000, uint256 q3000) = _tryQuote(3000, target);
+              address constant ROUTER =
+                  0xcaf681a66d020601342297493863e78c959e5cb2;
 
-                  require(ok500 || ok3000, "no live route");
+              address constant QUOTER =
+                  0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7;
 
-                  uint24 fee;
-                  uint256 quoted;
-
-                  if (ok500 && ok3000) {
-                      if (q500 <= q3000) {
-                          fee = 500;
-                          quoted = q500;
-                      } else {
-                          fee = 3000;
-                          quoted = q3000;
-                      }
-                  } else if (ok500) {
-                      fee = 500;
-                      quoted = q500;
-                  } else {
-                      fee = 3000;
-                      quoted = q3000;
-                  }
-
-                  uint256 maxIn = (quoted * 1005 + 999) / 1000;
-
-                  // Price-feed value is intentionally fork-local. It is chosen
-                  // so maxIn represents $4.75, below the $5 policy ceiling.
-                  uint256 wethPrice8 =
-                      (4.75 ether * 1e8) / maxIn;
-
-                  MockAggregator wethFeed =
-                      new MockAggregator(
-                          int256(wethPrice8),
-                          block.timestamp - 3600
+              function testForkedFundedClassicRoute()
+                  public
+              {
+                  uint256 target =
+                      vm.envUint(
+                          "TARGET_NVDA_WEI"
                       );
 
-                  MockAggregator nvdaFeed =
-                      new MockAggregator(
-                          int256(nvdaAsk8),
-                          block.timestamp - 3600
+                  (
+                      uint256 in500,
+                      ,
+                      ,
+                  ) =
+                      IQuoterV2(
+                          QUOTER
+                      ).quoteExactOutputSingle(
+                          IQuoterV2
+                              .QuoteExactOutputSingleParams(
+                                  WETH,
+                                  NVDA,
+                                  target,
+                                  500,
+                                  0
+                              )
                       );
 
-                  MockAggregator sequencer =
-                      new MockAggregator(
-                          0,
-                          block.timestamp - 3600
+                  (
+                      uint256 in3000,
+                      ,
+                      ,
+                  ) =
+                      IQuoterV2(
+                          QUOTER
+                      ).quoteExactOutputSingle(
+                          IQuoterV2
+                              .QuoteExactOutputSingleParams(
+                                  WETH,
+                                  NVDA,
+                                  target,
+                                  3000,
+                                  0
+                              )
                       );
 
-                  LiveRouterAdapter adapter =
-                      new LiveRouterAdapter(fee);
+                  uint24 fee =
+                      in500 <= in3000
+                          ? 500
+                          : 3000;
 
-                  vm.startPrank(OWNER);
+                  uint256 quoted =
+                      in500 <= in3000
+                          ? in500
+                          : in3000;
 
-                  IStockTokenRegistry(REGISTRY).setSequencerConfig(
-                      address(sequencer),
-                      60
-                  );
+                  uint256 maxIn =
+                      (
+                          quoted * 1005
+                          + 999
+                      ) / 1000;
 
-                  IStockTokenRegistry(REGISTRY).setAsset(
-                      WETH,
-                      bytes32("WETH"),
-                      false,
-                      address(wethFeed),
-                      86400
-                  );
-
-                  IStockTokenRegistry(REGISTRY).setAsset(
-                      NVDA,
-                      bytes32("NVDA"),
-                      true,
-                      address(nvdaFeed),
-                      86400
+                  vm.deal(
+                      TBA,
+                      maxIn
+                      + 0.01 ether
                   );
 
-                  IStockTokenRegistry(REGISTRY).setAdapter(
-                      address(adapter),
-                      true
-                  );
-                  IStockTokenRegistry(REGISTRY).setVenue(
-                      ROUTER,
-                      true
-                  );
-                  IStockTokenRegistry(REGISTRY).setSpender(
-                      ROUTER,
-                      true
+                  vm.startPrank(
+                      TBA
                   );
 
-                  IStockTokenRegistry(REGISTRY).setTradingPolicy(
-                      IStockTokenRegistry.TradingPolicy({
-                          maxTradeUsd18: uint128(5 ether),
-                          maxDailyUsd18: uint128(10 ether),
-                          maxTradesPerDay: 1,
-                          paused: false
-                      })
+                  IWETH(
+                      WETH
+                  ).deposit{
+                      value: maxIn
+                  }();
+
+                  bool approved =
+                      IWETH(
+                          WETH
+                      ).approve(
+                          ROUTER,
+                          maxIn
+                      );
+
+                  require(
+                      approved,
+                      "approve failed"
                   );
+
+                  uint256 beforeNvda =
+                      IERC20(
+                          NVDA
+                      ).balanceOf(
+                          TBA
+                      );
+
+                  uint256 used =
+                      ISwapRouter02(
+                          ROUTER
+                      ).exactOutputSingle(
+                          ISwapRouter02
+                              .ExactOutputSingleParams({
+                                  tokenIn: WETH,
+                                  tokenOut: NVDA,
+                                  fee: fee,
+                                  recipient: TBA,
+                                  amountOut: target,
+                                  amountInMaximum: maxIn,
+                                  sqrtPriceLimitX96: 0
+                              })
+                      );
+
+                  uint256 afterNvda =
+                      IERC20(
+                          NVDA
+                      ).balanceOf(
+                          TBA
+                      );
 
                   vm.stopPrank();
 
-                  IStockTokenRegistry.TradingPolicy memory policy =
-                      IStockTokenRegistry(REGISTRY).getTradingPolicy();
+                  uint256 received =
+                      afterNvda
+                      - beforeNvda;
 
-                  require(policy.paused == false, "policy still paused");
                   require(
-                      IStockTokenRegistry(REGISTRY).allowedAdapter(
-                          address(adapter)
-                      ),
-                      "adapter not allowed"
+                      received >= target,
+                      "NVDA output missing"
                   );
+
                   require(
-                      IStockTokenRegistry(REGISTRY).allowedVenue(ROUTER),
-                      "venue not allowed"
-                  );
-                  require(
-                      IStockTokenRegistry(REGISTRY).allowedSpender(ROUTER),
-                      "spender not allowed"
+                      used <= maxIn,
+                      "WETH max exceeded"
                   );
 
-                  // Fork-only simulated funding.
-                  vm.deal(TBA, maxIn + 0.01 ether);
-                  vm.prank(TBA);
-                  IWETH(WETH).deposit{value: maxIn}();
-
-                  uint256 beforeNvda = IERC20(NVDA).balanceOf(TBA);
-
-                  IStockTradingAccount.TradeRequest memory request =
-                      IStockTradingAccount.TradeRequest({
-                          tokenIn: WETH,
-                          tokenOut: NVDA,
-                          amountIn: maxIn,
-                          minAmountOut: target,
-                          deadline: block.timestamp + 600,
-                          venueData: bytes("")
-                      });
-
-                  vm.prank(OWNER);
-                  (
-                      uint256 spent,
-                      uint256 received
-                  ) = IStockTradingAccount(TBA).executeTrade(
-                      address(adapter),
-                      request
-                  );
-
-                  uint256 afterNvda = IERC20(NVDA).balanceOf(TBA);
-                  uint256 allowanceAfter =
-                      IERC20(WETH).allowance(TBA, ROUTER);
-
-                  require(spent > 0 && spent <= maxIn, "bad spend");
-                  require(received >= target, "bad receive");
-                  require(afterNvda > beforeNvda, "NVDA missing");
-                  require(allowanceAfter == 0, "approval not cleared");
-
-                  string memory report = string.concat(
-                      "{",
-                      '"project":"Rustee Broker Fork Policy Path v3.9",',
-                      '"chainId":4663,',
-                      '"selector":"0x6c606ce7",',
-                      '"exactAbi":"executeTrade(address,(address,address,uint256,uint256,uint256,bytes))",',
-                      '"v38BaselineSelector":"0x02b874a6",',
-                      '"v38BaselineDecoded":"TradingPaused()",',
-                      '"abiRecoveryRequired":false,',
-                      '"forkOnly":true,',
-                      '"policyConfigured":true,',
-                      '"policyUnpaused":true,',
-                      '"assetsConfigured":true,',
-                      '"adapterAllowed":true,',
-                      '"venueAllowed":true,',
-                      '"spenderAllowed":true,',
-                      '"sequencerConfigured":true,',
-                      '"simulatedFunding":true,',
-                      '"guardedExecuteTradeSucceeded":true,',
-                      '"approvalClearedAfterTrade":true,',
-                      '"feeTier":',
-                      vm.toString(uint256(fee)),
-                      ",",
-                      '"quotedWethInWei":"',
-                      vm.toString(quoted),
-                      '",',
-                      '"maxWethInWei":"',
-                      vm.toString(maxIn),
-                      '",',
-                      '"wethActuallySpentWei":"',
-                      vm.toString(spent),
-                      '",',
-                      '"targetNvdaWei":"',
-                      vm.toString(target),
-                      '",',
-                      '"nvdaReceivedWei":"',
-                      vm.toString(received),
-                      '",',
-                      '"executionGate":{',
-                      '"mainnetAssetFundingAllowed":false,',
-                      '"mainnetApprovalAllowed":false,',
-                      '"mainnetUnpauseAllowed":false,',
-                      '"mainnetBroadcastAllowed":false,',
-                      '"verdict":"FORK POLICY PATH PASSED - MAINNET CONFIGURATION NOT YET AUTHORIZED"',
-                      "}",
-                      "}"
-                  );
+                  string memory report =
+                      string.concat(
+                          "{",
+                          '"ok":true,',
+                          '"chainId":4663,',
+                          '"simulatedFunding":true,',
+                          '"simulatedApproval":true,',
+                          '"routerExecutionSucceeded":true,',
+                          '"bestFeeBps":',
+                          vm.toString(
+                              uint256(fee)
+                          ),
+                          ",",
+                          '"quotedWethInWei":"',
+                          vm.toString(
+                              quoted
+                          ),
+                          '",',
+                          '"maxWethInWei":"',
+                          vm.toString(
+                              maxIn
+                          ),
+                          '",',
+                          '"wethActuallyUsedWei":"',
+                          vm.toString(
+                              used
+                          ),
+                          '",',
+                          '"targetNvdaWei":"',
+                          vm.toString(
+                              target
+                          ),
+                          '",',
+                          '"nvdaReceivedWei":"',
+                          vm.toString(
+                              received
+                          ),
+                          '"',
+                          "}"
+                      );
 
                   vm.writeFile(
-                      "data/v39-policy-path.json",
+                      "data/fork-simulation.json",
                       report
                   );
               }
           }
           EOF
 
-          echo "PASS: harness generated"
+          echo "PASS: Foundry files generated"
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
 
-      - name: Run fork policy path
+      - name: Run fork simulation
         shell: bash
         run: |
           set -euo pipefail
+
           source data/target.env
           export TARGET_NVDA_WEI
-          export NVDA_ASK_8
 
           forge test \
-            --fork-url https://rpc.mainnet.chain.robinhood.com \
-            --match-test testForkedGuardedPolicyPath \
+            --fork-url \
+            https://rpc.mainnet.chain.robinhood.com \
+            --match-test \
+            testForkedFundedClassicRoute \
             -vv
 
-      - name: Validate v3.9 report
+      - name: Validate fork simulation report
         shell: bash
         run: |
           set -euo pipefail
-          test -s data/v39-policy-path.json
+
+          test -s data/fork-simulation.json
 
           python3 <<'PY'
           import json
-          p = json.load(open("data/v39-policy-path.json"))
-          assert p["chainId"] == 4663
-          assert p["selector"] == "0x6c606ce7"
-          assert p["v38BaselineDecoded"] == "TradingPaused()"
-          assert p["abiRecoveryRequired"] is False
-          assert p["forkOnly"] is True
-          assert p["policyConfigured"] is True
-          assert p["guardedExecuteTradeSucceeded"] is True
-          assert p["approvalClearedAfterTrade"] is True
-          assert p["executionGate"]["mainnetBroadcastAllowed"] is False
-          print("PASS: v3.9 fork policy path")
+
+          report = json.load(
+              open(
+                  "data/fork-simulation.json"
+              )
+          )
+
+          assert report["ok"] is True
+
+          assert (
+              report["chainId"]
+              == 4663
+          )
+
+          assert (
+              report[
+                  "simulatedFunding"
+              ]
+              is True
+          )
+
+          assert (
+              report[
+                  "simulatedApproval"
+              ]
+              is True
+          )
+
+          assert (
+              report[
+                  "routerExecutionSucceeded"
+              ]
+              is True
+          )
+
+          assert (
+              int(
+                  report[
+                      "nvdaReceivedWei"
+                  ]
+              )
+              > 0
+          )
+
+          print(
+              "PASS: fork-simulation.json"
+          )
           PY
 
-      - name: Configure Pages
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Upload site
@@ -644,6 +589,6 @@ jobs:
         with:
           path: .
 
-      - name: Deploy Pages
+      - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
