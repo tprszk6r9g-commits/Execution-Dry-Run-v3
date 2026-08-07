@@ -1,20 +1,19 @@
-# Rustee Broker Execution Dry-Run v3.3
+# Rustee Broker Execution Dry-Run v3.4
 
-This release hardens the Robinhood NVDA snapshot pipeline.
+Fixes the v3.2 classic infrastructure false-fail and adds live read-only V3
+QuoterV2 exact-output quote competition.
 
-The workflow:
-1. Fetches Robinhood's official read-only `/rhj/assets`.
-2. Fetches `/rhj/prices/NVDA`.
-3. Validates the canonical chain-4663 NVDA address.
-4. Requires active status, a valid bid/ask, and no trading halt.
-5. Writes one atomic `data/nvda-snapshot.json`.
-6. Deploys that exact generated file with GitHub Pages.
+Canonical selectors used:
+- QuoterV2 `quoteExactOutputSingle((address,address,uint256,uint24,uint160))`
+  = `0xbd21704a`
+- SwapRouter02 `exactOutputSingle((address,address,uint24,address,uint256,uint256,uint160))`
+  = `0x5023b4df`
 
-The browser no longer falls back to a cross-origin Robinhood fetch. It fails closed
-if the generated snapshot is missing, invalid, or over 20 minutes old.
+The app builds a conservative $4.975 NVDA target, quotes all discovered direct
+NVDA/WETH pools, selects the route requiring the least WETH, and constructs the
+candidate SwapRouter02 calldata.
 
-The 20-minute threshold is for this read-only dry-run UI only. It is NOT suitable
-as a future execution-price freshness standard. A real execution path should use
-a fresh executable DEX quote/simulation immediately before signing.
+Because the Trading TBA is intentionally unfunded and unapproved, the exact
+funded router simulation is not yet proven. Funding remains locked.
 
-No approvals, funding, unpause, signatures, or trades are sent.
+No approvals, funding, unpause, signatures, or transactions are sent.
