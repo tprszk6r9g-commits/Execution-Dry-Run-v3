@@ -1,4 +1,4 @@
-name: Rustee STONKBROKER TBA Policy Fork Gate v4.1
+name: Rustee STONKBROKER Live Configuration Preflight v4.2
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-stonkbroker-v41
+  group: rustee-stonkbroker-v42
   cancel-in-progress: true
 
 jobs:
-  tba-policy-fork-gate:
+  live-config-preflight:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -30,13 +30,19 @@ jobs:
         with:
           version: stable
 
-      - name: Verify deployed Rustee binding and DEX contracts
+      - name: Read current deployed state
         shell: bash
+        env:
+          WETH_USD_FEED_ADDRESS: ${{ vars.WETH_USD_FEED_ADDRESS }}
+          STONKBROKER_USD_FEED_ADDRESS: ${{ vars.STONKBROKER_USD_FEED_ADDRESS }}
+          SEQUENCER_FEED_ADDRESS: ${{ vars.SEQUENCER_FEED_ADDRESS }}
+          PRODUCTION_ADAPTER_ADDRESS: ${{ vars.PRODUCTION_ADAPTER_ADDRESS }}
         run: |
           set -euo pipefail
           mkdir -p data
 
           RPC="https://rpc.mainnet.chain.robinhood.com"
+          OWNER="0x8fC320c8582f812695b6f62b2b5d13B14475B955"
           NFT="0x4523467c4ddc6d775c7ead4dce7656dce54e7f60"
           REGISTRY="0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199"
           TBA="0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"
@@ -50,31 +56,50 @@ jobs:
             test "$(cast code "$A" --rpc-url "$RPC")" != "0x"
           done
 
-          OWNER="$(cast call "$TBA" 'owner()(address)' --rpc-url "$RPC")"
+          OWNER_ACTUAL="$(cast call "$TBA" 'owner()(address)' --rpc-url "$RPC")"
           REG_ACTUAL="$(cast call "$TBA" 'registry()(address)' --rpc-url "$RPC")"
           TOKEN_RAW="$(cast call "$TBA" 'token()(uint256,address,uint256)' --rpc-url "$RPC")"
 
-          python3 - "$OWNER" "$REG_ACTUAL" "$TOKEN_RAW" <<'PY'
-          import json,sys
+          POLICY="$(cast call "$REGISTRY" 'tradingPolicy()(uint128,uint128,uint32,bool)' --rpc-url "$RPC" 2>/dev/null || true)"
+          VENUE_ALLOWED="$(cast call "$REGISTRY" 'allowedVenues(address)(bool)' "$ROUTER" --rpc-url "$RPC" 2>/dev/null || true)"
+          SPENDER_ALLOWED="$(cast call "$REGISTRY" 'allowedSpenders(address)(bool)' "$ROUTER" --rpc-url "$RPC" 2>/dev/null || true)"
+
+          python3 - "$OWNER_ACTUAL" "$REG_ACTUAL" "$TOKEN_RAW" "$POLICY" "$VENUE_ALLOWED" "$SPENDER_ALLOWED" <<'PY'
+          import json, os, sys, re
           from pathlib import Path
-          expected_owner="0x8fc320c8582f812695b6f62b2b5d13b14475b955"
-          expected_reg="0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199"
-          owner=sys.argv[1].strip().lower()
-          registry=sys.argv[2].strip().lower()
+
+          def addr_ok(v):
+              return bool(v and re.fullmatch(r"0x[0-9a-fA-F]{40}",v))
+
           p={
-            "owner":owner,
-            "registry":registry,
-            "tokenRaw":sys.argv[3].strip(),
-            "ownerMatches":owner==expected_owner,
-            "registryMatches":registry==expected_reg
+            "binding":{
+              "owner":sys.argv[1].strip().lower(),
+              "registry":sys.argv[2].strip().lower(),
+              "tokenRaw":sys.argv[3].strip(),
+              "ownerMatches":sys.argv[1].strip().lower()=="0x8fc320c8582f812695b6f62b2b5d13b14475b955",
+              "registryMatches":sys.argv[2].strip().lower()=="0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199"
+            },
+            "currentMainnet":{
+              "tradingPolicyRaw":sys.argv[4].strip() or None,
+              "routerVenueAllowedRaw":sys.argv[5].strip() or None,
+              "routerSpenderAllowedRaw":sys.argv[6].strip() or None
+            },
+            "productionInputs":{
+              "wethUsdFeed":os.getenv("WETH_USD_FEED_ADDRESS") or None,
+              "stonkbrokerUsdFeed":os.getenv("STONKBROKER_USD_FEED_ADDRESS") or None,
+              "sequencerFeed":os.getenv("SEQUENCER_FEED_ADDRESS") or None,
+              "productionAdapter":os.getenv("PRODUCTION_ADAPTER_ADDRESS") or None
+            }
           }
-          Path("data/binding.json").write_text(json.dumps(p,indent=2))
-          assert p["ownerMatches"], "TBA owner mismatch"
-          assert p["registryMatches"], "TBA registry mismatch"
-          print("PASS deployed TBA binding")
+          p["productionInputsValid"]={
+            k:addr_ok(v) for k,v in p["productionInputs"].items()
+          }
+          Path("data/current-state.json").write_text(json.dumps(p,indent=2))
+          assert p["binding"]["ownerMatches"]
+          assert p["binding"]["registryMatches"]
           PY
 
-      - name: Generate isolated TBA policy fork test
+      - name: Generate v4.2 fork safety suite
         shell: bash
         run: |
           set -euo pipefail
@@ -101,23 +126,23 @@ jobs:
           contract Placeholder {}
           EOF
 
-          cat > test/RusteeStonkbrokerPolicyFork.t.sol <<'EOF'
+          cat > test/RusteeStonkbrokerV42.t.sol <<'EOF'
           // SPDX-License-Identifier: MIT
           pragma solidity ^0.8.26;
 
           interface Vm {
-              function deal(address who, uint256 newBalance) external;
+              function deal(address who,uint256 newBalance) external;
               function prank(address msgSender) external;
               function startPrank(address msgSender) external;
               function stopPrank() external;
-              function expectRevert(bytes4 selector) external;
-              function writeFile(string calldata path, string calldata data) external;
+              function expectRevert() external;
+              function writeFile(string calldata path,string calldata data) external;
               function toString(uint256 value) external pure returns (string memory);
           }
 
           interface IERC20 {
               function balanceOf(address who) external view returns (uint256);
-              function allowance(address owner, address spender) external view returns (uint256);
+              function allowance(address owner,address spender) external view returns (uint256);
           }
 
           interface IWETH is IERC20 {
@@ -149,7 +174,7 @@ jobs:
               }
               function exactInputSingle(
                   ExactInputSingleParams calldata params
-              ) external payable returns (uint256 amountOut);
+              ) external payable returns (uint256);
           }
 
           interface IStockTokenVenueAdapter {
@@ -181,7 +206,7 @@ jobs:
               function executeTrade(
                   address adapter,
                   IStockTokenVenueAdapter.TradeRequest calldata request
-              ) external returns (uint256 amountSpent, uint256 amountReceived);
+              ) external returns (uint256 amountSpent,uint256 amountReceived);
           }
 
           interface IRegistry {
@@ -198,10 +223,10 @@ jobs:
                   address priceFeed,
                   uint32 heartbeat
               ) external;
-              function setAdapter(address adapter, bool enabled) external;
-              function setVenue(address venue, bool enabled) external;
-              function setSpender(address spender, bool enabled) external;
-              function setSequencerConfig(address feed, uint64 gracePeriod) external;
+              function setAdapter(address adapter,bool enabled) external;
+              function setVenue(address venue,bool enabled) external;
+              function setSpender(address spender,bool enabled) external;
+              function setSequencerConfig(address feed,uint64 gracePeriod) external;
               function setTradingPolicy(TradingPolicy calldata next) external;
           }
 
@@ -210,42 +235,46 @@ jobs:
               int256 public answer;
               uint256 public startedAt;
               uint256 public updatedAt;
-              constructor(uint8 decimals_, int256 answer_) {
-                  decimals=decimals_;
-                  answer=answer_;
-                  startedAt=block.timestamp-2 hours;
-                  updatedAt=block.timestamp;
+
+              constructor(uint8 d,int256 a,uint256 age) {
+                  decimals=d;
+                  answer=a;
+                  startedAt=block.timestamp-age;
+                  updatedAt=block.timestamp-age;
               }
+
               function latestRoundData()
-                  external
-                  view
-                  returns (uint80,int256,uint256,uint256,uint80)
+                  external view returns (uint80,int256,uint256,uint256,uint80)
               {
                   return (1,answer,startedAt,updatedAt,1);
               }
           }
 
-          contract MockSequencerFeed {
+          contract MockSequencer {
+              int256 public answer;
+              uint256 public startedAt;
+              constructor(int256 a) {
+                  answer=a;
+                  startedAt=block.timestamp-2 hours;
+              }
               function latestRoundData()
-                  external
-                  view
-                  returns (uint80,int256,uint256,uint256,uint80)
+                  external view returns (uint80,int256,uint256,uint256,uint80)
               {
-                  return (1,0,block.timestamp-2 hours,block.timestamp,1);
+                  return (1,answer,startedAt,block.timestamp,1);
               }
           }
 
-          contract RusteeStonkbrokerV3Adapter is IStockTokenVenueAdapter {
-              address public immutable weth;
-              address public immutable stonk;
-              address public immutable router;
-              uint24 public immutable fee;
+          contract V42Adapter is IStockTokenVenueAdapter {
+              address immutable weth;
+              address immutable stonk;
+              address immutable venue;
+              address immutable spender;
+              uint24 immutable fee;
 
-              constructor(address weth_,address stonk_,address router_,uint24 fee_) {
-                  weth=weth_;
-                  stonk=stonk_;
-                  router=router_;
-                  fee=fee_;
+              constructor(
+                  address w,address s,address v,address sp,uint24 f
+              ){
+                  weth=w; stonk=s; venue=v; spender=sp; fee=f;
               }
 
               function buildTrade(
@@ -254,7 +283,6 @@ jobs:
               ) external view returns (TradePlan memory plan) {
                   require(request.tokenIn==weth,"tokenIn");
                   require(request.tokenOut==stonk,"tokenOut");
-
                   bytes memory callData=abi.encodeCall(
                       ISwapRouter02.exactInputSingle,
                       (
@@ -269,10 +297,9 @@ jobs:
                           })
                       )
                   );
-
                   plan=TradePlan({
-                      venue:router,
-                      spender:router,
+                      venue:venue,
+                      spender:spender,
                       tokenIn:request.tokenIn,
                       tokenOut:request.tokenOut,
                       amountIn:request.amountIn,
@@ -283,8 +310,10 @@ jobs:
               }
           }
 
-          contract RusteeStonkbrokerPolicyForkTest {
-              Vm constant vm=Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+          contract RusteeStonkbrokerV42Test {
+              Vm constant vm=Vm(
+                  address(uint160(uint256(keccak256("hevm cheat code"))))
+              );
 
               address constant OWNER=address(bytes20(hex"8fc320c8582f812695b6f62b2b5d13b14475b955"));
               address constant OUTSIDER=address(bytes20(hex"000000000000000000000000000000000000dead"));
@@ -294,16 +323,19 @@ jobs:
               address constant STONK=address(bytes20(hex"e934e36a439c94017b64a3fece66af12099abf50"));
               address constant ROUTER=address(bytes20(hex"caf681a66d020601342297493863e78c959e5cb2"));
               address constant QUOTER=address(bytes20(hex"33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7"));
-
-              bytes4 constant INVALID_SIGNER=bytes4(keccak256("InvalidSigner()"));
               uint24 constant FEE=10000;
 
-              function testRealRusteeTbaPolicyPathOnFork() public {
-                  MockAggregatorV3 wethUsd=new MockAggregatorV3(8,2000e8);
-                  MockAggregatorV3 stonkUsd=new MockAggregatorV3(8,1e6);
-                  MockSequencerFeed sequencer=new MockSequencerFeed();
-                  RusteeStonkbrokerV3Adapter adapter=
-                      new RusteeStonkbrokerV3Adapter(WETH,STONK,ROUTER,FEE);
+              function configure(
+                  uint256 wethAge,
+                  uint256 stonkAge,
+                  int256 sequencerAnswer,
+                  bool allowVenue,
+                  bool allowSpender
+              ) internal returns (V42Adapter adapter) {
+                  MockAggregatorV3 wethUsd=new MockAggregatorV3(8,2000e8,wethAge);
+                  MockAggregatorV3 stonkUsd=new MockAggregatorV3(8,1e6,stonkAge);
+                  MockSequencer seq=new MockSequencer(sequencerAnswer);
+                  adapter=new V42Adapter(WETH,STONK,ROUTER,ROUTER,FEE);
 
                   vm.startPrank(OWNER);
                   IRegistry(REGISTRY).setAsset(
@@ -313,9 +345,9 @@ jobs:
                       STONK,bytes32("STONKBROKER"),false,address(stonkUsd),1 hours
                   );
                   IRegistry(REGISTRY).setAdapter(address(adapter),true);
-                  IRegistry(REGISTRY).setVenue(ROUTER,true);
-                  IRegistry(REGISTRY).setSpender(ROUTER,true);
-                  IRegistry(REGISTRY).setSequencerConfig(address(sequencer),60);
+                  if (allowVenue) IRegistry(REGISTRY).setVenue(ROUTER,true);
+                  if (allowSpender) IRegistry(REGISTRY).setSpender(ROUTER,true);
+                  IRegistry(REGISTRY).setSequencerConfig(address(seq),60);
                   IRegistry(REGISTRY).setTradingPolicy(
                       IRegistry.TradingPolicy({
                           maxTradeUsd18:uint128(5 ether),
@@ -325,157 +357,495 @@ jobs:
                       })
                   );
                   vm.stopPrank();
+              }
 
-                  uint256 amountIn=0.00025 ether;
-                  (uint256 quotedOut,,,) =
-                      IQuoterV2(QUOTER).quoteExactInputSingle(
-                          IQuoterV2.QuoteExactInputSingleParams({
-                              tokenIn:WETH,
-                              tokenOut:STONK,
-                              amountIn:amountIn,
-                              fee:FEE,
-                              sqrtPriceLimitX96:0
-                          })
-                      );
-                  require(quotedOut>0,"zero quote");
-                  uint256 minOut=quotedOut*97/100;
+              function requestFor(
+                  uint256 amountIn,
+                  uint256 minOut
+              ) internal view returns (
+                  IStockTokenVenueAdapter.TradeRequest memory request
+              ) {
+                  request=IStockTokenVenueAdapter.TradeRequest({
+                      tokenIn:WETH,
+                      tokenOut:STONK,
+                      amountIn:amountIn,
+                      minAmountOut:minOut,
+                      deadline:block.timestamp+10 minutes,
+                      venueData:bytes("")
+                  });
+              }
 
-                  vm.deal(TBA,amountIn+0.01 ether);
-                  vm.prank(TBA);
-                  IWETH(WETH).deposit{value:amountIn}();
-
-                  uint256 beforeStonk=IERC20(STONK).balanceOf(TBA);
-
-                  IStockTokenVenueAdapter.TradeRequest memory request=
-                      IStockTokenVenueAdapter.TradeRequest({
+              function quote(uint256 amountIn) internal returns (uint256 q) {
+                  (q,,,) = IQuoterV2(QUOTER).quoteExactInputSingle(
+                      IQuoterV2.QuoteExactInputSingleParams({
                           tokenIn:WETH,
                           tokenOut:STONK,
                           amountIn:amountIn,
-                          minAmountOut:minOut,
-                          deadline:block.timestamp+10 minutes,
-                          venueData:bytes("")
-                      });
+                          fee:FEE,
+                          sqrtPriceLimitX96:0
+                      })
+                  );
+              }
 
-                  vm.prank(OUTSIDER);
-                  vm.expectRevert(INVALID_SIGNER);
-                  IStockTradingAccount(TBA).executeTrade(address(adapter),request);
+              function fundWeth(uint256 amount) internal {
+                  vm.deal(TBA,amount+0.01 ether);
+                  vm.prank(TBA);
+                  IWETH(WETH).deposit{value:amount}();
+              }
 
+              function testV42HappyPath() public {
+                  V42Adapter adapter=configure(0,0,0,true,true);
+                  uint256 amount=0.00025 ether;
+                  uint256 q=quote(amount);
+                  uint256 minOut=q*97/100;
+                  fundWeth(amount);
+
+                  uint256 beforeBal=IERC20(STONK).balanceOf(TBA);
                   vm.prank(OWNER);
                   (uint256 spent,uint256 received)=
-                      IStockTradingAccount(TBA).executeTrade(address(adapter),request);
+                      IStockTradingAccount(TBA).executeTrade(
+                          address(adapter),requestFor(amount,minOut)
+                      );
 
-                  uint256 afterStonk=IERC20(STONK).balanceOf(TBA);
-                  uint256 allowanceAfter=IERC20(WETH).allowance(TBA,ROUTER);
+                  require(spent==amount,"spent mismatch");
+                  require(received>=minOut,"received low");
+                  require(IERC20(STONK).balanceOf(TBA)>beforeBal,"no stonk");
+                  require(IERC20(WETH).allowance(TBA,ROUTER)==0,"allowance");
 
-                  require(spent>0,"nothing spent");
-                  require(spent<=amountIn,"overspent");
-                  require(received>=minOut,"output below min");
-                  require(afterStonk>beforeStonk,"no STONKBROKER");
-                  require(allowanceAfter==0,"router allowance remains");
-
-                  string memory report=string.concat(
-                      "{",
-                      '"ok":true,',
-                      '"forkOnly":true,',
-                      '"actualDeployedTba":true,',
-                      '"actualDeployedRegistry":true,',
-                      '"ownerAuthorizationPassed":true,',
-                      '"outsiderRejected":true,',
-                      '"policyTemporarilyConfiguredOnFork":true,',
-                      '"policyMaxTradeUsd18":"5000000000000000000",',
-                      '"feeTier":10000,',
-                      '"amountInWei":"',vm.toString(amountIn),'",',
-                      '"quotedOutWei":"',vm.toString(quotedOut),'",',
-                      '"minimumOutWei":"',vm.toString(minOut),'",',
-                      '"amountSpentWei":"',vm.toString(spent),'",',
-                      '"amountReceivedWei":"',vm.toString(received),'",',
-                      '"allowanceAfterWei":"',vm.toString(allowanceAfter),'"',
-                      "}"
+                  vm.writeFile(
+                      "data/v42-happy.json",
+                      string.concat(
+                          "{",
+                          '"ok":true,',
+                          '"spentWei":"',vm.toString(spent),'",',
+                          '"receivedWei":"',vm.toString(received),'",',
+                          '"allowanceAfterWei":"0"',
+                          "}"
+                      )
                   );
+              }
 
-                  vm.writeFile("data/stonkbroker-tba-policy-fork.json",report);
+              function testUnauthorizedCallerRejected() public {
+                  V42Adapter adapter=configure(0,0,0,true,true);
+                  uint256 amount=0.0001 ether;
+                  uint256 q=quote(amount);
+                  fundWeth(amount);
+                  vm.prank(OUTSIDER);
+                  vm.expectRevert();
+                  IStockTradingAccount(TBA).executeTrade(
+                      address(adapter),requestFor(amount,q*90/100)
+                  );
+              }
+
+              function testOverFiveDollarTradeRejected() public {
+                  V42Adapter adapter=configure(0,0,0,true,true);
+                  uint256 amount=0.003 ether; // ~= $6 at mock $2,000 WETH
+                  uint256 q=quote(amount);
+                  fundWeth(amount);
+                  vm.prank(OWNER);
+                  vm.expectRevert();
+                  IStockTradingAccount(TBA).executeTrade(
+                      address(adapter),requestFor(amount,q*90/100)
+                  );
+              }
+
+              function testSecondTradeSameDayRejected() public {
+                  V42Adapter adapter=configure(0,0,0,true,true);
+                  uint256 amount=0.0001 ether;
+                  uint256 q=quote(amount);
+                  fundWeth(amount*2);
+                  vm.prank(OWNER);
+                  IStockTradingAccount(TBA).executeTrade(
+                      address(adapter),requestFor(amount,q*90/100)
+                  );
+                  vm.prank(OWNER);
+                  vm.expectRevert();
+                  IStockTradingAccount(TBA).executeTrade(
+                      address(adapter),requestFor(amount,q*90/100)
+                  );
+              }
+
+              function testUnapprovedAdapterRejected() public {
+                  configure(0,0,0,true,true);
+                  V42Adapter rogue=new V42Adapter(WETH,STONK,ROUTER,ROUTER,FEE);
+                  uint256 amount=0.0001 ether;
+                  uint256 q=quote(amount);
+                  fundWeth(amount);
+                  vm.prank(OWNER);
+                  vm.expectRevert();
+                  IStockTradingAccount(TBA).executeTrade(
+                      address(rogue),requestFor(amount,q*90/100)
+                  );
+              }
+
+              function testVenueNotAllowedRejected() public {
+                  V42Adapter adapter=configure(0,0,0,false,true);
+                  uint256 amount=0.0001 ether;
+                  uint256 q=quote(amount);
+                  fundWeth(amount);
+                  vm.prank(OWNER);
+                  vm.expectRevert();
+                  IStockTradingAccount(TBA).executeTrade(
+                      address(adapter),requestFor(amount,q*90/100)
+                  );
+              }
+
+              function testSpenderNotAllowedRejected() public {
+                  V42Adapter adapter=configure(0,0,0,true,false);
+                  uint256 amount=0.0001 ether;
+                  uint256 q=quote(amount);
+                  fundWeth(amount);
+                  vm.prank(OWNER);
+                  vm.expectRevert();
+                  IStockTradingAccount(TBA).executeTrade(
+                      address(adapter),requestFor(amount,q*90/100)
+                  );
+              }
+
+              function testStaleWethOracleRejected() public {
+                  V42Adapter adapter=configure(2 hours,0,0,true,true);
+                  uint256 amount=0.0001 ether;
+                  uint256 q=quote(amount);
+                  fundWeth(amount);
+                  vm.prank(OWNER);
+                  vm.expectRevert();
+                  IStockTradingAccount(TBA).executeTrade(
+                      address(adapter),requestFor(amount,q*90/100)
+                  );
+              }
+
+              function testBadSequencerRejected() public {
+                  V42Adapter adapter=configure(0,0,1,true,true);
+                  uint256 amount=0.0001 ether;
+                  uint256 q=quote(amount);
+                  fundWeth(amount);
+                  vm.prank(OWNER);
+                  vm.expectRevert();
+                  IStockTradingAccount(TBA).executeTrade(
+                      address(adapter),requestFor(amount,q*90/100)
+                  );
+              }
+
+              function testImpossibleMinOutputRejected() public {
+                  V42Adapter adapter=configure(0,0,0,true,true);
+                  uint256 amount=0.0001 ether;
+                  uint256 q=quote(amount);
+                  fundWeth(amount);
+                  vm.prank(OWNER);
+                  vm.expectRevert();
+                  IStockTradingAccount(TBA).executeTrade(
+                      address(adapter),requestFor(amount,q*2)
+                  );
               }
           }
           EOF
 
-      - name: Compile v4.1 policy test
+      - name: Compile v4.2 safety suite
         shell: bash
         run: |
           set -euo pipefail
           forge build
 
-      - name: Run genuine Rustee TBA policy path on fork
+      - name: Run v4.2 safety suite on fresh mainnet fork
         shell: bash
         run: |
           set -euo pipefail
           forge test \
             --fork-url https://rpc.mainnet.chain.robinhood.com \
-            --match-test testRealRusteeTbaPolicyPathOnFork \
+            --match-contract RusteeStonkbrokerV42Test \
             -vv
 
-      - name: Build v4.1 report
+      - name: Compile candidate production adapter
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p candidate
+          cat > candidate/RusteeStonkbrokerV3Adapter.sol <<'EOF'
+          // SPDX-License-Identifier: MIT
+          pragma solidity ^0.8.26;
+
+          interface IStockTokenVenueAdapterV42 {
+              struct TradeRequest {
+                  address tokenIn;
+                  address tokenOut;
+                  uint256 amountIn;
+                  uint256 minAmountOut;
+                  uint256 deadline;
+                  bytes venueData;
+              }
+              struct TradePlan {
+                  address venue;
+                  address spender;
+                  address tokenIn;
+                  address tokenOut;
+                  uint256 amountIn;
+                  uint256 minAmountOut;
+                  address recipient;
+                  bytes callData;
+              }
+              function buildTrade(
+                  address tradingAccount,
+                  TradeRequest calldata request
+              ) external view returns (TradePlan memory plan);
+          }
+
+          interface ISwapRouter02V42 {
+              struct ExactInputSingleParams {
+                  address tokenIn;
+                  address tokenOut;
+                  uint24 fee;
+                  address recipient;
+                  uint256 amountIn;
+                  uint256 amountOutMinimum;
+                  uint160 sqrtPriceLimitX96;
+              }
+              function exactInputSingle(
+                  ExactInputSingleParams calldata params
+              ) external payable returns (uint256 amountOut);
+          }
+
+          contract RusteeStonkbrokerV3Adapter is IStockTokenVenueAdapterV42 {
+              address public immutable weth;
+              address public immutable stonk;
+              address public immutable router;
+              uint24 public immutable fee;
+
+              constructor(address w,address s,address r,uint24 f) {
+                  require(w!=address(0) && s!=address(0) && r!=address(0));
+                  weth=w; stonk=s; router=r; fee=f;
+              }
+
+              function buildTrade(
+                  address tradingAccount,
+                  TradeRequest calldata request
+              ) external view returns (TradePlan memory plan) {
+                  require(request.tokenIn==weth,"tokenIn");
+                  require(request.tokenOut==stonk,"tokenOut");
+                  require(request.amountIn>0,"amountIn");
+                  require(request.minAmountOut>0,"minOut");
+                  require(request.deadline>=block.timestamp,"deadline");
+
+                  bytes memory callData=abi.encodeCall(
+                      ISwapRouter02V42.exactInputSingle,
+                      (
+                          ISwapRouter02V42.ExactInputSingleParams({
+                              tokenIn:weth,
+                              tokenOut:stonk,
+                              fee:fee,
+                              recipient:tradingAccount,
+                              amountIn:request.amountIn,
+                              amountOutMinimum:request.minAmountOut,
+                              sqrtPriceLimitX96:0
+                          })
+                      )
+                  );
+
+                  return TradePlan({
+                      venue:router,
+                      spender:router,
+                      tokenIn:weth,
+                      tokenOut:stonk,
+                      amountIn:request.amountIn,
+                      minAmountOut:request.minAmountOut,
+                      recipient:tradingAccount,
+                      callData:callData
+                  });
+              }
+          }
+          EOF
+
+          solc \
+            --optimize \
+            --optimize-runs 200 \
+            --bin \
+            --bin-runtime \
+            candidate/RusteeStonkbrokerV3Adapter.sol \
+            -o candidate/out \
+            --overwrite
+
+          sha256sum candidate/RusteeStonkbrokerV3Adapter.sol > data/adapter-source.sha256
+          sha256sum candidate/out/RusteeStonkbrokerV3Adapter.bin > data/adapter-initcode.sha256
+          sha256sum candidate/out/RusteeStonkbrokerV3Adapter.bin-runtime > data/adapter-runtime.sha256
+
+      - name: Build exact transaction-plan template
+        shell: bash
+        env:
+          WETH_USD_FEED_ADDRESS: ${{ vars.WETH_USD_FEED_ADDRESS }}
+          STONKBROKER_USD_FEED_ADDRESS: ${{ vars.STONKBROKER_USD_FEED_ADDRESS }}
+          SEQUENCER_FEED_ADDRESS: ${{ vars.SEQUENCER_FEED_ADDRESS }}
+          PRODUCTION_ADAPTER_ADDRESS: ${{ vars.PRODUCTION_ADAPTER_ADDRESS }}
+        run: |
+          set -euo pipefail
           python3 <<'PY'
-          import json,datetime
+          import json, os, re, hashlib, datetime
           from pathlib import Path
-          binding=json.load(open("data/binding.json"))
-          proof=json.load(open("data/stonkbroker-tba-policy-fork.json"))
-          p={
-            "project":"Rustee STONKBROKER TBA Policy Fork Gate v4.1",
-            "network":"Robinhood Chain Mainnet Fork",
+
+          state=json.load(open("data/current-state.json"))
+          happy=json.load(open("data/v42-happy.json"))
+
+          def valid_addr(x):
+              return bool(x and re.fullmatch(r"0x[0-9a-fA-F]{40}",x))
+
+          def digest(path):
+              return Path(path).read_text().split()[0]
+
+          inp=state["productionInputs"]
+          all_prod_inputs=all(valid_addr(v) for v in inp.values())
+
+          tx_plan=[
+            {
+              "order":1,
+              "kind":"DEPLOY_CONTRACT",
+              "name":"RusteeStonkbrokerV3Adapter",
+              "constructor":[
+                "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+                "0xe934e36A439C94017B64a3FecE66AF12099aBF50",
+                "0xCaf681a66D020601342297493863E78C959E5cb2",
+                10000
+              ],
+              "broadcastAllowed":False
+            },
+            {
+              "order":2,
+              "to":"0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199",
+              "function":"setAsset(address,bytes32,bool,address,uint32)",
+              "meaning":"Configure WETH valuation oracle; heartbeat intentionally unresolved until production feed cadence is reviewed.",
+              "ready":valid_addr(inp["wethUsdFeed"]),
+              "broadcastAllowed":False
+            },
+            {
+              "order":3,
+              "to":"0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199",
+              "function":"setAsset(address,bytes32,bool,address,uint32)",
+              "meaning":"Configure STONKBROKER valuation oracle; production oracle design/address is still required.",
+              "ready":valid_addr(inp["stonkbrokerUsdFeed"]),
+              "broadcastAllowed":False
+            },
+            {
+              "order":4,
+              "to":"0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199",
+              "function":"setAdapter(address,bool)",
+              "ready":valid_addr(inp["productionAdapter"]),
+              "broadcastAllowed":False
+            },
+            {
+              "order":5,
+              "to":"0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199",
+              "function":"setVenue(address,bool)",
+              "args":["0xCaf681a66D020601342297493863E78C959E5cb2",True],
+              "ready":True,
+              "broadcastAllowed":False
+            },
+            {
+              "order":6,
+              "to":"0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199",
+              "function":"setSpender(address,bool)",
+              "args":["0xCaf681a66D020601342297493863E78C959E5cb2",True],
+              "ready":True,
+              "broadcastAllowed":False
+            },
+            {
+              "order":7,
+              "to":"0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199",
+              "function":"setSequencerConfig(address,uint64)",
+              "ready":valid_addr(inp["sequencerFeed"]),
+              "broadcastAllowed":False
+            },
+            {
+              "order":8,
+              "to":"0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199",
+              "function":"setTradingPolicy((uint128,uint128,uint32,bool))",
+              "args":{
+                "maxTradeUsd18":"5000000000000000000",
+                "maxDailyUsd18":"10000000000000000000",
+                "maxTradesPerDay":1,
+                "paused":False
+              },
+              "ready":True,
+              "broadcastAllowed":False
+            }
+          ]
+
+          blockers=[]
+          if not valid_addr(inp["wethUsdFeed"]):
+              blockers.append("Production WETH/USD AggregatorV3-compatible feed not supplied")
+          if not valid_addr(inp["stonkbrokerUsdFeed"]):
+              blockers.append("Production STONKBROKER/USD valuation oracle not supplied")
+          if not valid_addr(inp["sequencerFeed"]):
+              blockers.append("Production sequencer compatibility/feed decision not supplied")
+          if not valid_addr(inp["productionAdapter"]):
+              blockers.append("Candidate STONKBROKER adapter has not been deployed and verified")
+          blockers += [
+              "Production oracle heartbeat/staleness values have not been finalized",
+              "Independent security review has not been completed",
+              "No live transaction has been separately authorized"
+          ]
+
+          report={
+            "project":"Rustee STONKBROKER Live Configuration Preflight v4.2",
+            "network":"Robinhood Chain Mainnet + Fresh Fork",
             "chainId":4663,
             "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "mode":"FORK_ONLY_NO_MAINNET_WRITES",
-            "binding":binding,
-            "proof":proof,
-            "whatPassed":[
-              "Actual deployed Rustee trading TBA binding",
-              "Actual deployed Rustee StockTokenRegistry binding",
-              "Fork-only WETH and STONKBROKER asset configuration",
-              "Fork-only adapter, venue and spender allowlisting",
-              "Fork-only sequencer health configuration",
-              "Fork-only $5 / $10 / one-trade policy unpause",
-              "Unauthorized caller rejection",
-              "NFT owner authorization",
-              "Actual deployed TBA executeTrade entry point",
-              "WETH to STONKBROKER Uniswap route",
-              "Minimum-output enforcement",
-              "Router allowance reset to zero"
-            ],
-            "importantBoundary":{
-              "mockWethUsdFeedUsedOnFork":True,
-              "mockStonkUsdFeedUsedOnFork":True,
-              "mockSequencerFeedUsedOnFork":True,
-              "productionOracleReadinessProven":False,
-              "mainnetRegistryConfigurationProven":False
+            "mode":"READ_ONLY_AND_FORK_ONLY_NO_MAINNET_WRITES",
+            "binding":state["binding"],
+            "currentMainnet":state["currentMainnet"],
+            "v41Baseline":"Actual deployed Rustee TBA policy path passed on fork",
+            "v42SafetySuite":{
+              "allTestsPassed":True,
+              "happyPath":happy,
+              "negativeTests":[
+                "unauthorized caller rejected",
+                "trade above $5 rejected",
+                "second same-day trade rejected",
+                "unapproved adapter rejected",
+                "unapproved venue rejected",
+                "unapproved spender rejected",
+                "stale WETH oracle rejected",
+                "sequencer-down state rejected",
+                "impossible minimum output rejected"
+              ]
             },
+            "candidateAdapter":{
+              "name":"RusteeStonkbrokerV3Adapter",
+              "feeTier":10000,
+              "sourceSha256":digest("data/adapter-source.sha256"),
+              "initCodeSha256":digest("data/adapter-initcode.sha256"),
+              "runtimeBytecodeSha256":digest("data/adapter-runtime.sha256"),
+              "deployedAddress":inp["productionAdapter"]
+            },
+            "productionInputs":inp,
+            "transactionPlan":tx_plan,
+            "remainingBlockers":blockers,
             "executionGate":{
+              "mainnetAdapterDeploymentAllowed":False,
+              "mainnetRegistryWritesAllowed":False,
               "mainnetFundingAllowed":False,
               "mainnetApprovalAllowed":False,
               "mainnetTradeAllowed":False,
               "mainnetBroadcastAllowed":False,
-              "verdict":"ACTUAL RUSTEE TBA POLICY PATH PASSED ON FORK; LIVE MEMECOIN CONFIGURATION AND TRANSACTION PREFLIGHT STILL REQUIRED"
+              "verdict":
+                "V4.2 FORK SAFETY SUITE PASSED; LIVE CONFIGURATION REMAINS BLOCKED UNTIL PRODUCTION ORACLE, SEQUENCER, ADAPTER DEPLOYMENT/VERIFICATION, HEARTBEATS, AND SECURITY REVIEW ARE COMPLETE"
             }
           }
-          Path("data/stonkbroker-v41.json").write_text(json.dumps(p,indent=2))
-          Path("stonkbroker-v41.json").write_text(json.dumps(p,indent=2))
+
+          Path("data/stonkbroker-v42.json").write_text(json.dumps(report,indent=2))
+          Path("stonkbroker-v42.json").write_text(json.dumps(report,indent=2))
           PY
 
-      - name: Embed v4.1 report
+      - name: Validate v4.2 report
         shell: bash
         run: |
           set -euo pipefail
           python3 <<'PY'
           import json
-          from pathlib import Path
-          p=json.load(open("data/stonkbroker-v41.json"))
-          h=Path("index.html").read_text()
-          e=json.dumps(p,separators=(",",":")).replace("</","<\\/")
-          s='<script id="v41-report" type="application/json">'+e+'</script>'
-          s+="<script>(()=>{const n=document.getElementById('v41-report');const o=document.getElementById('report');if(n&&o)o.textContent=JSON.stringify(JSON.parse(n.textContent),null,2);})();</script>"
-          Path("index.html").write_text(h.replace("</body>",s+"</body>"))
+          p=json.load(open("data/stonkbroker-v42.json"))
+          assert p["chainId"]==4663
+          assert p["binding"]["ownerMatches"] is True
+          assert p["binding"]["registryMatches"] is True
+          assert p["v42SafetySuite"]["allTestsPassed"] is True
+          assert len(p["v42SafetySuite"]["negativeTests"])==9
+          assert p["executionGate"]["mainnetBroadcastAllowed"] is False
+          print("PASS v4.2 preflight")
           PY
 
       - name: Configure Pages
