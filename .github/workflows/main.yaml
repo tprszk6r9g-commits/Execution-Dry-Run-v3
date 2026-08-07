@@ -111,6 +111,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          # Remove stale Foundry harnesses from earlier dry-run phases.
+          # Forge compiles every .sol file under test/, so leaving an older
+          # RusteeFork.t.sol in the repo can fail compilation before v3.9 runs.
+          rm -rf src test out cache
+          rm -f foundry.toml
           mkdir -p src test data
 
           cat > foundry.toml <<'EOF'
