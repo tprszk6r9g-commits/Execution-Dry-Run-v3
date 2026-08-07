@@ -1,4 +1,4 @@
-name: Rustee STONKBROKER Historical + Manipulation Analysis v4.6
+name: Rustee STONKBROKER Historical + Manipulation Analysis v4.6.1
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-stonkbroker-v46
+  group: rustee-stonkbroker-v461
   cancel-in-progress: true
 
 jobs:
@@ -271,6 +271,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          # Important: isolate v4.6.1 from any older Solidity tests already
+          # committed in the repository (for example RusteeFork.t.sol).
+          # Otherwise `forge test` compiles every file under test/ and a stale
+          # checksum error can fail this workflow before our v4.6 stress test runs.
+          rm -rf test src out cache
+          mkdir -p test src data
 
           cat > foundry.toml <<'EOF'
           [profile.default]
@@ -569,7 +576,7 @@ jobs:
               blockers.insert(0,"30-minute TWAP candidate not retained by v4.6 historical stability gate")
 
           report={
-            "project":"Rustee STONKBROKER Historical + Manipulation Analysis v4.6",
+            "project":"Rustee STONKBROKER Historical + Manipulation Analysis v4.6.1",
             "network":"Robinhood Chain Mainnet + Fork",
             "chainId":4663,
             "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -605,7 +612,7 @@ jobs:
               "mainnetUnpauseAllowed":False,
               "mainnetBroadcastAllowed":False,
               "verdict":(
-                "V4.6 HISTORICAL + FORK STRESS COMPLETE; 30M CANDIDATE "
+                "V4.6.1 HISTORICAL + FORK STRESS COMPLETE; 30M CANDIDATE "
                 + ("RETAINED" if candidate_retained else "NOT YET RETAINED")
                 + "; MAINNET REMAINS LOCKED"
               )
@@ -634,7 +641,7 @@ jobs:
           assert len(p["manipulationStress"]["trials"]) >= 5
           for t in p["manipulationStress"]["trials"]:
               assert math.isfinite(t["spotMoveBps"])
-          print("PASS v4.6")
+          print("PASS v4.6.1")
           PY
 
       - name: Embed v4.6 report into page
