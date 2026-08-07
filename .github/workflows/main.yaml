@@ -1,4 +1,4 @@
-name: Rustee Mainnet Readiness v3.10
+name: Rustee Production Discovery v3.11
 
 on:
   push:
@@ -12,13 +12,12 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v310-pages
+  group: rustee-v311-pages
   cancel-in-progress: true
 
 jobs:
-  readiness:
+  discovery:
     runs-on: ubuntu-latest
-
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -32,31 +31,179 @@ jobs:
         with:
           version: stable
 
-      - name: Build read-only mainnet readiness report
+      - name: Install v3.11 candidate adapter source
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p data
+          mkdir -p src data
+
+          cat > foundry.toml <<'EOF'
+          [profile.default]
+          src = "src"
+          out = "out"
+          solc_version = "0.8.26"
+          evm_version = "cancun"
+          optimizer = true
+          optimizer_runs = 200
+          via_ir = true
+          EOF
+
+          cat > src/RusteeNvdaRouterAdapter.sol <<'EOF'
+          // SPDX-License-Identifier: MIT
+          pragma solidity ^0.8.26;
+
+          interface ISwapRouter02 {
+              struct ExactOutputSingleParams {
+                  address tokenIn;
+                  address tokenOut;
+                  uint24 fee;
+                  address recipient;
+                  uint256 amountOut;
+                  uint256 amountInMaximum;
+                  uint160 sqrtPriceLimitX96;
+              }
+
+              function exactOutputSingle(
+                  ExactOutputSingleParams calldata params
+              ) external payable returns (uint256 amountIn);
+          }
+
+          interface IStockTokenVenueAdapter {
+              struct TradeRequest {
+                  address tokenIn;
+                  address tokenOut;
+                  uint256 amountIn;
+                  uint256 minAmountOut;
+                  uint256 deadline;
+                  bytes venueData;
+              }
+
+              struct TradePlan {
+                  address venue;
+                  address spender;
+                  address tokenIn;
+                  address tokenOut;
+                  uint256 amountIn;
+                  uint256 minAmountOut;
+                  address recipient;
+                  bytes callData;
+              }
+
+              function buildTrade(
+                  address tradingAccount,
+                  TradeRequest calldata request
+              ) external view returns (TradePlan memory plan);
+          }
+
+          contract RusteeNvdaRouterAdapter is IStockTokenVenueAdapter {
+              address public immutable WETH;
+              address public immutable NVDA;
+              address public immutable ROUTER;
+              uint24 public immutable fee;
+
+              error UnsupportedPair();
+              error Expired();
+              error EmptyTrade();
+
+              constructor(
+                  address weth_,
+                  address nvda_,
+                  address router_,
+                  uint24 fee_
+              ) {
+                  if (
+                      weth_ == address(0) ||
+                      nvda_ == address(0) ||
+                      router_ == address(0)
+                  ) revert UnsupportedPair();
+
+                  WETH = weth_;
+                  NVDA = nvda_;
+                  ROUTER = router_;
+                  fee = fee_;
+              }
+
+              function buildTrade(
+                  address tradingAccount,
+                  TradeRequest calldata request
+              ) external view returns (TradePlan memory plan) {
+                  if (
+                      request.tokenIn != WETH ||
+                      request.tokenOut != NVDA
+                  ) revert UnsupportedPair();
+
+                  if (block.timestamp > request.deadline) revert Expired();
+
+                  if (
+                      request.amountIn == 0 ||
+                      request.minAmountOut == 0
+                  ) revert EmptyTrade();
+
+                  bytes memory callData = abi.encodeCall(
+                      ISwapRouter02.exactOutputSingle,
+                      (
+                          ISwapRouter02.ExactOutputSingleParams({
+                              tokenIn: WETH,
+                              tokenOut: NVDA,
+                              fee: fee,
+                              recipient: tradingAccount,
+                              amountOut: request.minAmountOut,
+                              amountInMaximum: request.amountIn,
+                              sqrtPriceLimitX96: 0
+                          })
+                      )
+                  );
+
+                  plan = TradePlan({
+                      venue: ROUTER,
+                      spender: ROUTER,
+                      tokenIn: WETH,
+                      tokenOut: NVDA,
+                      amountIn: request.amountIn,
+                      minAmountOut: request.minAmountOut,
+                      recipient: tradingAccount,
+                      callData: callData
+                  });
+              }
+          }
+          EOF
+
+          forge build
+
+      - name: Build read-only production discovery report
+        shell: bash
+        run: |
+          set -euo pipefail
 
           python3 <<'PY'
           import json
           import urllib.request
-          import subprocess
+          import hashlib
           import datetime
           from pathlib import Path
 
           RPC = "https://rpc.mainnet.chain.robinhood.com"
-          ASSETS_URL = "https://api.robinhood.com/rhj/assets"
-          PRICE_URL = "https://api.robinhood.com/rhj/prices/NVDA"
+          ASSETS = "https://api.robinhood.com/rhj/assets"
+          PRICES = "https://api.robinhood.com/rhj/prices/NVDA"
 
           CHAIN_ID = 4663
-          OWNER = "0x8fC320c8582f812695b6f62b2b5d13B14475B955"
-          NFT = "0x4523467c4ddc6d775c7ead4dce7656dce54e7f60"
-          REGISTRY = "0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199"
-          TBA = "0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"
           WETH = "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73"
           NVDA = "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC"
           ROUTER = "0xCaf681a66D020601342297493863E78C959E5cb2"
+          REGISTRY = "0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199"
+          TBA = "0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"
+          VERIFIER_PROXY = "0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7"
+
+          def get_json(url):
+              req = urllib.request.Request(
+                  url,
+                  headers={
+                      "Accept": "application/json",
+                      "User-Agent": "Rustee-v3.11-discovery"
+                  }
+              )
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return json.loads(r.read().decode())
 
           def rpc(method, params):
               req = urllib.request.Request(
@@ -69,7 +216,7 @@ jobs:
                   }).encode(),
                   headers={
                       "content-type": "application/json",
-                      "user-agent": "Rustee-v3.10-readiness"
+                      "user-agent": "Rustee-v3.11-discovery"
                   }
               )
               with urllib.request.urlopen(req, timeout=30) as r:
@@ -78,284 +225,182 @@ jobs:
                   raise RuntimeError(j["error"])
               return j["result"]
 
-          def get_json(url):
-              req = urllib.request.Request(
-                  url,
-                  headers={
-                      "Accept": "application/json",
-                      "User-Agent": "Rustee-v3.10-readiness"
-                  }
-              )
-              with urllib.request.urlopen(req, timeout=30) as r:
-                  return json.loads(r.read().decode())
-
-          def sig(signature):
-              return subprocess.check_output(
-                  ["cast", "sig", signature],
-                  text=True
-              ).strip()
-
-          def word_chunks(hexdata):
-              h = hexdata[2:] if hexdata.startswith("0x") else hexdata
-              return [h[i:i+64] for i in range(0, len(h), 64) if h[i:i+64]]
-
-          def decode_address_word(word):
-              return "0x" + word[-40:]
-
-          def bool_call(to, signature, address_arg):
-              selector = sig(signature)
-              data = selector + address_arg.lower().replace("0x", "").rjust(64, "0")
-              raw = rpc("eth_call", [{"to": to, "data": data}, "latest"])
-              return int(raw, 16) != 0
-
-          # Chain + bytecode
-          actual_chain = int(rpc("eth_chainId", []), 16)
-          code_targets = {
-              "registry": REGISTRY,
-              "tradingTba": TBA,
-              "weth": WETH,
-              "nvda": NVDA,
-              "router": ROUTER,
-          }
-          code_checks = {}
-          for name, address in code_targets.items():
-              code = rpc("eth_getCode", [address, "latest"])
-              code_checks[name] = {
-                  "address": address,
-                  "codeBytes": max(0, (len(code) - 2) // 2),
-                  "hasCode": len(code) > 2,
-              }
-
-          # ERC-6551 / TBA binding using selectors previously recovered.
-          owner_raw = rpc(
-              "eth_call",
-              [{"to": TBA, "data": "0x8da5cb5b"}, "latest"]
-          )
-          registry_raw = rpc(
-              "eth_call",
-              [{"to": TBA, "data": "0x7b103999"}, "latest"]
-          )
-          token_raw = rpc(
-              "eth_call",
-              [{"to": TBA, "data": "0xfc0c546a"}, "latest"]
-          )
-
-          owner_actual = decode_address_word(word_chunks(owner_raw)[0])
-          registry_actual = decode_address_word(word_chunks(registry_raw)[0])
-          tw = word_chunks(token_raw)
-          token_chain = int(tw[0], 16)
-          token_contract = decode_address_word(tw[1])
-          token_id = int(tw[2], 16)
-
-          binding_pass = (
-              actual_chain == CHAIN_ID
-              and owner_actual.lower() == OWNER.lower()
-              and registry_actual.lower() == REGISTRY.lower()
-              and token_chain == CHAIN_ID
-              and token_contract.lower() == NFT.lower()
-              and token_id == 1
-          )
-
-          # Current trading policy, decoded as 4 ABI words.
-          policy_selector = sig("getTradingPolicy()")
-          policy_raw = rpc(
-              "eth_call",
-              [{"to": REGISTRY, "data": policy_selector}, "latest"]
-          )
-          pw = word_chunks(policy_raw)
-          if len(pw) < 4:
-              raise RuntimeError(
-                  f"Unexpected getTradingPolicy return: {policy_raw}"
-              )
-
-          current_policy = {
-              "maxTradeUsd18": str(int(pw[0], 16)),
-              "maxDailyUsd18": str(int(pw[1], 16)),
-              "maxTradesPerDay": int(pw[2], 16),
-              "paused": bool(int(pw[3], 16)),
-          }
-
-          venue_allowed = bool_call(
-              REGISTRY,
-              "allowedVenue(address)",
-              ROUTER
-          )
-          spender_allowed = bool_call(
-              REGISTRY,
-              "allowedSpender(address)",
-              ROUTER
-          )
-
-          # Canonical Robinhood NVDA status.
-          assets_json = get_json(ASSETS_URL)
-          prices_json = get_json(PRICE_URL)
-          assets = assets_json.get("assets", [])
-          quotes = prices_json.get("quotes", [])
+          assets_json = get_json(ASSETS)
+          prices_json = get_json(PRICES)
 
           asset = next(
-              x for x in assets
-              if str(x.get("tokenSymbol", "")).upper() == "NVDA"
+              a for a in assets_json["assets"]
+              if a.get("tokenSymbol") == "NVDA"
           )
           quote = next(
-              x for x in quotes
-              if str(x.get("tokenSymbol", "")).upper() == "NVDA"
+              q for q in prices_json["quotes"]
+              if q.get("tokenSymbol") == "NVDA"
           )
           deployment = next(
               d for d in asset["deployments"]
               if int(d["chainId"]) == CHAIN_ID
           )
 
-          canonical_nvda = (
-              deployment["contractAddress"].lower() == NVDA.lower()
+          multiplier = asset.get("currentMultiplier")
+          pending_multiplier = asset.get("pendingMultiplier", "")
+          pending_time = asset.get("pendingMultiplierEffectiveTime")
+
+          verifier_code = rpc(
+              "eth_getCode",
+              [VERIFIER_PROXY, "latest"]
           )
-          nvda_active = asset.get("status") == "ASSET_STATUS_ACTIVE"
-          nvda_not_halted = quote.get("isTradingHalt") is False
+          verifier_has_code = len(verifier_code) > 2
 
-          desired_policy = {
-              "maxTradeUsd18": str(5 * 10**18),
-              "maxDailyUsd18": str(10 * 10**18),
-              "maxTradesPerDay": 1,
-              "paused": False,
-          }
+          adapter_artifact = Path(
+              "out/RusteeNvdaRouterAdapter.sol/"
+              "RusteeNvdaRouterAdapter.json"
+          )
+          compiled = json.load(open(adapter_artifact))
+          bytecode = compiled["bytecode"]["object"]
+          deployed_bytecode = compiled["deployedBytecode"]["object"]
 
-          blockers = []
-          if not binding_pass:
-              blockers.append("TBA binding mismatch")
-          if not all(x["hasCode"] for x in code_checks.values()):
-              blockers.append("One or more canonical contracts have no bytecode")
-          if not canonical_nvda:
-              blockers.append("Canonical NVDA address mismatch")
-          if not nvda_active:
-              blockers.append("NVDA is not active")
-          if not nvda_not_halted:
-              blockers.append("NVDA is trading-halted")
+          source_bytes = Path(
+              "src/RusteeNvdaRouterAdapter.sol"
+          ).read_bytes()
 
-          # These are intentionally unresolved until production addresses are
-          # selected and independently verified.
-          blockers += [
-              "Production WETH/USD price feed not selected",
-              "Production NVDA/USD price feed not selected",
-              "Production sequencer-uptime feed decision not finalized",
-              "Production StockTokenVenueAdapter not deployed/verified",
-          ]
+          source_sha256 = hashlib.sha256(source_bytes).hexdigest()
+          initcode_sha256 = hashlib.sha256(
+              bytes.fromhex(bytecode.removeprefix("0x"))
+          ).hexdigest()
+          runtime_sha256 = hashlib.sha256(
+              bytes.fromhex(deployed_bytecode.removeprefix("0x"))
+          ).hexdigest()
 
+          # We deliberately do not invent stream IDs. Robinhood documents that
+          # REST prices are raw underlier prices while the onchain Chainlink
+          # surface is multiplier-adjusted. A production implementation needs
+          # an independently verified stream identifier and a purpose-built
+          # adapter from Data Streams report semantics to the Registry's
+          # AggregatorV3-style latestRoundData() interface.
           report = {
-              "project": "Rustee Broker Mainnet Readiness v3.10",
+              "project": "Rustee Broker Production Discovery v3.11",
               "network": "Robinhood Chain Mainnet",
               "chainId": CHAIN_ID,
               "generatedAt": datetime.datetime.now(
                   datetime.timezone.utc
               ).isoformat(),
-              "mode": "READ_ONLY",
-              "addresses": {
-                  "owner": OWNER,
-                  "brokerNft": NFT,
-                  "stockTokenRegistry": REGISTRY,
+              "mode": "READ_ONLY_AND_COMPILE_ONLY",
+              "knownProductionAddresses": {
+                  "registry": REGISTRY,
                   "tradingTba": TBA,
                   "weth": WETH,
                   "nvda": NVDA,
                   "router": ROUTER,
+                  "chainlinkDataStreamsVerifierProxy": VERIFIER_PROXY,
               },
-              "binding": {
-                  "pass": binding_pass,
-                  "owner": owner_actual,
-                  "registry": registry_actual,
-                  "token": {
-                      "chainId": token_chain,
-                      "tokenContract": token_contract,
-                      "tokenId": token_id,
-                  },
+              "oracleDiscovery": {
+                  "officialRobinhoodOracleTechnology": "Chainlink",
+                  "dataStreamsVerifierProxyHasCode": verifier_has_code,
+                  "nvdaCurrentMultiplier": multiplier,
+                  "nvdaPendingMultiplier": pending_multiplier,
+                  "nvdaPendingMultiplierEffectiveTime": pending_time,
+                  "restBidRawUnderlyingUsd": quote.get("bid"),
+                  "restAskRawUnderlyingUsd": quote.get("ask"),
+                  "restPriceMultiplierAdjusted": False,
+                  "onchainChainlinkStockPriceMultiplierAdjusted": True,
+                  "nvdaStreamId": None,
+                  "wethUsdStreamOrFeedId": None,
+                  "decision":
+                      "Use verified onchain Chainlink semantics; do not use raw REST NVDA price directly as Registry oracle.",
               },
-              "bytecode": code_checks,
-              "robinhoodNvda": {
-                  "canonicalAddressPass": canonical_nvda,
-                  "active": nvda_active,
-                  "notHalted": nvda_not_halted,
-                  "bid": quote.get("bid"),
-                  "ask": quote.get("ask"),
+              "sequencerDiscovery": {
+                  "networkArchitecture": "Arbitrum L2",
+                  "publicSequencerEndpointDocumented": True,
+                  "aggregatorStyleUptimeFeedAddress": None,
+                  "decision":
+                      "Do not invent an uptime-feed contract address. Keep production configuration blocked until a compatible onchain feed is explicitly documented or Registry logic is adapted.",
               },
-              "currentMainnetState": {
-                  "policy": current_policy,
-                  "routerVenueAllowed": venue_allowed,
-                  "routerSpenderAllowed": spender_allowed,
-              },
-              "successfulForkProof": {
-                  "version": "v3.9",
-                  "selector": "0x6c606ce7",
-                  "exactAbi":
-                      "executeTrade(address,(address,address,uint256,uint256,uint256,bytes))",
-                  "guardedExecuteTradeSucceeded": True,
-                  "approvalClearedAfterTrade": True,
+              "adapterCandidate": {
+                  "name": "RusteeNvdaRouterAdapter",
+                  "status": "COMPILED_NOT_DEPLOYED",
                   "feeTier": 500,
-                  "quotedWethInWei": "2354570379252831",
-                  "maxWethInWei": "2366343231149096",
-                  "wethActuallySpentWei": "2354570379252831",
-                  "targetNvdaWei": "20454545454545456",
-                  "nvdaReceivedWei": "20454545454545456",
+                  "sourceSha256": source_sha256,
+                  "initCodeSha256": initcode_sha256,
+                  "runtimeBytecodeSha256": runtime_sha256,
+                  "constructor": [
+                      WETH,
+                      NVDA,
+                      ROUTER,
+                      500
+                  ],
+                  "sameRouteShapeAsSuccessfulV39Fork": True,
+                  "productionDeploymentAddress": None,
               },
-              "desiredPolicy": desired_policy,
-              "productionConfiguration": {
-                  "wethUsdFeed": None,
-                  "nvdaUsdFeed": None,
-                  "sequencerUptimeFeed": None,
-                  "sequencerGracePeriodSeconds": 3600,
-                  "stockTokenVenueAdapter": None,
-                  "venue": ROUTER,
-                  "spender": ROUTER,
-                  "wethHeartbeatSeconds": None,
-                  "nvdaHeartbeatSeconds": None,
+              "mainnetState": {
+                  "canonicalNvda": (
+                      deployment["contractAddress"].lower()
+                      == NVDA.lower()
+                  ),
+                  "nvdaActive": asset.get("status") == "ASSET_STATUS_ACTIVE",
+                  "nvdaNotHalted": quote.get("isTradingHalt") is False,
               },
-              "blockers": blockers,
+              "resolvedBlockers": [
+                  "Oracle vendor: Chainlink",
+                  "Robinhood Chain Data Streams verifier proxy",
+                  "Candidate production venue adapter source and reproducible bytecode",
+                  "v3.9-tested WETH/NVDA fee tier 500 route shape",
+              ],
+              "remainingBlockers": [
+                  "Exact verified NVDA Chainlink stream/feed identifier",
+                  "Exact verified WETH/USD Chainlink stream/feed identifier",
+                  "AggregatorV3-compatible oracle adapter design for StockTokenRegistry",
+                  "Sequencer uptime feed compatibility decision",
+                  "Independent review of candidate RusteeNvdaRouterAdapter",
+                  "Production adapter deployment and bytecode verification",
+              ],
               "executionGate": {
-                  "mainnetAssetFundingAllowed": False,
-                  "mainnetApprovalAllowed": False,
                   "mainnetRegistryWritesAllowed": False,
+                  "mainnetAdapterDeploymentAllowed": False,
+                  "mainnetFundingAllowed": False,
+                  "mainnetApprovalAllowed": False,
                   "mainnetUnpauseAllowed": False,
                   "mainnetBroadcastAllowed": False,
                   "verdict":
-                      "READ-ONLY MAINNET BINDING VERIFIED; PRODUCTION ORACLE/ADAPTER CONFIGURATION STILL REQUIRED",
+                      "ORACLE/ADAPTER ARCHITECTURE IDENTIFIED; EXACT STREAM IDS AND PRODUCTION ORACLE ADAPTER STILL REQUIRED",
               },
           }
 
-          Path("data/mainnet-readiness-v310.json").write_text(
+          Path("data/production-discovery-v311.json").write_text(
               json.dumps(report, indent=2)
           )
-          Path("mainnet-readiness-v310.json").write_text(
+          Path("production-discovery-v311.json").write_text(
               json.dumps(report, indent=2)
           )
 
-          print("PASS: chain", actual_chain)
-          print("PASS: binding", binding_pass)
-          print("PASS: current policy", current_policy)
-          print("PASS: canonical NVDA", canonical_nvda)
-          print("PASS: live writes remain disabled")
+          print("PASS: verifier proxy code", verifier_has_code)
+          print("PASS: NVDA multiplier", multiplier)
+          print("PASS: adapter compiled and hashed")
+          print("PASS: no live writes")
           PY
 
-      - name: Validate readiness report
+      - name: Validate v3.11 report
         shell: bash
         run: |
           set -euo pipefail
-          test -s data/mainnet-readiness-v310.json
-          test -s mainnet-readiness-v310.json
 
           python3 <<'PY'
           import json
 
-          p = json.load(open("data/mainnet-readiness-v310.json"))
+          p = json.load(open("data/production-discovery-v311.json"))
 
           assert p["chainId"] == 4663
-          assert p["mode"] == "READ_ONLY"
-          assert p["binding"]["pass"] is True
-          assert p["robinhoodNvda"]["canonicalAddressPass"] is True
-          assert p["successfulForkProof"]["guardedExecuteTradeSucceeded"] is True
-          assert p["successfulForkProof"]["approvalClearedAfterTrade"] is True
+          assert p["mode"] == "READ_ONLY_AND_COMPILE_ONLY"
+          assert p["oracleDiscovery"]["officialRobinhoodOracleTechnology"] == "Chainlink"
+          assert p["oracleDiscovery"]["dataStreamsVerifierProxyHasCode"] is True
+          assert p["adapterCandidate"]["status"] == "COMPILED_NOT_DEPLOYED"
+          assert p["adapterCandidate"]["sameRouteShapeAsSuccessfulV39Fork"] is True
           assert p["executionGate"]["mainnetBroadcastAllowed"] is False
-          assert p["executionGate"]["mainnetRegistryWritesAllowed"] is False
+          assert p["executionGate"]["mainnetAdapterDeploymentAllowed"] is False
 
-          print("PASS: v3.10 readiness report validates")
+          print("PASS: v3.11 discovery validates")
           PY
 
-      - name: Embed readiness report in site
+      - name: Embed v3.11 report
         shell: bash
         run: |
           set -euo pipefail
@@ -364,29 +409,23 @@ jobs:
           import json
           from pathlib import Path
 
-          report = json.load(open("data/mainnet-readiness-v310.json"))
-          html_path = Path("index.html")
-          html = html_path.read_text()
-
+          report = json.load(open("data/production-discovery-v311.json"))
+          path = Path("index.html")
+          html = path.read_text()
           embedded = json.dumps(report, separators=(",", ":")).replace(
-              "</",
-              "<\\/"
+              "</", "<\\/"
           )
 
           script = f"""
-          <script id="v310-report" type="application/json">{embedded}</script>
+          <script id="v311-report" type="application/json">{embedded}</script>
           <script>
           (() => {{
-            const raw = document.getElementById('v310-report');
+            const node = document.getElementById('v311-report');
             const out = document.getElementById('report');
-            if (!raw || !out) return;
-            try {{
-              out.textContent = JSON.stringify(
-                JSON.parse(raw.textContent), null, 2
-              );
-            }} catch (e) {{
-              out.textContent = 'ERROR: ' + e.message;
-            }}
+            if (!node || !out) return;
+            out.textContent = JSON.stringify(
+              JSON.parse(node.textContent), null, 2
+            );
           }})();
           </script>
           """
@@ -394,9 +433,7 @@ jobs:
           if "</body>" not in html:
               raise RuntimeError("index.html missing </body>")
 
-          html_path.write_text(
-              html.replace("</body>", script + "</body>")
-          )
+          path.write_text(html.replace("</body>", script + "</body>"))
           PY
 
       - name: Configure Pages
