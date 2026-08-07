@@ -1,4 +1,4 @@
-name: Deploy Rustee Policy + Fork Gate v3.5.1
+name: Deploy Rustee Policy + Fork Gate v3.5.2
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v351-pages
+  group: rustee-v352-pages
   cancel-in-progress: true
 
 jobs:
@@ -58,7 +58,7 @@ jobs:
                           headers={
                               "Accept": "application/json",
                               "User-Agent":
-                                  "Rustee-Broker-Fork-Verifier/3.5.1"
+                                  "Rustee-Broker-Fork-Verifier/3.5.2"
                           }
                       )
 
@@ -302,20 +302,32 @@ jobs:
                   )
               );
 
+              // Construct from raw 20-byte values so Solidity does not
+              // apply EIP-55 checksum validation to address literals.
               address constant TBA =
-                  0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654;
+                  address(bytes20(
+                      hex"522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"
+                  ));
 
               address constant WETH =
-                  0x0bd7d308f8e1639fab988df18a8011f41eacad73;
+                  address(bytes20(
+                      hex"0bd7d308f8e1639fab988df18a8011f41eacad73"
+                  ));
 
               address constant NVDA =
-                  0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec;
+                  address(bytes20(
+                      hex"d0601ce157db5bdc3162bbac2a2c8af5320d9eec"
+                  ));
 
               address constant ROUTER =
-                  0xcaf681a66d020601342297493863e78c959e5cb2;
+                  address(bytes20(
+                      hex"caf681a66d020601342297493863e78c959e5cb2"
+                  ));
 
               address constant QUOTER =
-                  0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7;
+                  address(bytes20(
+                      hex"33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7"
+                  ));
 
               function testForkedFundedClassicRoute()
                   public
