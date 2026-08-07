@@ -1,19 +1,22 @@
-# Rustee Broker Execution Dry-Run v3.4
+# Rustee Broker Policy + Fork Gate v3.5
 
-Fixes the v3.2 classic infrastructure false-fail and adds live read-only V3
-QuoterV2 exact-output quote competition.
+v3.5 adds a true forked funded execution test with **no real funds**.
 
-Canonical selectors used:
-- QuoterV2 `quoteExactOutputSingle((address,address,uint256,uint24,uint160))`
-  = `0xbd21704a`
-- SwapRouter02 `exactOutputSingle((address,address,uint24,address,uint256,uint256,uint160))`
-  = `0x5023b4df`
+GitHub Actions:
+- fetches the current Robinhood NVDA ask;
+- builds a conservative $4.975 NVDA target;
+- forks Robinhood Chain mainnet;
+- queries QuoterV2;
+- temporarily impersonates the Trading TBA inside the fork only;
+- gives that forked address simulated ETH/WETH;
+- approves SwapRouter02 only inside the fork;
+- executes the best 0.05% or 0.30% exact-output route;
+- verifies NVDA arrived;
+- writes `data/fork-simulation.json`.
 
-The app builds a conservative $4.975 NVDA target, quotes all discovered direct
-NVDA/WETH pools, selects the route requiring the least WETH, and constructs the
-candidate SwapRouter02 calldata.
+This proves router/pool settlement mechanics, but it intentionally does **not**
+claim the real Rustee policy path is complete. The fork impersonation bypasses
+the Trading TBA's own execution wrapper, so the final owner → TBA → policy →
+router call still must be identified and simulated.
 
-Because the Trading TBA is intentionally unfunded and unapproved, the exact
-funded router simulation is not yet proven. Funding remains locked.
-
-No approvals, funding, unpause, signatures, or transactions are sent.
+No live-chain approval, funding, unpause, signature, or trade occurs.
