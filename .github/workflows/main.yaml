@@ -1,4 +1,4 @@
-name: Rustee Production Discovery v3.11
+name: Rustee Production Discovery v3.11.1
 
 on:
   push:
@@ -35,6 +35,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          # Isolate this compile from stale Foundry files left by earlier phases.
+          # `forge build` can compile Solidity under test/ as part of the project,
+          # so the old RusteeFork.t.sol must not remain in this v3.11 build.
+          rm -rf src test script out cache
+          rm -f foundry.toml
           mkdir -p src data
 
           cat > foundry.toml <<'EOF'
