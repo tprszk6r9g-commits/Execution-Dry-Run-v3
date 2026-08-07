@@ -1,4 +1,4 @@
-name: Deploy Rustee Execution Dry-Run v3.4
+name: Deploy Rustee Policy + Fork Gate v3.5
 
 on:
   push:
@@ -14,73 +14,87 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-execution-dryrun-pages
+  group: rustee-v35-pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  simulate-and-deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build atomic Robinhood NVDA snapshot
+      - name: Build atomic NVDA snapshot + target
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p data
           python3 <<'PY'
-          import json, pathlib, time, urllib.request, datetime
-          OUT=pathlib.Path("data")
-          ASSETS="https://api.robinhood.com/rhj/assets"
-          PRICE="https://api.robinhood.com/rhj/prices/NVDA"
-          EXPECTED="0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC"
-          def get(url):
+          import json, urllib.request, datetime, time, pathlib, os
+          A="https://api.robinhood.com/rhj/assets"
+          P="https://api.robinhood.com/rhj/prices/NVDA"
+          def get(u):
               last=None
               for i in range(4):
                   try:
-                      req=urllib.request.Request(url,headers={"Accept":"application/json","User-Agent":"Rustee-Broker-ReadOnly-Verifier/3.4"})
-                      with urllib.request.urlopen(req,timeout=20) as r:
-                          return json.loads(r.read().decode())
+                      req=urllib.request.Request(u,headers={"Accept":"application/json","User-Agent":"Rustee-v3.5"})
+                      with urllib.request.urlopen(req,timeout=20) as r:return json.loads(r.read())
                   except Exception as e:
                       last=e
-                      if i<3: time.sleep(2**i)
-              raise RuntimeError(f"{url}: {last}")
-          aj,pj=get(ASSETS),get(PRICE)
-          assets=aj.get("assets",aj if isinstance(aj,list) else [])
-          quotes=pj.get("quotes",pj if isinstance(pj,list) else [])
-          asset=next((x for x in assets if str(x.get("tokenSymbol","")).upper()=="NVDA"),None)
-          quote=next((x for x in quotes if str(x.get("tokenSymbol","")).upper()=="NVDA"),None)
-          if not asset or not quote: raise RuntimeError("NVDA missing")
-          dep=next((d for d in asset.get("deployments",[]) if int(d.get("chainId",-1))==4663),None)
-          if not dep or str(dep.get("contractAddress","")).lower()!=EXPECTED.lower(): raise RuntimeError("canonical NVDA mismatch")
-          if asset.get("status")!="ASSET_STATUS_ACTIVE": raise RuntimeError("NVDA inactive")
-          if quote.get("isTradingHalt") is True: raise RuntimeError("NVDA halted")
-          bid,ask=float(quote["bid"]),float(quote["ask"])
-          if bid<=0 or ask<=0 or ask<bid: raise RuntimeError("invalid bid/ask")
-          snap={"ok":True,"generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z"),"workflow":"Deploy Rustee Execution Dry-Run v3.4","chainId":4663,"asset":asset,"quote":quote}
-          tmp=OUT/"nvda-snapshot.json.tmp"; final=OUT/"nvda-snapshot.json"
-          tmp.write_text(json.dumps(snap,indent=2)); tmp.replace(final)
-          print(f"PASS NVDA {bid}/{ask}")
+                      if i<3:time.sleep(2**i)
+              raise RuntimeError(last)
+          aj,pj=get(A),get(P)
+          assets=aj.get("assets",[]); quotes=pj.get("quotes",[])
+          asset=next(x for x in assets if x.get("tokenSymbol")=="NVDA")
+          quote=next(x for x in quotes if x.get("tokenSymbol")=="NVDA")
+          dep=next(d for d in asset["deployments"] if int(d["chainId"])==4663)
+          assert dep["contractAddress"].lower()=="0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC".lower()
+          assert asset["status"]=="ASSET_STATUS_ACTIVE"
+          assert quote["isTradingHalt"] is False
+          ask=float(quote["ask"])
+          target=int((4.975/ask)*1e18)
+          snap={"ok":True,"generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z"),"chainId":4663,"asset":asset,"quote":quote,"targetNvdaWei":str(target)}
+          pathlib.Path("data/nvda-snapshot.json").write_text(json.dumps(snap,indent=2))
+          pathlib.Path("data/target.env").write_text(f"TARGET_NVDA_WEI={target}\n")
+          print("TARGET_NVDA_WEI",target)
           PY
 
-      - name: Validate v3.4
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Run forked funded route simulation
+        shell: bash
         run: |
           set -euo pipefail
-          grep -q "Rustee Broker Execution Dry-Run v3.4" index.html
-          test -s data/nvda-snapshot.json
-          python3 - <<'PY'
+          source data/target.env
+          export TARGET_NVDA_WEI
+          forge test \
+            --fork-url https://rpc.mainnet.chain.robinhood.com \
+            --match-test testForkedFundedClassicRoute \
+            -vv
+
+      - name: Validate fork report
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s data/fork-simulation.json
+          python3 <<'PY'
           import json
-          p=json.load(open("data/nvda-snapshot.json"))
-          assert p["ok"] is True and p["chainId"]==4663
-          print("PASS v3.4")
+          p=json.load(open("data/fork-simulation.json"))
+          assert p["ok"] is True
+          assert p["chainId"]==4663
+          assert p["routerExecutionSucceeded"] is True
+          assert int(p["nvdaReceivedWei"]) > 0
+          print("PASS: forked funded route simulation")
           PY
 
-      - name: Configure GitHub Pages
+      - name: Configure Pages
         uses: actions/configure-pages@v5
 
       - name: Upload site
