@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Execution Dry-Run v3.1</title>
+<title>Rustee Broker Execution Dry-Run v3.2</title>
 <style>
 :root{--bg:#031713;--card:#082b23;--card2:#061e19;--line:#2b6a5a;--text:#effff9;--muted:#9bbeb5;--teal:#41dfc4;--green:#7defaf;--amber:#ffb357;--red:#ff8585}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(150deg,#031713,#06251e);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -25,7 +25,7 @@ pre{white-space:pre-wrap;word-break:break-all;background:#04130f;border:1px soli
 </style>
 </head>
 <body><main>
-<span class="pill">Robinhood Chain Mainnet · 4663 · Execution Dry-Run v3.1</span>
+<span class="pill">Robinhood Chain Mainnet · 4663 · Execution Dry-Run v3.2</span>
 <h1>Rustee Broker Execution Gate</h1>
 <p>Final read-only gate before any funding. It verifies the deployed Rustee policy, confirms the canonical NVDA token, loads Robinhood's live stock-token metadata/price when available, verifies UniswapX infrastructure, and refuses to call a route “tradable” unless an actual quote/order path is available.</p>
 
@@ -77,7 +77,21 @@ pre{white-space:pre-wrap;word-break:break-all;background:#04130f;border:1px soli
 </div>
 
 <div class="card">
-<h2>4. $5 NVDA intent builder</h2>
+<h2>4. Classic Uniswap route probe</h2>
+<p>Uniswap's Robinhood playbook says classic v3/v4 routing exists even though UniswapX service wiring is still pending. This probe is read-only: it verifies the deployed classic contracts and searches the Uniswap v3 factory for direct NVDA/WETH pools at the standard fee tiers. It never approves or swaps.</p>
+<button class="primary" id="classic">Probe classic NVDA/WETH route</button>
+<div class="grid" style="margin-top:12px">
+<div class="metric"><small>WETH</small><strong>0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73</strong></div>
+<div class="metric"><small>SwapRouter02</small><strong>0xCaf681a66D020601342297493863E78C959E5cb2</strong></div>
+<div class="metric"><small>V3 QuoterV2</small><strong>0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7</strong></div>
+<div class="metric"><small>V4 PoolManager</small><strong>0x8366a39cc670b4001a1121b8f6a443a643e40951</strong></div>
+</div>
+<div id="classicResults"></div>
+<div class="warn" style="margin-top:14px"><b>Interpretation:</b> finding contract bytecode or even a pool is not enough to authorize funding. A real executable quote/simulation must still succeed. If no direct NVDA/WETH v3 pool exists, the gate stays locked and we investigate multi-hop/v4 routing rather than guessing.</div>
+</div>
+
+<div class="card">
+<h2>5. $5 NVDA intent builder</h2>
 <p>This computes the intended quantity from the Robinhood ask only. It does not claim this is an executable DEX quote.</p>
 <button id="intent">Build $5 intent</button>
 <div class="grid" style="margin-top:12px">
@@ -90,14 +104,14 @@ pre{white-space:pre-wrap;word-break:break-all;background:#04130f;border:1px soli
 </div>
 
 <div class="card">
-<h2>5. Exact execution-path gate</h2>
+<h2>6. Exact execution-path gate</h2>
 <button class="primary" id="gate">Assess final execution readiness</button>
 <div id="gateResults"></div>
 <div class="warn" style="margin-top:14px"><b>Fail-closed rule:</b> no funding, allowance, unpause, or order signature until a real chain-4663 route returns an executable quote and a complete call/order simulation succeeds from the Trading TBA context.</div>
 </div>
 
 <div class="card">
-<h2>6. Export dry-run report</h2>
+<h2>7. Export dry-run report</h2>
 <pre id="report">Run the checks above.</pre>
 <button id="copy" disabled>Copy JSON report</button>
 <button id="export" disabled>Export JSON report</button>
@@ -115,7 +129,11 @@ const A={
  verifier:'0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7',
  reactor:'0x000000007A1C8e570011EeDF86A2A35593013cBA',
  quoter:'0x00000000a3db63Df9078cBF3dF88B4CAdD5a7F58',
- permit2:'0x000000000022D473030F116dDEE9F6B43aC78BA3'
+ permit2:'0x000000000022D473030F116dDEE9F6B43aC78BA3',
+ weth:'0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73',
+ swapRouter02:'0xCaf681a66D020601342297493863E78C959E5cb2',
+ v3Quoter:'0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7',
+ poolManager:'0x8366a39cc670b4001a1121b8f6a443a643e40951'
 };
 const S={owner:'0x8da5cb5b',policy:'0x42bdef75',balanceOf:'0x70a08231',allowance:'0xdd62ed3e'};
 const DEAD='0x000000000000000000000000000000000000dEaD';
@@ -137,7 +155,7 @@ async function rpc(method,params=[]){
 async function call(to,data,from){return rpc('eth_call',[{to,data,...(from?{from}:{})},'latest'])}
 async function code(a){const h=await rpc('eth_getCode',[a,'latest']);return (h.length-2)/2}
 function row(n,v,p,info=false){return `<div class="row"><div><b>${n}</b><div class="tiny">${v}</div></div><div class="${info?'info':p?'pass':'fail'}">${info?'INFO':p?'PASS':'FAIL'}</div></div>`}
-function report(){const out={project:'Rustee Broker Execution Dry-Run v3.1',network:'Robinhood Chain Mainnet',chainId:CHAIN,generatedAt:new Date().toISOString(),connectedWallet:wallet,addresses:A,safety:state.safety||null,robinhoodMarket:state.rh||null,infrastructure:state.infra||null,intent:state.intent||null,executionGate:state.gate||null,assetFundingAllowed:false,approvalAllowed:false,unpauseAllowed:false,broadcastAllowed:false}; $('report').textContent=JSON.stringify(out,null,2); window.out=out; $('copy').disabled=false;$('export').disabled=false}
+function report(){const out={project:'Rustee Broker Execution Dry-Run v3.2',network:'Robinhood Chain Mainnet',chainId:CHAIN,generatedAt:new Date().toISOString(),connectedWallet:wallet,addresses:A,safety:state.safety||null,robinhoodMarket:state.rh||null,infrastructure:state.infra||null,classicRoute:state.classic||null,intent:state.intent||null,executionGate:state.gate||null,assetFundingAllowed:false,approvalAllowed:false,unpauseAllowed:false,broadcastAllowed:false}; $('report').textContent=JSON.stringify(out,null,2); window.out=out; $('copy').disabled=false;$('export').disabled=false}
 async function connect(){if(!window.ethereum)throw Error('Open in a wallet browser');wallet=(await ethereum.request({method:'eth_requestAccounts'}))[0];$('wallet').textContent=wallet}
 async function switchChain(){try{await ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:HEX}]})}catch{await ethereum.request({method:'wallet_addEthereumChain',params:[{chainId:HEX,chainName:'Robinhood Chain',nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},rpcUrls:[RPC],blockExplorerUrls:['https://robinhoodchain.blockscout.com']}]})}}
 async function safety(){
@@ -201,6 +219,63 @@ async function infra(){
  const pass=list.every(x=>x.pass); state.infra={pass,contracts:list,uniswapXServiceWiringConfirmed:false,serviceStatus:'Contracts deployed; official Uniswap Robinhood playbook says explorer verification + SDK/service wiring phases remain pending.'};
  $('infraResults').innerHTML=list.map(x=>row(x.name,`${x.address} · ${x.bytes} bytes`,x.pass)).join('')+row('UniswapX service/SDK wiring ready','Official playbook still says pending',false);report()
 }
+
+// Uniswap V3 Factory is intentionally discovered from SwapRouter02.factory()
+// rather than hard-coding the truncated address from documentation.
+const SEL={
+ factory:'0xc45a0155', // factory()
+ getPool:'0x1698ee82' // getPool(address,address,uint24)
+};
+function u24word(n){return BigInt(n).toString(16).padStart(64,'0')}
+async function classicProbe(){
+ const results=[];
+ const contracts=[
+  ['WETH',A.weth],['SwapRouter02',A.swapRouter02],['V3 QuoterV2',A.v3Quoter],['V4 PoolManager',A.poolManager]
+ ];
+ for(const [name,address] of contracts){
+   const bytes=await code(address);
+   results.push({name,address,bytes,pass:bytes>0});
+ }
+ let factory=null, factoryBytes=0;
+ try{
+   const r=await call(A.swapRouter02,SEL.factory);
+   const w=words(r); if(w[0]) factory=addr(w[0]);
+   if(factory) factoryBytes=await code(factory);
+ }catch(e){}
+ const pools=[];
+ if(factory && factoryBytes>0){
+   for(const fee of [100,500,3000,10000]){
+     try{
+       const data=SEL.getPool+aw(A.nvda)+aw(A.weth)+u24word(fee);
+       const r=await call(factory,data);
+       const w=words(r), pool=w[0]?addr(w[0]):null;
+       const exists=pool && !eq(pool,'0x0000000000000000000000000000000000000000');
+       const bytes=exists?await code(pool):0;
+       pools.push({fee,pool,bytes,exists:!!exists,pass:!!exists&&bytes>0});
+     }catch(e){pools.push({fee,pool:null,bytes:0,exists:false,pass:false,error:e.message})}
+   }
+ }
+ const direct=pools.find(x=>x.pass)||null;
+ state.classic={
+   contracts,
+   factory,
+   factoryBytes,
+   pools,
+   directV3PoolFound:!!direct,
+   directV3Pool:direct,
+   executableQuoteObtained:false,
+   exactSimulationSucceeded:false,
+   passInfrastructure:contracts.every(x=>x.pass)&&factoryBytes>0,
+   routeStatus:direct?'DIRECT_V3_POOL_FOUND_QUOTE_NOT_YET_PROVEN':'NO_DIRECT_V3_POOL_FOUND'
+ };
+ let h=results.map(x=>row(x.name,`${x.address} · ${x.bytes} bytes`,x.pass)).join('');
+ h+=row('SwapRouter02 factory()',factory?`${factory} · ${factoryBytes} bytes`:'unresolved',!!factory&&factoryBytes>0);
+ for(const p of pools) h+=row(`NVDA/WETH v3 fee ${p.fee/10000}%`,p.pass?`${p.pool} · ${p.bytes} bytes`:'No direct pool found',p.pass);
+ h+=row('Executable classic quote obtained','Not yet — route discovery only',false);
+ $('classicResults').innerHTML=h;
+ report();
+}
+
 function buildIntent(){
  const ask=Number(state.rh?.ask); if(!ask||state.rh?.isTradingHalt!==false){alert('Fetch/validate a current non-halted NVDA snapshot first.');return}
  const q=5/ask; state.intent={budgetUsd:5,referenceAskUsd:ask,indicativeNvda:q,maxSlippagePct:0.5,deadlineSeconds:60,isExecutableQuote:false};
@@ -208,14 +283,19 @@ function buildIntent(){
  $('intentResults').innerHTML=row('Budget inside policy','$5.00',true)+row('Reference price source','Robinhood read-only underlying ask',true)+row('Indicative quantity only',q.toFixed(8)+' NVDA',true,true)+row('Executable DEX quote obtained','No',false);report()
 }
 function gate(){
+ const classicInfra=!!state.classic?.passInfrastructure;
+ const classicPool=!!state.classic?.directV3PoolFound;
+ const classicQuote=!!state.classic?.executableQuoteObtained;
+ const classicSim=!!state.classic?.exactSimulationSucceeded;
  const checks=[
   ['Rustee safety gate passed',!!state.safety?.pass],
   ['Robinhood canonical active NVDA snapshot passed',!!state.rh?.pass],
-  ['Pinned onchain contracts have bytecode',!!state.infra?.pass],
+  ['Pinned UniswapX contracts have bytecode',!!state.infra?.pass],
   ['$5 indicative intent built',!!state.intent],
-  ['UniswapX Robinhood SDK/service wiring confirmed',false],
-  ['Real executable NVDA route quote obtained',false],
-  ['Exact order/calldata simulation from Trading TBA succeeded',false],
+  ['Classic Uniswap infrastructure verified',classicInfra],
+  ['Classic direct NVDA/WETH pool discovered',classicPool],
+  ['Real executable classic or UniswapX quote obtained',classicQuote],
+  ['Exact order/calldata simulation from Trading TBA succeeded',classicSim],
   ['Chainlink signed NVDA report/stream integrated into execution path',false]
  ];
  const ready=checks.every(x=>x[1]);
@@ -228,6 +308,7 @@ $('safety').onclick=()=>safety().catch(e=>alert(e.message));
 $('rh').onclick=()=>fetchRH().catch(e=>alert(e.message));
 $('validatePaste').onclick=()=>{try{const j=JSON.parse($('paste').value),a=findNVDAAssets(j),q=findNVDAQuote(j); if(a||q){applyRH(a,q)}else alert('No NVDA asset/quote found in pasted JSON. Paste one response at a time if necessary.')}catch(e){alert(e.message)}};
 $('infra').onclick=()=>infra().catch(e=>alert(e.message));
+$('classic').onclick=()=>classicProbe().catch(e=>alert(e.message));
 $('intent').onclick=()=>buildIntent();
 $('gate').onclick=()=>gate();
 $('copy').onclick=async()=>{await navigator.clipboard.writeText(JSON.stringify(window.out,null,2));alert('Report copied')};

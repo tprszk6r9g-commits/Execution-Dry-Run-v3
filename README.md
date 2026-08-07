@@ -1,24 +1,21 @@
-# Rustee Broker Execution Dry-Run v3.1
+# Rustee Broker Execution Dry-Run v3.2
 
-v3.1 fixes the iPhone/GitHub Pages `Load failed` problem by moving Robinhood REST
-reads into GitHub Actions.
+v3.2 adds a fail-closed Classic Uniswap route probe.
 
-The workflow fetches:
+Why:
+- Official UniswapX Robinhood documentation says the V3 Dutch Reactor and OrderQuoter are deployed, but SDK/service wiring is still pending.
+- The same official playbook says classic routing surfaces are deployed on Robinhood Chain, including Uniswap v3/v4 and SwapRouter02.
+- This verifier therefore checks both paths without sending transactions.
 
-- `https://api.robinhood.com/rhj/assets`
-- `https://api.robinhood.com/rhj/prices/NVDA`
+New read-only checks:
+- WETH bytecode
+- SwapRouter02 bytecode
+- V3 QuoterV2 bytecode
+- V4 PoolManager bytecode
+- SwapRouter02.factory() discovery
+- Direct NVDA/WETH V3 pool discovery at fee tiers 0.01%, 0.05%, 0.30%, and 1.00%
 
-and publishes them as same-origin static JSON files under `/data/`.
+Important:
+A discovered pool is NOT treated as an executable quote. Funding remains locked until an actual route quote and full eth_call simulation from the Trading TBA context succeed.
 
-The browser then reads those local snapshot files, avoiding CORS/browser-policy
-failures while remaining completely read-only.
-
-The workflow also refreshes the snapshot every 15 minutes and on every push or
-manual workflow run.
-
-Important: UniswapX contracts are deployed on Robinhood Chain, but the official
-UniswapX Robinhood playbook still says SDK/service wiring is pending. Therefore
-the final execution gate intentionally remains locked until a genuine chain-4663
-quote/order path can be demonstrated and simulated.
-
-No approvals, funding, unpause, signatures, or trades are sent by this site.
+No approvals, funding, unpause, signatures, or trades are sent.
