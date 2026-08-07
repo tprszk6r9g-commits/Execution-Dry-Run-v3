@@ -1,4 +1,4 @@
-name: Rustee STONKBROKER Live Configuration Preflight v4.2.1
+name: Rustee STONKBROKER Live Configuration Preflight v4.2.2
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-stonkbroker-v421
+  group: rustee-stonkbroker-v422
   cancel-in-progress: true
 
 jobs:
@@ -559,8 +559,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p candidate
-          cat > candidate/RusteeStonkbrokerV3Adapter.sol <<'EOF'
+          mkdir -p src/candidate candidate/out
+          cat > src/candidate/RusteeStonkbrokerV3Adapter.sol <<'EOF'
           // SPDX-License-Identifier: MIT
           pragma solidity ^0.8.26;
 
@@ -659,19 +659,19 @@ jobs:
           mkdir -p candidate/out
 
           forge inspect \
-            candidate/RusteeStonkbrokerV3Adapter.sol:RusteeStonkbrokerV3Adapter \
+            src/candidate/RusteeStonkbrokerV3Adapter.sol:RusteeStonkbrokerV3Adapter \
             bytecode \
             > candidate/out/RusteeStonkbrokerV3Adapter.bin
 
           forge inspect \
-            candidate/RusteeStonkbrokerV3Adapter.sol:RusteeStonkbrokerV3Adapter \
+            src/candidate/RusteeStonkbrokerV3Adapter.sol:RusteeStonkbrokerV3Adapter \
             deployedBytecode \
             > candidate/out/RusteeStonkbrokerV3Adapter.bin-runtime
 
           test -s candidate/out/RusteeStonkbrokerV3Adapter.bin
           test -s candidate/out/RusteeStonkbrokerV3Adapter.bin-runtime
 
-          sha256sum candidate/RusteeStonkbrokerV3Adapter.sol > data/adapter-source.sha256
+          sha256sum src/candidate/RusteeStonkbrokerV3Adapter.sol > data/adapter-source.sha256
           sha256sum candidate/out/RusteeStonkbrokerV3Adapter.bin > data/adapter-initcode.sha256
           sha256sum candidate/out/RusteeStonkbrokerV3Adapter.bin-runtime > data/adapter-runtime.sha256
 
@@ -790,7 +790,7 @@ jobs:
           ]
 
           report={
-            "project":"Rustee STONKBROKER Live Configuration Preflight v4.2.1",
+            "project":"Rustee STONKBROKER Live Configuration Preflight v4.2.2",
             "network":"Robinhood Chain Mainnet + Fresh Fork",
             "chainId":4663,
             "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -853,7 +853,7 @@ jobs:
           assert p["v42SafetySuite"]["allTestsPassed"] is True
           assert len(p["v42SafetySuite"]["negativeTests"])==9
           assert p["executionGate"]["mainnetBroadcastAllowed"] is False
-          print("PASS v4.2.1 preflight")
+          print("PASS v4.2.2 preflight")
           PY
 
       - name: Configure Pages
