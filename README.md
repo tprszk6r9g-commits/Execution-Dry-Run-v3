@@ -61,3 +61,13 @@ The first v3.9 GitHub run stopped during Solidity compilation because Solidity
 with an invalid checksum. v3.9.1 encodes the same Quoter address as a numeric
 `uint160` literal and casts it to `address`. No protocol logic or safety gate
 was changed.
+
+## v3.9.2 compile correction
+
+The v3.9.1 run exposed the same Solidity 0.8.26 checksum enforcement on the TBA
+literal. v3.9.2 eliminates the entire class of failures by encoding **all**
+hard-coded 20-byte addresses in the generated Solidity harness as numeric
+`uint160` literals explicitly cast to `address`.
+
+This changes no address values, protocol logic, policy settings, fork behavior,
+or safety gates.
