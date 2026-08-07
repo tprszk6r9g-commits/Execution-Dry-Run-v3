@@ -1,4 +1,4 @@
-name: Rustee Signed Report Replay Gate v3.13
+name: Rustee Data Streams Onboarding v3.14
 
 on:
   push:
@@ -11,83 +11,85 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v313-pages
+  group: rustee-v314-pages
   cancel-in-progress: true
 
 jobs:
-  replay-gate:
+  onboarding:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
-
-      - name: Confirm verifier and build readiness report
+      - name: Build onboarding report
         shell: bash
         env:
           NVDA_STREAM_ID: ${{ vars.NVDA_STREAM_ID }}
           WETH_STREAM_ID: ${{ vars.WETH_STREAM_ID }}
+          CHAINLINK_DATA_STREAMS_ENDPOINT: ${{ vars.CHAINLINK_DATA_STREAMS_ENDPOINT }}
+          CHAINLINK_DATA_STREAMS_CLIENT_ID: ${{ secrets.CHAINLINK_DATA_STREAMS_CLIENT_ID }}
+          CHAINLINK_DATA_STREAMS_CLIENT_SECRET: ${{ secrets.CHAINLINK_DATA_STREAMS_CLIENT_SECRET }}
           SIGNED_NVDA_REPORT_HEX: ${{ secrets.SIGNED_NVDA_REPORT_HEX }}
           SIGNED_NVDA_PARAMETER_PAYLOAD_HEX: ${{ secrets.SIGNED_NVDA_PARAMETER_PAYLOAD_HEX }}
         run: |
           set -euo pipefail
           mkdir -p data
-          RPC="https://rpc.mainnet.chain.robinhood.com"
-          VERIFIER="0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7"
-          CODE="$(cast code "$VERIFIER" --rpc-url "$RPC")"
-          test "$CODE" != "0x"
-
           python3 <<'PY'
           import json, os, re, datetime
           from pathlib import Path
 
-          nvda=os.getenv("NVDA_STREAM_ID","").strip()
-          weth=os.getenv("WETH_STREAM_ID","").strip()
-          report=os.getenv("SIGNED_NVDA_REPORT_HEX","").strip()
-          params=os.getenv("SIGNED_NVDA_PARAMETER_PAYLOAD_HEX","").strip()
+          def val(n): return os.getenv(n,"").strip()
+          def present(n): return bool(val(n))
+          def b32(n): return bool(re.fullmatch(r"0x[0-9a-fA-F]{64}", val(n)))
+          def hx(n):
+              x=val(n)
+              return bool(x and re.fullmatch(r"0x(?:[0-9a-fA-F]{2})*", x))
 
-          b32=lambda x: bool(re.fullmatch(r"0x[0-9a-fA-F]{64}",x))
-          hx=lambda x: bool(re.fullmatch(r"0x(?:[0-9a-fA-F]{2})*",x))
+          ids_ready=b32("NVDA_STREAM_ID") and b32("WETH_STREAM_ID")
+          auth_ready=present("CHAINLINK_DATA_STREAMS_CLIENT_ID") and present("CHAINLINK_DATA_STREAMS_CLIENT_SECRET")
+          report_ready=hx("SIGNED_NVDA_REPORT_HEX") and hx("SIGNED_NVDA_PARAMETER_PAYLOAD_HEX")
 
-          ready=(b32(nvda) and b32(weth) and bool(report) and hx(report)
-                 and bool(params) and hx(params))
+          if ids_ready and report_ready:
+              verdict="READY TO RE-RUN v3.13 LOCAL-FORK SIGNED REPORT REPLAY"
+          elif ids_ready and auth_ready:
+              verdict="FEED IDS + AUTH READY; ACQUIRE A GENUINE SIGNED NVDA REPORT"
+          elif ids_ready:
+              verdict="FEED IDS READY; AUTHENTICATED DATA STREAMS ACCESS STILL REQUIRED"
+          else:
+              verdict="WAITING FOR EXACT PRODUCTION STREAM IDS"
 
           p={
-            "project":"Rustee Broker Signed Report Replay Gate v3.13",
+            "project":"Rustee Broker Data Streams Onboarding v3.14",
             "network":"Robinhood Chain Mainnet",
             "chainId":4663,
             "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "mode":"NO_MAINNET_WRITES",
-            "verifierProxy":"0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7",
-            "verifierProxyHasCode":True,
-            "inputs":{
-              "nvdaStreamIdPresent":bool(nvda),
-              "nvdaStreamIdValidBytes32":b32(nvda),
-              "wethStreamIdPresent":bool(weth),
-              "wethStreamIdValidBytes32":b32(weth),
-              "signedNvdaReportPresent":bool(report),
-              "signedNvdaReportHexValid":hx(report) if report else False,
-              "parameterPayloadPresent":bool(params),
-              "parameterPayloadHexValid":hx(params) if params else False
+            "authoritativeFacts":{
+              "robinhoodChainUsesChainlink":True,
+              "dataStreamsVerifierProxy":"0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7",
+              "nvdaRestPriceMultiplierAdjusted":False,
+              "nvdaOnchainChainlinkPriceMultiplierAdjusted":True
             },
-            "realSignedReplay":{
-              "readyToAttemptOnFork":ready,
-              "attempted":False,
-              "verified":False
+            "repositoryVariables":{
+              "NVDA_STREAM_ID":{"present":present("NVDA_STREAM_ID"),"validBytes32":b32("NVDA_STREAM_ID")},
+              "WETH_STREAM_ID":{"present":present("WETH_STREAM_ID"),"validBytes32":b32("WETH_STREAM_ID")},
+              "CHAINLINK_DATA_STREAMS_ENDPOINT":{"present":present("CHAINLINK_DATA_STREAMS_ENDPOINT")}
             },
-            "requiredRepositoryVariables":["NVDA_STREAM_ID","WETH_STREAM_ID"],
-            "requiredRepositorySecrets":[
-              "SIGNED_NVDA_REPORT_HEX",
-              "SIGNED_NVDA_PARAMETER_PAYLOAD_HEX"
-            ],
+            "repositorySecrets":{
+              "CHAINLINK_DATA_STREAMS_CLIENT_ID":present("CHAINLINK_DATA_STREAMS_CLIENT_ID"),
+              "CHAINLINK_DATA_STREAMS_CLIENT_SECRET":present("CHAINLINK_DATA_STREAMS_CLIENT_SECRET"),
+              "SIGNED_NVDA_REPORT_HEX":{"present":present("SIGNED_NVDA_REPORT_HEX"),"validHex":hx("SIGNED_NVDA_REPORT_HEX")},
+              "SIGNED_NVDA_PARAMETER_PAYLOAD_HEX":{"present":present("SIGNED_NVDA_PARAMETER_PAYLOAD_HEX"),"validHex":hx("SIGNED_NVDA_PARAMETER_PAYLOAD_HEX")}
+            },
+            "readiness":{
+              "feedIdsReady":ids_ready,
+              "authenticatedDataStreamsAccessReady":auth_ready,
+              "signedReportInputsReady":report_ready,
+              "v313ReplayReady":ids_ready and report_ready
+            },
             "executionGate":{
               "mainnetDeploymentAllowed":False,
               "mainnetRegistryWritesAllowed":False,
@@ -95,41 +97,34 @@ jobs:
               "mainnetApprovalAllowed":False,
               "mainnetUnpauseAllowed":False,
               "mainnetBroadcastAllowed":False,
-              "verdict":(
-                "INPUTS PRESENT; LOCAL-FORK REPLAY MAY RUN"
-                if ready else
-                "WAITING FOR EXACT FEED IDS + REAL SIGNED REPORT INPUTS"
-              )
+              "verdict":verdict
             }
           }
-
-          Path("data/signed-report-v313.json").write_text(json.dumps(p,indent=2))
-          Path("signed-report-v313.json").write_text(json.dumps(p,indent=2))
+          Path("data/datastreams-onboarding-v314.json").write_text(json.dumps(p,indent=2))
+          Path("datastreams-onboarding-v314.json").write_text(json.dumps(p,indent=2))
           PY
 
-      - name: Embed v3.13 report
+      - name: Embed report
         shell: bash
         run: |
           set -euo pipefail
           python3 <<'PY'
           import json
           from pathlib import Path
-          p=json.load(open("data/signed-report-v313.json"))
+          p=json.load(open("data/datastreams-onboarding-v314.json"))
           h=Path("index.html").read_text()
           e=json.dumps(p,separators=(",",":")).replace("</","<\\/")
-          script='<script id="v313-report" type="application/json">'+e+'</script>'
-          script+='''<script>(()=>{const n=document.getElementById("v313-report");const o=document.getElementById("report");if(n&&o)o.textContent=JSON.stringify(JSON.parse(n.textContent),null,2);})();</script>'''
-          Path("index.html").write_text(h.replace("</body>",script+"</body>"))
+          s='<script id="v314-report" type="application/json">'+e+'</script>'
+          s+='''<script>(()=>{const n=document.getElementById("v314-report");const o=document.getElementById("report");if(n&&o)o.textContent=JSON.stringify(JSON.parse(n.textContent),null,2);})();</script>'''
+          Path("index.html").write_text(h.replace("</body>",s+"</body>"))
           PY
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
-
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
-
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
