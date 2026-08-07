@@ -1,4 +1,4 @@
-name: Rustee Trade ABI Recovery v3.7.1
+name: Rustee Differential ABI Recovery v3.8
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v371-pages
+  group: rustee-v38-pages
   cancel-in-progress: true
 
 jobs:
@@ -26,14 +26,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Probe guarded trade candidate
+      - name: Differentially recover six-word struct
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p data
 
           python3 <<'PY'
-          import json, urllib.request, datetime
+          import json, urllib.request, datetime, time
 
           RPC="https://rpc.mainnet.chain.robinhood.com"
           CHAIN=4663
@@ -45,167 +45,167 @@ jobs:
           ROUTER="0xCaf681a66D020601342297493863E78C959E5cb2"
           NVDA="0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC"
           WETH="0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73"
+          QUOTER="0x33e885eD0Ec9bF04EcfB19341582aADCb4c8A9E7"
           SEL="0x6c606ce7"
 
           def rpc(method,params):
               req=urllib.request.Request(
                   RPC,
                   data=json.dumps({"jsonrpc":"2.0","id":1,"method":method,"params":params}).encode(),
-                  headers={"content-type":"application/json","user-agent":"Rustee-v3.7"}
+                  headers={"content-type":"application/json","user-agent":"Rustee-v3.8"}
               )
               try:
-                  with urllib.request.urlopen(req,timeout=30) as r:
-                      j=json.loads(r.read())
-              except Exception as e:
-                  return {"transportError":str(e)}
-              return j
+                  with urllib.request.urlopen(req,timeout=30) as r:return json.loads(r.read())
+              except Exception as e:return {"transportError":str(e)}
 
-          def call(data,frm):
+          def call(data,frm=OWNER):
               return rpc("eth_call",[{"to":TBA,"from":frm,"data":data},"latest"])
 
-          def w(n): return hex(int(n))[2:].rjust(64,"0")
+          def w(v):
+              if isinstance(v,str) and v.startswith("0x"):
+                  return v[2:].lower().rjust(64,"0")
+              return hex(int(v))[2:].rjust(64,"0")
+
           def aw(a): return a.lower().replace("0x","").rjust(64,"0")
 
-          def obs(j):
-              if "result" in j: return "return:"+j["result"]
-              if "error" in j:
-                  e=j["error"]
-                  d=e.get("data","")
-                  return "revert:"+str(d)+":"+e.get("message","")
-              return "transport:"+j.get("transportError","unknown")
+          def encode(outer, fields):
+              assert len(fields)==6
+              return SEL+aw(outer)+w(64)+"".join(w(x) for x in fields)
 
-          # Confirm binding.
-          def read_addr(selector):
-              j=call(selector,OWNER)
-              if "result" not in j:return None
-              return "0x"+j["result"][-40:].lower()
+          def parse(j):
+              if "result" in j:
+                  return {"success":True,"observation":"return:"+j["result"],"revertSelector":None}
+              if "error" in j:
+                  e=j["error"];d=e.get("data","")
+                  selector=d[:10] if isinstance(d,str) and d.startswith("0x") and len(d)>=10 else None
+                  return {"success":False,"observation":"revert:"+str(d)+":"+e.get("message",""),"revertSelector":selector}
+              return {"success":False,"observation":"transport:"+j.get("transportError","unknown"),"revertSelector":None}
+
+          # Binding.
+          def read_addr(sel):
+              p=parse(call(sel))
+              if not p["success"]:return None
+              return "0x"+p["observation"].split("return:")[1][-40:].lower()
 
           owner_actual=read_addr("0x8da5cb5b")
           registry_actual=read_addr("0x7b103999")
-          tok=call("0xfc0c546a",OWNER)
-          h=tok.get("result","0x")[2:]
-          words=[h[i:i+64] for i in range(0,len(h),64)] if h else []
-          token_chain=int(words[0],16) if len(words)>=3 else None
-          token_contract="0x"+words[1][-40:] if len(words)>=3 else None
-          token_id=int(words[2],16) if len(words)>=3 else None
-          binding_pass=(
-              owner_actual==OWNER.lower() and
-              registry_actual==REGISTRY.lower() and
-              token_chain==CHAIN and
-              token_contract.lower()==NFT.lower() and
-              token_id==1
-          )
+          tok=parse(call("0xfc0c546a"))
+          raw=tok["observation"].split("return:")[1][2:] if tok["success"] else ""
+          tw=[raw[i:i+64] for i in range(0,len(raw),64)] if raw else []
+          token_chain=int(tw[0],16) if len(tw)>=3 else None
+          token_contract=("0x"+tw[1][-40:]).lower() if len(tw)>=3 else None
+          token_id=int(tw[2],16) if len(tw)>=3 else None
+          binding_pass=owner_actual==OWNER.lower() and registry_actual==REGISTRY.lower() and token_chain==CHAIN and token_contract==NFT.lower() and token_id==1
 
-          # Runtime shows selector expects:
-          # word0 = address
-          # word1 = offset to a dynamic object.
-          # Probe offsets and minimum payload sizes, while keeping all payload
-          # words zero. This safely exposes ABI parser thresholds.
-          probes=[]
+          zero=[0,0,0,0,0,0]
+          baseline=parse(call(encode(OWNER,zero)))
+          baseline_sel=baseline["revertSelector"]
 
-          def dyn_call(first_addr, payload_words, offset=64, frm=OWNER):
-              payload="".join(w(x) for x in payload_words)
-              # Dynamic object at byte offset 64 from arguments start.
-              # The first dynamic word is treated as object content, not
-              # assumed to be a bytes length — we are recovering a dynamic
-              # tuple/struct shape.
-              data=SEL+aw(first_addr)+w(offset)+payload
-              return call(data,frm)
+          # Values selected to be ABI-safe and useful for differential diagnosis.
+          target_nvda=22685818513451888
+          quoted_weth=2612246804036778
+          max_weth=2625308038056962
+          now=int(time.time())
 
-          cases=[
-              ("0 words / owner",OWNER,[]),
-              ("1 word / owner",OWNER,[0]),
-              ("2 words / owner",OWNER,[0,0]),
-              ("4 words / owner",OWNER,[0]*4),
-              ("6 words / owner",OWNER,[0]*6),
-              ("8 words / owner",OWNER,[0]*8),
-              ("10 words / owner",OWNER,[0]*10),
-              ("12 words / owner",OWNER,[0]*12),
-              ("16 words / owner",OWNER,[0]*16),
-              ("6 words / router",ROUTER,[0]*6),
-              ("6 words / NVDA",NVDA,[0]*6),
-              ("6 words / WETH",WETH,[0]*6),
+          address_values=[
+              ("OWNER",OWNER),("ROUTER",ROUTER),("NVDA",NVDA),
+              ("WETH",WETH),("REGISTRY",REGISTRY),("TBA",TBA)
+          ]
+          numeric_values=[
+              ("ONE",1),("FEE_500",500),
+              ("TARGET_NVDA",target_nvda),
+              ("QUOTED_WETH",quoted_weth),
+              ("MAX_WETH",max_weth),
+              ("DEADLINE",now+300)
           ]
 
-          for name,a,p in cases:
-              o=obs(dyn_call(a,p))
-              probes.append({
+          singles=[]
+          # Address candidates in every field.
+          for i in range(6):
+              for label,val in address_values:
+                  f=zero.copy();f[i]=val
+                  p=parse(call(encode(OWNER,f)))
+                  singles.append({
+                      "name":f"field{i}={label}",
+                      "field":i,"valueLabel":label,"value":val,
+                      **p,
+                      "changedFromBaseline":p["revertSelector"]!=baseline_sel or p["success"]!=baseline["success"]
+                  })
+              for label,val in numeric_values:
+                  f=zero.copy();f[i]=val
+                  p=parse(call(encode(OWNER,f)))
+                  singles.append({
+                      "name":f"field{i}={label}",
+                      "field":i,"valueLabel":label,"value":str(val),
+                      **p,
+                      "changedFromBaseline":p["revertSelector"]!=baseline_sel or p["success"]!=baseline["success"]
+                  })
+
+          combos=[]
+          candidates=[
+              ("f0=WETH,f1=NVDA",[WETH,NVDA,0,0,0,0]),
+              ("f0=NVDA,f1=WETH",[NVDA,WETH,0,0,0,0]),
+              ("f0=ROUTER,f1=NVDA",[ROUTER,NVDA,0,0,0,0]),
+              ("f0=NVDA,f1=ROUTER",[NVDA,ROUTER,0,0,0,0]),
+              ("WETH,NVDA,target,max,fee,deadline",[WETH,NVDA,target_nvda,max_weth,500,now+300]),
+              ("NVDA,WETH,target,max,fee,deadline",[NVDA,WETH,target_nvda,max_weth,500,now+300]),
+              ("ROUTER,NVDA,target,max,fee,deadline",[ROUTER,NVDA,target_nvda,max_weth,500,now+300]),
+              ("NVDA,ROUTER,target,max,fee,deadline",[NVDA,ROUTER,target_nvda,max_weth,500,now+300]),
+              ("WETH,NVDA,max,target,fee,deadline",[WETH,NVDA,max_weth,target_nvda,500,now+300]),
+          ]
+          for name,f in candidates:
+              p=parse(call(encode(OWNER,f)))
+              combos.append({
                   "name":name,
-                  "firstAddress":a,
-                  "payloadWords":len(p),
-                  "observation":o,
-                  "interesting":("return:" in o or "revert:0x" in o and len(o)>20)
+                  "fields":[str(x) for x in f],
+                  **p,
+                  "changedFromBaseline":p["revertSelector"]!=baseline_sel or p["success"]!=baseline["success"]
               })
 
-          # Authorization comparison with the same structurally largest probe.
-          owner_o=obs(dyn_call(ROUTER,[0]*16,64,OWNER))
-          outsider_o=obs(dyn_call(ROUTER,[0]*16,64,OUTSIDER))
-          outsider_rejected=("revert:" in outsider_o)
+          # Authorization sanity check on best structurally plausible combo.
+          auth_fields=[WETH,NVDA,target_nvda,max_weth,500,now+300]
+          outsider=parse(call(encode(OWNER,auth_fields),OUTSIDER))
 
-          # Try traceCall gracefully. Some public RPCs disable it.
-          trace_req={
-              "to":TBA,
-              "from":OWNER,
-              "data":SEL+aw(ROUTER)+w(64)+("".join(w(0) for _ in range(16)))
-          }
-          trace_raw=rpc("debug_traceCall",[trace_req,"latest",{"tracer":"callTracer"}])
-          trace_supported=("result" in trace_raw)
-          trace_summary=""
-          if trace_supported:
-              def walk(x,depth=0,out=None):
-                  if out is None: out=[]
-                  if isinstance(x,dict):
-                      if x.get("to"):
-                          out.append({
-                              "depth":depth,
-                              "from":x.get("from"),
-                              "to":x.get("to"),
-                              "input":x.get("input","")[:10],
-                              "error":x.get("error")
-                          })
-                      for c in x.get("calls",[]) or []:
-                          walk(c,depth+1,out)
-                  return out
-              calls=walk(trace_raw["result"])
-              trace_summary=json.dumps(calls[:40])
-          else:
-              trace_summary=str(trace_raw.get("error") or trace_raw.get("transportError"))
+          transition_fields=sorted(set(x["field"] for x in singles if x["changedFromBaseline"]))
+          transitions=[]
+          for x in singles+combos:
+              if x["changedFromBaseline"]:
+                  transitions.append({
+                      "name":x["name"],
+                      "from":baseline_sel or baseline["observation"],
+                      "to":x["revertSelector"] or ("SUCCESS" if x["success"] else x["observation"])
+                  })
 
           report={
-              "project":"Rustee Broker Trade ABI Recovery v3.7",
+              "project":"Rustee Broker Differential ABI Recovery v3.8",
               "network":"Robinhood Chain Mainnet",
               "chainId":CHAIN,
               "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
-              "selector":"0x6c606ce7",
-              "corrections":{
-                  "selector523e3260":"Consistent with ERC-6551 isValidSigner(address,bytes); removed as trade candidate."
-              },
+              "selector":SEL,
               "binding":{
-                  "pass":binding_pass,
-                  "owner":owner_actual,
+                  "pass":binding_pass,"owner":owner_actual,
                   "registry":registry_actual,
                   "token":{"chainId":token_chain,"tokenContract":token_contract,"tokenId":token_id}
               },
-              "probes":probes,
+              "baseline":{
+                  "fields":["0"]*6,
+                  **baseline
+              },
+              "singleFieldProbes":singles,
+              "combinationProbes":combos,
               "authorization":{
-                  "ownerObservation":owner_o,
-                  "outsiderObservation":outsider_o,
-                  "outsiderRejected":outsider_rejected
+                  "outsiderProbe":outsider,
+                  "outsiderRejected":not outsider["success"]
               },
-              "trace":{
-                  "supported":trace_supported,
-                  "summary":trace_summary
-              },
-              "recovery":{
-                  "candidateSelector":"0x6c606ce7",
-                  "observedTopLevelShape":"address + dynamic object",
-                  "minimumDynamicRegionSuggestedByRuntime":"at least 0xc0 bytes before nested dynamic validation",
-                  "exactAbiRecovered":False,
-                  "nextGoal":"Recover six-word core struct and nested dynamic bytes offsets; then replay exact policy path on a fork."
+              "analysis":{
+                  "transitionFields":transition_fields,
+                  "transitions":transitions,
+                  "interpretation":
+                      "A revert-selector transition means the mutated field allowed execution to advance to a different validation stage."
               },
               "executionGate":{
                   "ready":False,
-                  "verdict":"POLICY ABI RECOVERY IN PROGRESS",
+                  "verdict":"DIFFERENTIAL ABI RECOVERY ONLY",
                   "assetFundingAllowed":False,
                   "approvalAllowed":False,
                   "unpauseAllowed":False,
@@ -213,48 +213,41 @@ jobs:
               }
           }
 
-          with open("data/trade-abi-recovery.json","w") as f:
+          with open("data/differential-abi-recovery.json","w") as f:
               json.dump(report,f,indent=2)
 
-          print("PASS binding",binding_pass)
-          print("PASS probes",len(probes))
-          print("TRACE supported",trace_supported)
+          print("Baseline",baseline_sel)
+          print("Transition fields",transition_fields)
+          print("Transitions",len(transitions))
           PY
 
       - name: Validate report
         shell: bash
         run: |
           set -euo pipefail
-          test -s data/trade-abi-recovery.json
+          test -s data/differential-abi-recovery.json
           python3 <<'PY'
           import json
-          p=json.load(open("data/trade-abi-recovery.json"))
-          assert p["chainId"] == 4663
+          p=json.load(open("data/differential-abi-recovery.json"))
+          assert p["chainId"]==4663
           assert p["binding"]["pass"] is True
-          assert p["selector"] == "0x6c606ce7"
-          assert len(p["probes"]) >= 10
+          assert p["selector"]=="0x6c606ce7"
+          assert len(p["singleFieldProbes"]) >= 60
           assert p["executionGate"]["broadcastAllowed"] is False
-          print("PASS v3.7")
+          print("PASS v3.8")
           PY
 
       - name: Build deterministic Pages artifact
         shell: bash
         run: |
           set -euo pipefail
-
           rm -rf site
           mkdir -p site/data
-
           cp index.html site/index.html
-          cp data/trade-abi-recovery.json site/data/trade-abi-recovery.json
-
+          cp data/differential-abi-recovery.json site/data/differential-abi-recovery.json
           test -s site/index.html
-          test -s site/data/trade-abi-recovery.json
-
-          echo "=== site artifact ==="
+          test -s site/data/differential-abi-recovery.json
           find site -maxdepth 3 -type f -print
-          echo "=== report bytes ==="
-          wc -c site/data/trade-abi-recovery.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
