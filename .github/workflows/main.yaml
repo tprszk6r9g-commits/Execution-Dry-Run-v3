@@ -1,4 +1,4 @@
-name: Rustee STONKBROKER Live Configuration Preflight v4.2
+name: Rustee STONKBROKER Live Configuration Preflight v4.2.1
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-stonkbroker-v42
+  group: rustee-stonkbroker-v421
   cancel-in-progress: true
 
 jobs:
@@ -654,14 +654,22 @@ jobs:
           }
           EOF
 
-          solc \
-            --optimize \
-            --optimize-runs 200 \
-            --bin \
-            --bin-runtime \
-            candidate/RusteeStonkbrokerV3Adapter.sol \
-            -o candidate/out \
-            --overwrite
+          # Foundry installs and manages the Solidity compiler internally.
+          # Do not assume a standalone `solc` executable is on PATH.
+          mkdir -p candidate/out
+
+          forge inspect \
+            candidate/RusteeStonkbrokerV3Adapter.sol:RusteeStonkbrokerV3Adapter \
+            bytecode \
+            > candidate/out/RusteeStonkbrokerV3Adapter.bin
+
+          forge inspect \
+            candidate/RusteeStonkbrokerV3Adapter.sol:RusteeStonkbrokerV3Adapter \
+            deployedBytecode \
+            > candidate/out/RusteeStonkbrokerV3Adapter.bin-runtime
+
+          test -s candidate/out/RusteeStonkbrokerV3Adapter.bin
+          test -s candidate/out/RusteeStonkbrokerV3Adapter.bin-runtime
 
           sha256sum candidate/RusteeStonkbrokerV3Adapter.sol > data/adapter-source.sha256
           sha256sum candidate/out/RusteeStonkbrokerV3Adapter.bin > data/adapter-initcode.sha256
@@ -782,7 +790,7 @@ jobs:
           ]
 
           report={
-            "project":"Rustee STONKBROKER Live Configuration Preflight v4.2",
+            "project":"Rustee STONKBROKER Live Configuration Preflight v4.2.1",
             "network":"Robinhood Chain Mainnet + Fresh Fork",
             "chainId":4663,
             "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -845,7 +853,7 @@ jobs:
           assert p["v42SafetySuite"]["allTestsPassed"] is True
           assert len(p["v42SafetySuite"]["negativeTests"])==9
           assert p["executionGate"]["mainnetBroadcastAllowed"] is False
-          print("PASS v4.2 preflight")
+          print("PASS v4.2.1 preflight")
           PY
 
       - name: Configure Pages
