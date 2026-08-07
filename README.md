@@ -99,3 +99,16 @@ v3.9.4 now deletes `src/`, `test/`, `out/`, `cache/`, and the prior
 `foundry.toml` before generating the isolated v3.9 harness.
 
 No Rustee contract logic, policy values, addresses, or safety gates changed.
+
+## v3.9.5 compiler correction
+
+The v3.9.4 run reached the actual `RusteePolicyPath.t.sol` harness and failed
+with Solidity's `Stack too deep` compiler error around the `TradeRequest`
+construction.
+
+v3.9.5 enables the Solidity optimizer and `via_ir = true`, which is the
+standard compiler path for resolving this class of stack-pressure issue
+without changing the test's behavior.
+
+This is a compile-only change. No contract addresses, policy limits, fork
+actions, route logic, or mainnet safety gates changed.
