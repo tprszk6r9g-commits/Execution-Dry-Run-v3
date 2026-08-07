@@ -1,20 +1,41 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee STONKBROKER TBA Policy Fork Gate v4.1</title>
+<title>Rustee STONKBROKER Live Configuration Preflight v4.2</title>
 <style>
-:root{--panel:#082b22;--line:#2d675b;--text:#ecfff8;--muted:#99beb4;--teal:#38dec4;--orange:#ff9a36}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#061914,#05251d);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+:root{--bg:#041914;--panel:#082b22;--line:#2d675b;--text:#ecfff8;--muted:#9cc0b7;--teal:#39dec4;--orange:#ff9a36}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#061914,#032019);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:920px;margin:auto;padding:28px 18px 90px}
-h1{font-size:clamp(38px,7vw,62px);line-height:1.03}
-p{color:var(--muted);font-size:17px;line-height:1.6}
-.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:10px 15px;color:var(--teal)}
-.card{background:linear-gradient(145deg,var(--panel),#072019);border:1px solid var(--line);border-radius:24px;padding:24px;margin:20px 0}
-.warn{border-left:8px solid var(--orange);background:#2a1908;padding:18px 20px;border-radius:16px}
-pre{white-space:pre-wrap;word-break:break-word;background:#03110e;border:1px solid #25574d;border-radius:16px;padding:18px;overflow:auto;max-height:1300px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}
-</style></head><body><main>
-<span class="pill">Robinhood Chain · v4.1 · ACTUAL TBA · FORK ONLY</span>
-<h1>Rustee $STONKBROKER TBA Policy Fork Gate</h1>
-<div class="warn"><b>No mainnet writes.</b> v4.1 uses the actual deployed Rustee trading TBA and Registry on an ephemeral Foundry fork. Temporary asset/oracle/adapter permissions exist only inside that fork.</div>
-<div class="card"><p>The upgrade from v4.0.2 is that the swap is no longer a direct impersonated DEX call. The NFT owner invokes the real deployed TBA's guarded <code>executeTrade</code> path, while an unrelated caller must be rejected.</p></div>
-<div class="card"><h2>v4.1 report</h2><pre id="report">Run the v4.1 workflow to generate the report.</pre></div>
-</main></body></html>
+h1{font-size:clamp(38px,7vw,62px);line-height:1.02;margin:18px 0}
+h2{font-size:clamp(25px,5vw,38px)}
+p{font-size:17px;line-height:1.6;color:var(--muted)}
+.pill{display:inline-flex;padding:10px 15px;border:1px solid var(--line);border-radius:999px;color:var(--teal)}
+.card{background:linear-gradient(145deg,var(--panel),#071f19);border:1px solid var(--line);border-radius:24px;padding:24px;margin:20px 0}
+.warn{border-left:8px solid var(--orange);background:#2a1908;padding:18px 20px;border-radius:16px;font-size:17px;line-height:1.55}
+pre{white-space:pre-wrap;word-break:break-word;background:#03110e;border:1px solid #25574d;border-radius:16px;padding:18px;max-height:1500px;overflow:auto;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}
+</style>
+</head>
+<body>
+<main>
+<span class="pill">Robinhood Chain · v4.2 · PRE-FLIGHT ONLY</span>
+<h1>Rustee $STONKBROKER Live Configuration Preflight</h1>
+<div class="warn"><b>No mainnet writes.</b> v4.2 replays the real Rustee TBA policy architecture on a fresh fork, adds adversarial boundary tests, compiles the candidate production adapter, and generates the proposed production configuration sequence. It never deploys, configures, funds, approves, trades, or broadcasts on live mainnet.</div>
+<div class="card">
+<h2>What v4.2 adds</h2>
+<p>Owner authorization, the $5 ceiling, one-trade-per-day rule, adapter/venue/spender allowlists, stale-oracle rejection, sequencer-down rejection, slippage protection and allowance cleanup are all exercised on fork state. Production oracle and adapter inputs remain explicit blockers rather than guessed values.</p>
+</div>
+<div class="card">
+<h2>v4.2 report</h2>
+<pre id="report">Loading v4.2 report…</pre>
+</div>
+<script>
+fetch('./stonkbroker-v42.json',{cache:'no-store'})
+.then(r=>{if(!r.ok)throw new Error('v4.2 report has not been generated yet');return r.json()})
+.then(j=>document.getElementById('report').textContent=JSON.stringify(j,null,2))
+.catch(e=>document.getElementById('report').textContent='ERROR: '+e.message);
+</script>
+</main>
+</body>
+</html>
