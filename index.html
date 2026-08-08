@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6awd4pVUSCWucM9D3lAMVA19D6WrvW/T1DHa6B/Sw6Q='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-Y5rKMNCUIKaPsa9oq4hnrPXguLEbX7yntPumD61G7GA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
 <title>Rustee Broker Portfolio Terminal v2.8.4 · Wallet Recovery</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
@@ -965,6 +965,35 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 </main>
 
 <script>
+// --- boot instrumentation (must be first) ---
+// Global handlers used to be registered ~2200 lines in. Anything that threw
+// at top level before that point killed the rest of the script silently:
+// the page kept whatever static text it shipped with and nothing was logged.
+window.__rusteeBoot = 'started';
+function __bootSay(msg){
+  try{
+    const s=document.getElementById('stickyCommandStatus');
+    if(s)s.textContent=msg;
+    const l=document.getElementById('commandWalletLog');
+    if(l)l.textContent=msg;
+    const pv=document.getElementById('cmdProvider');
+    if(pv&&/BOOT FAILED/.test(msg)){pv.textContent='Boot failed';pv.className='healthBad'}
+  }catch{}
+  console.log('[rustee boot]',msg);
+}
+window.addEventListener('error',e=>{
+  if(e.target&&e.target.matches&&e.target.matches('img'))return;
+  __bootSay('BOOT FAILED at '+window.__rusteeBoot+'\n'+(e.message||'error')+
+            '\n'+(e.filename||'')+':'+(e.lineno||'?'));
+});
+window.addEventListener('unhandledrejection',e=>{
+  const r=e.reason?.message||String(e.reason||'');
+  // Rabby Mobile's injected shim rejects with "not found rainbowkit" on any
+  // page that does not use RainbowKit. Harmless; do not treat as a failure.
+  if(/rainbowkit/i.test(r)){console.warn('ignored wallet shim rejection:',r);return}
+  __bootSay('Promise error at '+window.__rusteeBoot+': '+r);
+});
+
 const CHAIN=4663, CHAIN_HEX='0x1237';
 const RPC='https://rpc.mainnet.chain.robinhood.com';
 const OWNER='0x8fC320c8582f812695b6f62b2b5d13B14475B955';
@@ -2536,7 +2565,7 @@ document.querySelectorAll('[data-open-tab]').forEach(b=>b.onclick=()=>openTabByI
 $('refreshCommandCenter').onclick=()=>refreshCommandCenter().catch(e=>{$('commandLog').textContent='ERROR: '+e.message;setSticky('Rustee ready')});
 $('refreshReceipts').onclick=()=>refreshRecordedReceipts();
 $('clearReceipts').onclick=()=>{if(confirm('Clear only the local receipt display? On-chain transactions are unaffected.')){localStorage.removeItem(RECEIPT_KEY);renderReceipts()}};
-renderReceipts();
+window.__rusteeBoot='receipts';renderReceipts();
 
 
 // --- Phase 6 read-only Registry policy/security helpers ---
@@ -2800,7 +2829,7 @@ function exportProductionReport(){
 $('saveProdEvidence').onclick=()=>{saveProdEvidence();$('productionLog').textContent='Local evidence inputs saved. No chain write occurred.'};
 $('runProductionGate').onclick=()=>runProductionGate().catch(()=>{});
 $('exportProductionReport').onclick=()=>{try{exportProductionReport()}catch(e){$('productionLog').textContent='ERROR: '+e.message}};
-loadProdEvidence();
+window.__rusteeBoot='prodEvidence';loadProdEvidence();
 
 
 const EVIDENCE_KEY='rustee-phase8-evidence-v28';
@@ -2946,7 +2975,7 @@ $('validateAuditEvidence').onclick=()=>validateAuditEvidence();
 $('saveAuditEvidence').onclick=()=>{$('evidenceLog').textContent='Audit evidence saved locally. No chain write occurred.';phase8Save()};
 $('buildEvidenceBundle').onclick=()=>buildEvidenceBundle();
 $('exportEvidenceBundle').onclick=()=>exportEvidenceBundle();
-phase8Load();
+window.__rusteeBoot='phase8';phase8Load();
 
 
 // --- v2.8.1 browser/runtime hardening ---
@@ -3370,9 +3399,11 @@ function reportStartupFailure(where,e){
   if($('cmdProvider')){$('cmdProvider').textContent='Startup error';$('cmdProvider').className='healthBad'}
   console.error(where,e);
 }
-try{renderWalletChoices()}catch(e){reportStartupFailure('renderWalletChoices',e)}
+window.__rusteeBoot='wallet';try{renderWalletChoices()}catch(e){reportStartupFailure('renderWalletChoices',e)}
 try{renderWalletConnectionState()}catch(e){reportStartupFailure('renderWalletConnectionState',e)}
 installWalletListeners().catch(e=>reportStartupFailure('installWalletListeners',e));
 setTimeout(()=>restoreWalletConnection().catch(e=>reportStartupFailure('restoreWalletConnection',e)),250);
+window.__rusteeBoot='complete';
+__bootSay('Boot complete \u2713 — provider: '+(activeWalletName()||'none detected'));
 </script>
 </body></html>
