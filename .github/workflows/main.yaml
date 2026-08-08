@@ -1,4 +1,4 @@
-name: Rustee v4.9.3 Data Streams + Registry V2 Fork Gate
+name: Rustee v4.9.3.1 Data Streams + Registry V2 Fork Gate
 
 on:
   push:
@@ -32,6 +32,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p data
           python3 <<'PY'
           import json, os, urllib.request, datetime
           RPC=os.environ.get("ARCHIVE_RPC_URL") or "https://rpc.mainnet.chain.robinhood.com"
