@@ -1,4 +1,4 @@
-name: Rustee v4.9.3.3 Data Streams + Registry V2 Fork Gate
+name: Rustee v4.9.4 Verifier + Policy Fork Gate
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-v493-pages
+  group: rustee-v494-pages
   cancel-in-progress: true
 
 env:
@@ -28,54 +28,63 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate public production inputs
+      - name: Validate public verifier inputs
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p data
           python3 <<'PY'
           import json, os, urllib.request, datetime
-          RPC=os.environ.get("ARCHIVE_RPC_URL") or "https://rpc.mainnet.chain.robinhood.com"
-          feed=os.environ["ETH_USD_FEED_ID"]
+          rpc_url=os.environ["ARCHIVE_RPC_URL"]
           proxy=os.environ["VERIFIER_PROXY"]
+          feed=os.environ["ETH_USD_FEED_ID"]
 
           def rpc(method, params):
-              req=urllib.request.Request(RPC,data=json.dumps({"jsonrpc":"2.0","id":1,"method":method,"params":params}).encode(),headers={"content-type":"application/json","user-agent":"Rustee-v4.9.3"})
+              payload=json.dumps({"jsonrpc":"2.0","id":1,"method":method,"params":params}).encode()
+              req=urllib.request.Request(rpc_url,data=payload,headers={"content-type":"application/json","user-agent":"Rustee-v4.9.4"})
               with urllib.request.urlopen(req,timeout=30) as r:
                   j=json.loads(r.read())
               if "error" in j: raise RuntimeError(j["error"])
               return j["result"]
 
           chain=int(rpc("eth_chainId",[]),16)
-          code=rpc("eth_getCode",[proxy,"latest"])
+          proxy_code=rpc("eth_getCode",[proxy,"latest"])
+
           report={
-            "project":"Rustee Broker v4.9.3",
-            "mode":"READ_FORK_ONLY_NO_MAINNET_WRITES",
+            "project":"Rustee Broker Verifier + Policy Fork Gate v4.9.4",
+            "network":"Robinhood Chain Mainnet + Fork",
+            "mode":"READ_ONLY_AND_FORK_ONLY_NO_MAINNET_WRITES",
             "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "chainId":chain,
-            "feedId":feed,
-            "feedIdValidBytes32":feed.startswith("0x") and len(feed)==66,
+            "ethUsdFeedId":feed,
+            "feedIdBytes32Shape":feed.startswith("0x") and len(feed)==66,
             "verifierProxy":proxy,
-            "verifierProxyHasCode":len(code)>2,
-            "archiveRpcConfigured":bool(os.environ.get("ARCHIVE_RPC_URL")),
+            "verifierProxyHasCode":len(proxy_code)>2,
+            "archiveRpcConfigured":bool(rpc_url),
             "signedReportReplay":{
               "attempted":False,
               "verified":False,
-              "reason":"Requires authenticated Chainlink Data Streams report retrieval; no credentials are embedded in this repository."
+              "status":"AUTHENTICATED_REPORT_NOT_YET_SUPPLIED"
             },
-            "registryV2":{"forkTestsScheduled":True,"productionDeploymentAllowed":False},
+            "policyHarness":{
+              "maxTradeUsd18":"5000000000000000000",
+              "maxReportAgeSeconds":120,
+              "tests":["fresh verified <= $5 passes","over $5 rejects","unverified rejects","stale rejects","wrong feed rejects"]
+            },
             "executionGate":{
-              "mainnetWritesAllowed":False,
+              "mainnetDeploymentAllowed":False,
+              "mainnetRegistryWritesAllowed":False,
               "mainnetFundingAllowed":False,
               "mainnetApprovalAllowed":False,
               "mainnetTradeAllowed":False,
+              "mainnetUnpauseAllowed":False,
               "mainnetBroadcastAllowed":False
             }
           }
-          assert chain==4663
-          assert report["feedIdValidBytes32"]
+          assert chain == 4663
+          assert report["feedIdBytes32Shape"]
           assert report["verifierProxyHasCode"]
-          open("data/v4.9.3-report.json","w").write(json.dumps(report,indent=2))
+          open("data/v4.9.4-report.json","w").write(json.dumps(report,indent=2))
           print(json.dumps(report,indent=2))
           PY
         env:
@@ -86,19 +95,19 @@ jobs:
         with:
           version: stable
 
-      - name: Fork-test Registry V2 prototype
-        run: forge test --match-path test/RegistryV2Fork.t.sol --fork-url "${{ secrets.ARCHIVE_RPC_URL }}" -vv
+      - name: Fork-test Registry V2 and Data Streams policy harness
+        run: |
+          forge test --match-path test/RegistryV2Fork.t.sol --fork-url "${{ secrets.ARCHIVE_RPC_URL }}" -vv
+          forge test --match-path test/DataStreamsPolicyGateV2.t.sol --fork-url "${{ secrets.ARCHIVE_RPC_URL }}" -vv
 
       - name: Verify no broadcast primitives
         shell: bash
         run: |
           set -euo pipefail
-
           if grep -R -E -- 'startBroadcast|broadcast\(|eth_sendRawTransaction|eth_sendTransaction' src test 2>/dev/null; then
             echo "ERROR: broadcast/write primitive detected"
             exit 1
           fi
-
           echo "PASS: no broadcast primitives found in src/ or test/"
 
       - name: Configure Pages
