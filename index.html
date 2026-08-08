@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-Y5rKMNCUIKaPsa9oq4hnrPXguLEbX7yntPumD61G7GA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
-<title>Rustee Broker Portfolio Terminal v2.8.4 · Wallet Recovery</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-3gCtkJIWcLwQ9Znazu+rUFqSTMf2sNroHXwhAIO4MYg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
+<title>Rustee Broker Portfolio Terminal v2.8.6 · Rabby + Broker Binding Fix</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -296,7 +296,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 
 <div id="overviewPane" class="tabpane">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.4 · Wallet Recovery · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.6 · Rabby + Broker Binding Fix · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -1001,6 +1001,11 @@ const VAULT='0x8ad8bd35d33dd7b4d0de81f809f5b7f92623956d';
 const TRADING='0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654';
 const REWARDS='0xfd0d881d73ec1476f5da0ab78283149ea21c3b32';
 const IDENTITY='0x496d7d47ae69d65d714413f0dc78c712ed92158d';
+// Broker NFT binding is derived from the deployed ERC-6551 TBA at runtime.
+// Do not hard-code or guess this mainnet address: token() is part of ERC-6551.
+let NFT='';
+let BROKER_TOKEN_ID=null;
+const SEL_TOKEN='fc0c546a';
 const POLICY_REGISTRY='0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199';
 const DATA_STREAMS_VERIFIER='0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7';
 const WETH='0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
@@ -1067,6 +1072,22 @@ async function rpc(method,params=[]){
   const p=injectedWalletProvider();
   if(p) return p.request({method,params});
   return fallbackRpc(method,params);
+}
+async function resolveBrokerNFT(force=false){
+  if(NFT&&!force)return NFT;
+  // ERC-6551 IERC6551Account.token() => (uint256 chainId,address tokenContract,uint256 tokenId)
+  const raw=await rpc('eth_call',[{to:TRADING,data:'0x'+SEL_TOKEN},'latest']);
+  const body=String(raw||'').replace(/^0x/,'');
+  if(body.length<192)throw Error('Unable to read ERC-6551 token() binding from Trading TBA');
+  const boundChain=BigInt('0x'+body.slice(0,64));
+  const tokenContract='0x'+body.slice(64+24,128);
+  const tokenId=BigInt('0x'+body.slice(128,192));
+  if(boundChain!==BigInt(CHAIN))throw Error(`TBA is bound to chain ${boundChain}, expected ${CHAIN}`);
+  if(!/^0x[0-9a-fA-F]{40}$/.test(tokenContract)||/^0x0{40}$/i.test(tokenContract))
+    throw Error('TBA returned an invalid Broker NFT contract');
+  NFT=tokenContract;
+  BROKER_TOKEN_ID=tokenId;
+  return NFT;
 }
 async function ownerOfTBA(addr){
   const raw=await rpc('eth_call',[{to:addr,data:'0x'+SEL_OWNER},'latest']);
@@ -2744,8 +2765,9 @@ async function runProductionGate(){
 
   try{
     const cid=Number(BigInt(await rpc('eth_chainId')));
+    const brokerNft=await resolveBrokerNFT();
     const [nftCode,regCode,tradingCode,verCode]=await Promise.all([
-      rpc('eth_getCode',[NFT,'latest']),
+      rpc('eth_getCode',[brokerNft,'latest']),
       rpc('eth_getCode',[POLICY_REGISTRY,'latest']),
       rpc('eth_getCode',[TRADING,'latest']),
       rpc('eth_getCode',[DATA_STREAMS_VERIFIER,'latest'])
@@ -2913,7 +2935,7 @@ function buildEvidenceBundle(){
     generatedAt:new Date().toISOString(),
     mode:'READ_ONLY_NO_MAINNET_WRITES',
     binding:{
-      owner:OWNER,nft:NFT,registry:POLICY_REGISTRY,tradingTba:TRADING,
+      owner:OWNER,nft:(NFT||null),tokenId:(BROKER_TOKEN_ID===null?null:BROKER_TOKEN_ID.toString()),registry:POLICY_REGISTRY,tradingTba:TRADING,
       dataStreamsVerifier:DATA_STREAMS_VERIFIER
     },
     replayEvidence:{
@@ -2980,8 +3002,8 @@ window.__rusteeBoot='phase8';phase8Load();
 
 // --- v2.8.1 browser/runtime hardening ---
 const SECURITY_MAX_FUND_WEI=6_000_000_000_000_000n; // 0.006 ETH per direct Vault funding tx
-const SECURITY_FIXED_CONTRACTS=[VAULT,TRADING,REWARDS,IDENTITY,ROUTER,QUOTER,WETH,USDG,NVDA,POLICY_REGISTRY,NFT,DATA_STREAMS_VERIFIER]
-  .map(x=>x.toLowerCase());
+const SECURITY_FIXED_CONTRACTS=[VAULT,TRADING,REWARDS,IDENTITY,ROUTER,QUOTER,WETH,USDG,NVDA,POLICY_REGISTRY,DATA_STREAMS_VERIFIER]
+  .filter(Boolean).map(x=>x.toLowerCase());
 let runtimeSecurityCache={time:0,ok:false,missing:[]};
 let integritySecurityCache={time:0,ok:false,details:null};
 let commandRefreshPromise=null;
@@ -3034,14 +3056,17 @@ async function sha256Text(text){
 async function txSecurityDigest(tx){return sha256Text(canonicalTxJson(tx))}
 async function assertRuntimeContracts(force=false){
   if(!force&&runtimeSecurityCache.time&&Date.now()-runtimeSecurityCache.time<60000)return runtimeSecurityCache;
+  let brokerNft=null;
+  try{brokerNft=await resolveBrokerNFT(force)}catch(e){console.warn('Broker NFT binding read failed',e)}
   const required=[
     ['Vault',VAULT],['Trading',TRADING],['Rewards',REWARDS],['Identity',IDENTITY],
     ['Router',ROUTER],['Quoter',QUOTER],['WETH',WETH],['USDG',USDG],
-    ['Policy Registry',POLICY_REGISTRY],['Broker NFT',NFT]
+    ['Policy Registry',POLICY_REGISTRY],['Broker NFT',brokerNft]
   ];
   securityStatus('healthRuntime','CHECKING','healthWarn');
   const checks=await Promise.all(required.map(async ([name,address])=>{
     try{
+      if(!address)return {name,ok:false,error:'address unavailable'};
       const code=await withTimeout(rpc('eth_getCode',[address,'latest']),3000,`${name} bytecode`);
       return {name,ok:!!code&&code!=='0x'};
     }catch(e){return {name,ok:false,error:e.message}}
