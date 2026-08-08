@@ -1,4 +1,4 @@
-name: Deploy Rustee Broker Portfolio Executor
+name: Deploy Rustee Broker Portfolio Executor v1.4
 
 on:
   push:
@@ -27,14 +27,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify expected homepage
+      - name: Verify v1.4 withdrawal fix
         shell: bash
         run: |
           set -euo pipefail
           test -s index.html
-          grep -q "Portfolio Executor v1.2" index.html
-          grep -q "Trading TBA portfolio + move assets to owner" index.html
-          echo "PASS: current Rustee portfolio executor detected"
+          grep -q "Portfolio Executor v1.4" index.html
+          grep -q "SEL_WITHDRAW_TOKEN='9e281a98'" index.html
+          grep -q "withdrawToken(address,uint256)" index.html
+          echo "PASS: v1.4 restricted Trading TBA withdrawal path detected"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
