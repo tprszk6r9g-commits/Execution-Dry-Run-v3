@@ -1,3 +1,5 @@
+# Rustee Portfolio Terminal v2.8.1 — Security Hardened
+
 # Rustee Portfolio Terminal v2.8 — Phase 8 Evidence + Replay
 
 # Rustee Portfolio Terminal v2.7.1 — Spend/Custody Remediation
@@ -24,3 +26,6 @@ included in Phase 7.
 
 
 See `REMEDIATION_2_7_1.md` for the high-priority spend ceiling and custody/allowance fixes.
+
+
+See `SECURITY_HARDENING_2_8_1.md` and `GITHUB_SECURITY_CHECKLIST.md`.

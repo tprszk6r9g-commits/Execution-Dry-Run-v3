@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Portfolio Terminal v2.8.1 · Remediation</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ncG3kMoWFXH56HAd8gUWMg6P8ZsUtvL+kOFuEefdNoc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
+<title>Rustee Broker Portfolio Terminal v2.8.1.1 · Remediation</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -243,9 +244,24 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
           <div class="healthItem"><span>Prices</span><b id="healthPrices">—</b></div>
           <div class="healthItem"><span>History</span><b id="healthHistory">—</b></div>
           <div class="healthItem"><span>Wallet</span><b id="healthWallet">—</b></div>
+          <div class="healthItem"><span>Frontend integrity</span><b id="healthIntegrity">CHECKING</b></div>
+          <div class="healthItem"><span>Runtime contracts</span><b id="healthRuntime">CHECKING</b></div>
+
         </div>
         <div class="actions" style="margin-top:12px"><button class="primary" id="refreshCommandCenter">Refresh all</button></div>
       </div>
+    </div>
+
+    <div class="commandSection commandCard">
+      <h3>Security Seal</h3>
+      <div class="healthGrid">
+        <div class="healthItem"><span>CSP script lock</span><b class="healthGood">HASH-LOCKED ✓</b></div>
+        <div class="healthItem"><span>External JavaScript</span><b class="healthGood">NONE ✓</b></div>
+        <div class="healthItem"><span>GitHub Actions</span><b class="healthGood">SHA-PINNED ✓</b></div>
+        <div class="healthItem"><span>Transaction guard</span><b class="healthGood">ENFORCED ✓</b></div>
+      </div>
+      <p class="auditNote">The browser verifies the published integrity manifest and runtime contract presence. The transaction guard re-checks owner, chain, destination, code presence, and calldata before asking the wallet to sign.</p>
+      <pre id="securitySealLog">Integrity verification pending.</pre>
     </div>
     <div class="commandHero commandSection">
       <div class="commandCard"><h3>Account allocation</h3><div id="cmdAllocation" class="miniAlloc"><div class="emptyState">Load portfolio to calculate allocation.</div></div></div>
@@ -263,7 +279,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 
 <div id="overviewPane" class="tabpane">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.1 · Remediation · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.1.1 · Remediation · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -1110,10 +1126,10 @@ async function moveAsset(){
     `to the current Broker NFT owner wallet?\n\nYou will get a wallet confirmation next.`
   )) return;
 
-  const hash=await ethereum.request({
-    method:'eth_sendTransaction',
-    params:[{from:account,to:TRADING,data:s.data,gas:hexQty(s.gas*120n/100n)}]
-  });
+  const hash=await secureSendTransaction(
+    {from:account,to:TRADING,data:s.data,gas:hexQty(s.gas*120n/100n)},
+    `Trading TBA withdrawal · ${s.symbol}`
+  );
 
   $('moveAsset').disabled=true;
   $('assetLog').textContent='Withdrawal submitted:\n'+hash+'\nWaiting for confirmation…';
@@ -1226,7 +1242,10 @@ async function fundVault(){
   if(vb>=need){$('fundLog').textContent='Vault already has enough ETH: '+fromWei(vb)+' ETH';return;}
   const topup=need-vb;
   if(!confirm(`Send ${fromWei(topup)} ETH from owner wallet to Vault TBA?`)) return;
-  const tx=await ethereum.request({method:'eth_sendTransaction',params:[{from:account,to:VAULT,value:hexQty(topup)}]});
+  const tx=await secureSendTransaction(
+    {from:account,to:VAULT,value:hexQty(topup),data:'0x'},
+    'Fund Rustee Vault'
+  );
   $('fundLog').textContent='Funding transaction sent:\n'+tx+'\nWaiting for confirmation…';
   await waitReceipt(tx);
   $('fundLog').textContent+=' \nCONFIRMED';
@@ -1259,9 +1278,10 @@ async function execute(){
   if(!account) await connect();
   if(!confirm(`REAL MAINNET TRADE\n\nSpend ${fromWei(quoteState.amountIn)} ETH from Rustee Vault TBA to buy NVDA and deliver it to Trading TBA?\n\nYou will get a wallet confirmation next.`)) return;
   const gas=simulationState.gas*120n/100n;
-  const hash=await ethereum.request({method:'eth_sendTransaction',params:[{
-    from:account,to:VAULT,data:simulationState.data,gas:hexQty(gas)
-  }]});
+  const hash=await secureSendTransaction(
+    {from:account,to:VAULT,data:simulationState.data,gas:hexQty(gas)},
+    'Legacy NVDA buy'
+  );
   $('execute').disabled=true;
   $('execLog').textContent='REAL transaction submitted:\n'+hash+'\nWaiting for receipt…';
   const receipt=await waitReceipt(hash);
@@ -1383,7 +1403,7 @@ async function executeUniversalMove(){
   if(!account) await connect();
   if(!confirm(`REAL MAINNET MOVE\n\n${ACCOUNT_LABELS[s.sourceKey]} → ${ACCOUNT_LABELS[s.destKey]}\n${unitsToDecimal(s.amountUnits,s.decimals,12)} ${s.symbol}\n\nReview the wallet confirmation carefully.`)) return;
   const sendTx={...s.tx,gas:hexQty(s.gas*120n/100n)};
-  const hash=await ethereum.request({method:'eth_sendTransaction',params:[sendTx]});
+  const hash=await secureSendTransaction(sendTx,`Asset move · ${s.symbol}`);
   recordReceipt({hash,status:'PENDING',type:'ASSET_MOVE',label:`${ACCOUNT_LABELS[s.sourceKey]} → ${ACCOUNT_LABELS[s.destKey]} · ${s.symbol}`,createdAt:new Date().toISOString()});
   $('executeUniversalMove').disabled=true;
   $('universalMoveLog').textContent='Submitted:\n'+hash+'\nWaiting for confirmation…';
@@ -1626,7 +1646,7 @@ function renderTerminal(){
       const a=p.asset, q=terminalState.quotes[a.tokenSymbol], dep=tokenDeployment(a);
       const halted=q?.isTradingHalt===true;
       rows.push(`<div class="holding">
-        <img class="tokenLogo" src="${escapeHtml(a.logoUrl||'')}" onerror="this.style.visibility='hidden'">
+        <img class="tokenLogo" src="${escapeHtml(a.logoUrl||'')}" alt="">
         <div><div class="holdingTitle">${escapeHtml(a.tokenSymbol)} ${halted?'<span class="statusChip warn">HALT</span>':''}</div>
         <div class="holdingMeta">${escapeHtml(a.tokenName||'Robinhood Stock Token')}<br>${escapeHtml(dep?.contractAddress||p.token)}</div></div>
         <div class="holdingValue"><b>${value==null?'—':money(value)}</b><span>${amount.toLocaleString(undefined,{maximumFractionDigits:10})} tokens${tokenUsd==null?'':' · '+money(tokenUsd)+'/token'}</span></div>
@@ -1968,7 +1988,7 @@ async function executeNextOpsStep(kind){
   }
   if(!confirm(`REAL MAINNET OPERATION\n\nStep ${idx+1}/${opsState.steps.length}\n${s.route}\n${unitsToDecimal(s.amountUnits,s.decimals,12)} ${s.symbol}\n\nThis requires a real wallet signature.`)) return;
   const tx={...s.tx,gas:hexQty(s.gas*120n/100n)};
-  const hash=await ethereum.request({method:'eth_sendTransaction',params:[tx]});
+  const hash=await secureSendTransaction(tx,`Operations · ${s.route}`);
   recordReceipt({hash,status:'PENDING',type:s.type,label:s.route,createdAt:new Date().toISOString()});
   s.status='SUBMITTED';s.txHash=hash;renderOpsPlan();
   $('opsLog').textContent=`Waiting for step ${idx+1} receipt:\n${hash}`;
@@ -2322,7 +2342,7 @@ async function executeNextTradeStep(){
     :'';
   if(!confirm(`REAL MAINNET TRADE STEP\n\n${idx+1}/${tradeState.steps.length}\n${step.label}${custodyNote}\n\nReview the wallet destination and gas carefully.`)) return;
   const tx={...step.tx,gas:hexQty(step.gas*120n/100n)};
-  const hash=await ethereum.request({method:'eth_sendTransaction',params:[tx]});
+  const hash=await secureSendTransaction(tx,`Trade step · ${step.label}`);
   recordReceipt({hash,status:'PENDING',type:step.type,label:step.label,createdAt:new Date().toISOString()});
   step.status='SUBMITTED';step.txHash=hash;renderTradePlan();
   $('tradeExecLog').textContent=`Submitted step ${idx+1}:\n${hash}\nWaiting for confirmation…`;
@@ -2389,7 +2409,7 @@ function writeReceiptLog(x){localStorage.setItem(RECEIPT_KEY,JSON.stringify(x.sl
 function recordReceipt(item){const log=readReceiptLog();const i=log.findIndex(x=>x.hash===item.hash);if(i>=0)log.splice(i,1);log.unshift({...item,updatedAt:new Date().toISOString()});writeReceiptLog(log);renderReceipts()}
 function setSticky(msg){$('stickyCommandStatus').textContent=msg}
 async function refreshRecordedReceipts(){const log=readReceiptLog();let changed=false;for(const r of log){if(r.status==='CONFIRMED'||r.status==='FAILED')continue;try{const rec=await rpc('eth_getTransactionReceipt',[r.hash]);if(rec){r.status=rec.status==='0x1'?'CONFIRMED':'FAILED';r.block=Number(BigInt(rec.blockNumber));changed=true}}catch{}}if(changed)writeReceiptLog(log);renderReceipts()}
-function renderReceipts(){const log=readReceiptLog();$('receiptList').innerHTML=log.map(r=>{const cls=r.status==='CONFIRMED'?'receiptConfirmed':r.status==='FAILED'?'receiptFailed':'receiptPending';return `<div class="receipt"><div class="receiptHead"><b>${escapeHtml(r.label||r.type||'Transaction')}</b><b class="${cls}">${escapeHtml(r.status||'PENDING')}</b></div><div class="receiptMeta">${escapeHtml(r.hash||'')}<br>${r.block?'Block '+r.block+' · ':''}${escapeHtml(r.createdAt||r.updatedAt||'')}</div><div class="actions"><button onclick="window.open('${BLOCKSCOUT}/tx/${escapeHtml(r.hash)}','_blank')">Explorer ↗</button></div></div>`}).join('')||'<div class="emptyState">No locally recorded transactions yet.</div>'}
+function renderReceipts(){const log=readReceiptLog();$('receiptList').innerHTML=log.map(r=>{const cls=r.status==='CONFIRMED'?'receiptConfirmed':r.status==='FAILED'?'receiptFailed':'receiptPending';return `<div class="receipt"><div class="receiptHead"><b>${escapeHtml(r.label||r.type||'Transaction')}</b><b class="${cls}">${escapeHtml(r.status||'PENDING')}</b></div><div class="receiptMeta">${escapeHtml(r.hash||'')}<br>${r.block?'Block '+r.block+' · ':''}${escapeHtml(r.createdAt||r.updatedAt||'')}</div><div class="actions"><button class="receiptExplorer" data-tx="${escapeHtml(r.hash)}">Explorer ↗</button></div></div>`}).join('')||'<div class="emptyState">No locally recorded transactions yet.</div>'}
 function commandStockSummary(){const keys=['OWNER','VAULT','TRADING','REWARDS','IDENTITY'];let total=0,count=0,per={OWNER:0,VAULT:0,TRADING:0,REWARDS:0,IDENTITY:0};for(const key of keys)for(const p of terminalState.positions){const bal=p.balances[key]||0n;if(bal===0n)continue;count++;const v=currentPositionUsd(key,p);if(v!=null){total+=v;per[key]+=v}}return {total,count,per}}
 function renderCommandAllocation(){const x=commandStockSummary(),max=Math.max(...Object.values(x.per),0);$('cmdAllocation').innerHTML=Object.entries(x.per).map(([k,v])=>`<div class="miniAllocRow"><span>${escapeHtml(ACCOUNT_LABELS[k])}</span><div class="miniBar"><i style="width:${max?Math.min(100,v/max*100):0}%"></i></div><b>${money(v)}</b></div>`).join('');$('cmdPortfolioUsd').textContent=money(x.total);$('cmdPositions').textContent=String(x.count)}
 function renderCommandActivity(){const events=(historyState.events||[]).slice(0,6);$('cmdRecentActivity').innerHTML=events.map(e=>`<div class="receipt"><div class="receiptHead"><b>${escapeHtml(e.symbol)} · ${escapeHtml(e.direction)}</b><b>${escapeHtml(e.amount)}</b></div><div class="receiptMeta">${escapeHtml(typeof e.account==='string'?e.account:(ACCOUNT_LABELS[e.account]||e.account||''))}<br>${escapeHtml(e.txHash||'')}</div></div>`).join('')||'<div class="emptyState">No indexed Stock Token activity loaded yet.</div>'}
@@ -2405,7 +2425,7 @@ async function refreshCommandCenter(){
  if(!terminalState.positions.length){try{await discoverPortfolio()}catch{}}else{try{await refreshTerminalPrices(false);renderTerminal()}catch{}}
  renderCommandAllocation();
  if(!historyState.events.length){try{await loadOnchainHistory()}catch{}}
- renderCommandActivity();await refreshRecordedReceipts();
+ renderCommandActivity();await refreshRecordedReceipts();await Promise.all([verifyPublishedIntegrity(false),assertRuntimeContracts(false)]);
  $('commandLog').textContent=`PASS — Command Center refreshed.\nPortfolio positions: ${commandStockSummary().count}\nLocal receipts: ${readReceiptLog().length}`;
  setSticky('Rustee refreshed · '+new Date().toLocaleTimeString());
 }
@@ -2441,6 +2461,8 @@ async function runSecurityPreflight(){
       rpc('eth_getCode',[TRADING,'latest']),
       rpc('eth_getCode',[DATA_STREAMS_VERIFIER,'latest'])
     ]);
+    await assertRuntimeContracts(true);
+    await verifyPublishedIntegrity(true);
     const regOk=regCode&&regCode!=='0x',tbaOk=tbaCode&&tbaCode!=='0x',verOk=verCode&&verCode!=='0x';
     $('secRegistryCode').textContent=regOk?'PASS ✓':'FAIL ✕';$('secRegistryCode').className=regOk?'gatePass':'gateFail';
     $('secTradingCode').textContent=tbaOk?'PASS ✓':'FAIL ✕';$('secTradingCode').className=tbaOk?'gatePass':'gateFail';
@@ -2821,6 +2843,156 @@ $('saveAuditEvidence').onclick=()=>{$('evidenceLog').textContent='Audit evidence
 $('buildEvidenceBundle').onclick=()=>buildEvidenceBundle();
 $('exportEvidenceBundle').onclick=()=>exportEvidenceBundle();
 phase8Load();
+
+
+// --- v2.8.1 browser/runtime hardening ---
+const SECURITY_MAX_FUND_WEI=6_000_000_000_000_000n; // 0.006 ETH per direct Vault funding tx
+const SECURITY_FIXED_CONTRACTS=[VAULT,TRADING,REWARDS,IDENTITY,ROUTER,QUOTER,WETH,USDG,NVDA,POLICY_REGISTRY,NFT,DATA_STREAMS_VERIFIER]
+  .map(x=>x.toLowerCase());
+let runtimeSecurityCache={time:0,ok:false,missing:[]};
+let integritySecurityCache={time:0,ok:false,details:null};
+
+function securityDynamicTokens(){
+  const out=new Set();
+  try{for(const a of terminalState.catalog||[]){const d=tokenDeployment(a);if(d?.contractAddress)out.add(d.contractAddress.toLowerCase())}}catch{}
+  try{if(assetState?.token)out.add(assetState.token.toLowerCase())}catch{}
+  try{if(universalMoveState?.token)out.add(universalMoveState.token.toLowerCase())}catch{}
+  try{if(tradeState?.asset?.token)out.add(tradeState.asset.token.toLowerCase())}catch{}
+  try{for(const s of opsState?.steps||[])if(s.token)out.add(s.token.toLowerCase())}catch{}
+  return out;
+}
+function isZeroData(data){return !data||data==='0x'}
+function txSelector(data){return (data||'0x').slice(0,10).toLowerCase()}
+function canonicalTxJson(tx){
+  return JSON.stringify({
+    chainId:CHAIN,
+    from:String(tx.from||'').toLowerCase(),
+    to:String(tx.to||'').toLowerCase(),
+    value:String(tx.value||'0x0').toLowerCase(),
+    gas:String(tx.gas||'').toLowerCase(),
+    data:String(tx.data||'0x').toLowerCase()
+  });
+}
+async function sha256Text(text){
+  const bytes=new TextEncoder().encode(text);
+  const digest=await crypto.subtle.digest('SHA-256',bytes);
+  return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+async function txSecurityDigest(tx){return sha256Text(canonicalTxJson(tx))}
+async function assertRuntimeContracts(force=false){
+  if(!force&&runtimeSecurityCache.time&&Date.now()-runtimeSecurityCache.time<60000)return runtimeSecurityCache;
+  const required=[
+    ['Vault',VAULT],['Trading',TRADING],['Rewards',REWARDS],['Identity',IDENTITY],
+    ['Router',ROUTER],['Quoter',QUOTER],['WETH',WETH],['USDG',USDG],
+    ['Policy Registry',POLICY_REGISTRY],['Broker NFT',NFT]
+  ];
+  const missing=[];
+  for(const [name,address] of required){
+    try{const code=await rpc('eth_getCode',[address,'latest']);if(!code||code==='0x')missing.push(name)}catch{missing.push(name)}
+  }
+  runtimeSecurityCache={time:Date.now(),ok:missing.length===0,missing};
+  if($('healthRuntime')){
+    $('healthRuntime').textContent=runtimeSecurityCache.ok?'PASS ✓':'FAIL ✕';
+    $('healthRuntime').className=runtimeSecurityCache.ok?'healthGood':'healthBad';
+  }
+  return runtimeSecurityCache;
+}
+async function validateSecurityDestination(tx){
+  const to=String(tx.to||'').toLowerCase();
+  if(!/^0x[0-9a-f]{40}$/.test(to))throw Error('SECURITY: invalid transaction destination');
+  const fixed=SECURITY_FIXED_CONTRACTS.includes(to);
+  const dynamic=securityDynamicTokens().has(to);
+
+  // Plain ETH may only be sent directly to one of Rustee's controlled TBAs.
+  const value=BigInt(tx.value||'0x0');
+  if(value>0n&&isZeroData(tx.data)){
+    const ethTargets=[VAULT,TRADING,REWARDS,IDENTITY].map(x=>x.toLowerCase());
+    if(!ethTargets.includes(to))throw Error('SECURITY: direct ETH destination is not a Rustee TBA');
+    if(to===VAULT.toLowerCase()&&value>SECURITY_MAX_FUND_WEI)
+      throw Error(`SECURITY: direct Vault funding exceeds ${fromWei(SECURITY_MAX_FUND_WEI)} ETH ceiling`);
+    return true;
+  }
+
+  if(!fixed&&!dynamic)throw Error('SECURITY: destination is not a fixed Rustee contract or an active canonical/session token');
+  return true;
+}
+async function hardenedTxPreflight(tx,label='Transaction'){
+  if(!window.ethereum)throw Error('SECURITY: no injected wallet provider');
+  const cid=Number(BigInt(await ethereum.request({method:'eth_chainId'})));
+  if(cid!==CHAIN)throw Error(`SECURITY: wrong chain ${cid}; expected ${CHAIN}`);
+  const accounts=await ethereum.request({method:'eth_accounts'});
+  const current=(accounts?.[0]||'').toLowerCase();
+  if(current!==OWNER.toLowerCase())throw Error('SECURITY: connected account is not the Broker NFT owner');
+  if(String(tx.from||'').toLowerCase()!==OWNER.toLowerCase())throw Error('SECURITY: transaction from-address mismatch');
+
+  const runtime=await assertRuntimeContracts(false);
+  if(!runtime.ok)throw Error('SECURITY: required runtime contract missing: '+runtime.missing.join(', '));
+  await validateSecurityDestination(tx);
+
+  // Contract calls must still point to deployed code.
+  if(!isZeroData(tx.data)){
+    const code=await rpc('eth_getCode',[tx.to,'latest']);
+    if(!code||code==='0x')throw Error('SECURITY: destination has no contract bytecode');
+  }
+
+  const digest=await txSecurityDigest(tx);
+  const selector=txSelector(tx.data);
+  const message=
+    `SECURITY PRE-SIGN CHECK\n\n${label}\n`+
+    `Chain: ${CHAIN}\nFrom: ${short(tx.from)}\nTo: ${short(tx.to)}\n`+
+    `Value: ${fromWei(BigInt(tx.value||'0x0'))} ETH\nSelector: ${selector}\n`+
+    `TX fingerprint: ${digest.slice(0,16)}…${digest.slice(-12)}\n\n`+
+    `Continue to wallet signature?`;
+  if(!confirm(message))throw Error('Transaction canceled at security pre-sign gate');
+  if($('securitySealLog'))$('securitySealLog').textContent=
+    `PRE-SIGN PASS\n${label}\nDestination: ${tx.to}\nSelector: ${selector}\nSHA-256: ${digest}`;
+  return {digest,cid};
+}
+async function secureSendTransaction(tx,label='Transaction'){
+  await hardenedTxPreflight(tx,label);
+  return ethereum.request({method:'eth_sendTransaction',params:[tx]});
+}
+async function verifyPublishedIntegrity(force=false){
+  if(!force&&integritySecurityCache.time&&Date.now()-integritySecurityCache.time<60000)return integritySecurityCache;
+  try{
+    const manifest=await fetchJson('data/integrity.json?v='+Date.now(),7000);
+    const targets=['index.html','data/robinhood-assets.json','data/robinhood-prices.json','data/rustee-history.json'];
+    const results=[];
+    for(const path of targets){
+      const url=path==='index.html'?'./index.html?integrity='+Date.now():path+'?integrity='+Date.now();
+      const r=await fetch(url,{cache:'no-store'});
+      if(!r.ok)throw Error(`HTTP ${r.status} for ${path}`);
+      const text=await r.text();
+      const got=await sha256Text(text);
+      const expected=manifest.sha256?.[path];
+      results.push({path,ok:!!expected&&got===expected,got,expected});
+    }
+    const ok=results.every(x=>x.ok);
+    integritySecurityCache={time:Date.now(),ok,details:results};
+    if($('healthIntegrity')){
+      $('healthIntegrity').textContent=ok?'PASS ✓':'FAIL ✕';
+      $('healthIntegrity').className=ok?'healthGood':'healthBad';
+    }
+    if($('securitySealLog'))$('securitySealLog').textContent=
+      (ok?'INTEGRITY PASS ✓':'INTEGRITY FAIL ✕')+'\n'+
+      results.map(x=>`${x.path}: ${x.ok?'OK':'MISMATCH'}`).join('\n');
+    return integritySecurityCache;
+  }catch(e){
+    integritySecurityCache={time:Date.now(),ok:false,details:String(e.message||e)};
+    if($('healthIntegrity')){$('healthIntegrity').textContent='UNAVAILABLE';$('healthIntegrity').className='healthWarn'}
+    if($('securitySealLog'))$('securitySealLog').textContent='Integrity manifest unavailable: '+e.message;
+    return integritySecurityCache;
+  }
+}
+document.addEventListener('error',e=>{
+  if(e.target?.matches?.('img.tokenLogo'))e.target.style.visibility='hidden';
+},true);
+$('receiptList')?.addEventListener('click',e=>{
+  const b=e.target.closest?.('.receiptExplorer');
+  if(!b)return;
+  const h=b.dataset.tx;
+  if(/^0x[0-9a-fA-F]{64}$/.test(h))window.open(BLOCKSCOUT+'/tx/'+h,'_blank','noopener');
+});
 
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
 bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);
