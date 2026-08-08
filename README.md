@@ -1,6 +1,6 @@
-# Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7.1
+# Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7.2
 
-v4.7.1 follows the green/corrected v4.5.2 math and the v4.6.1 finding that
+v4.7.2 follows the green/corrected v4.5.2 math and the v4.6.1 finding that
 Robinhood's public RPC did not expose enough historical state.
 
 ## New requirement
@@ -15,7 +15,7 @@ The workflow does not hardcode or guess a paid provider endpoint.
 
 ## Historical gate
 
-v4.7.1 attempts 14 recent samples spanning 0 to 168 hours. The archive evidence
+v4.7.2 attempts 14 recent samples spanning 0 to 168 hours. The archive evidence
 gate requires at least 8 successful historical samples.
 
 ## Bidirectional stress
