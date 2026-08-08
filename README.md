@@ -1,19 +1,32 @@
-# Rustee Portfolio Terminal v2.2 — Resilient Data Fix
+# Rustee Portfolio Terminal v2.3 — Phase 3 Operations
 
-This release fixes the iPhone/GitHub Pages **Load failed** errors shown in Phase 1/2.
+Phase 3 adds a top-tier **Operations Center** while preserving the working resilient-data Portfolio, History + P&L, Account Center, Universal Asset Mover, NVDA trade executor, and Trading-TBA withdrawal path.
 
-## Cause
-The static GitHub Pages frontend was attempting cross-origin browser requests to Robinhood's read-only REST APIs and Blockscout. Embedded/mobile browsers can reject those requests even when the endpoints themselves are healthy.
+## New in Phase 3
 
-## Fix
-The GitHub Actions workflow now retrieves the public read-only data server-side and publishes it beside the app:
+### Smart Route Planner
+- Main Wallet ↔ Vault / Trading / Rewards / Identity
+- Vault / Rewards / Identity → any Rustee account through generic `BrokerAccount.execute`
+- Trading TBA → Owner through restricted `withdrawToken()` / `withdrawETH()`
+- Trading TBA → another TBA automatically becomes a two-step route:
+  1. Trading → Owner
+  2. Owner → destination
+- ETH, NVDA, WETH, and custom ERC-20 support
+- exact amount/balance validation
+- per-step `eth_estimateGas` + `eth_call`
+- 60-second simulation expiry
+- explorer links for confirmed transactions
 
-- `data/robinhood-assets.json`
-- `data/robinhood-prices.json`
-- `data/rustee-history.json`
+### One-Tap Sweep Planner
+- Sweep Vault, Trading, Rewards, Identity, or all four
+- optional ETH
+- optional WETH
+- optional automatically discovered canonical Robinhood Stock Tokens
+- never auto-sweeps unknown tokens or NFTs
+- creates one controlled plan but preserves one wallet confirmation per transaction
+- per-step status: Pending / Ready / Submitted / Done / Failed
 
-The browser loads these files from the **same GitHub Pages origin**, eliminating the cross-origin dependency for normal operation.
+## Safety boundary
+Phase 3 does **not** create a bot signer or bypass wallet confirmation. Each real transaction is explicitly confirmed by the Broker NFT owner.
 
-The workflow also runs every 15 minutes to refresh the public snapshots. The UI displays snapshot age. Direct live API requests remain a best-effort path for quote refresh, with same-origin snapshot fallback.
-
-No credentials, wallet keys, or private data are stored in the generated snapshots.
+The Trading TBA remains restricted: when routing Trading → another TBA, assets first recover to the current NFT owner and then move to the destination in a separately simulated transaction.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Portfolio Terminal v2.2 · Phase 2</title>
+<title>Rustee Broker Portfolio Terminal v2.3 · Phase 3</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -76,6 +76,24 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 .lotCard{border:1px solid var(--line);border-radius:16px;padding:13px;margin-top:10px;background:#051713}
 @media(max-width:650px){.historyGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+
+.opsHero{display:grid;grid-template-columns:1.3fr 1fr;gap:12px}
+.opsPanel{border:1px solid var(--line);border-radius:20px;padding:17px;background:#061d18}
+.opsPanel h3{margin:0 0 10px;font-size:20px}
+.planTableWrap{overflow:auto;border:1px solid var(--line);border-radius:18px;margin-top:14px}
+.planTable{width:100%;border-collapse:collapse;min-width:760px;font-size:13px}
+.planTable th,.planTable td{padding:11px 9px;text-align:left;border-bottom:1px solid #1d4b42;vertical-align:top}
+.planTable th{background:#08231d;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:10px}
+.planStatus{font-weight:800}
+.planPending{color:var(--muted)}.planReady{color:var(--teal)}.planDone{color:var(--green)}.planFail{color:var(--red)}
+.routePath{font:12px ui-monospace,monospace;color:var(--muted);word-break:break-all}
+.opsStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.opsStat{border:1px solid var(--line);border-radius:15px;padding:12px;background:#051713}
+.opsStat small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.1em}
+.opsStat strong{display:block;font-size:20px;margin-top:5px}
+.warnline{border-left:5px solid var(--orange);padding:10px 12px;background:#21170b;border-radius:12px;color:#f6e7d2;font-size:13px;line-height:1.45}
+@media(max-width:650px){.opsHero{grid-template-columns:1fr}.opsStats{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body><main>
@@ -86,10 +104,11 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <button class="tabbtn" data-tab="historyPane">History + P&amp;L</button>
   <button class="tabbtn" data-tab="accountsPane">Accounts</button>
   <button class="tabbtn" data-tab="transferPane">Move Assets</button>
+  <button class="tabbtn" data-tab="operationsPane">Operations</button>
 </div>
 <div id="overviewPane" class="tabpane active">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.2 · Phase 2 · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.3 · Phase 3 · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -208,7 +227,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 
 <div id="portfolioPane" class="tabpane">
   <div class="card">
-    <span class="badge">PHASE 2 · HISTORY + COST BASIS + P&L</span>
+    <span class="badge">PHASE 3 · OPERATIONS + SMART ROUTING</span>
     <h2>Rustee Portfolio Terminal</h2>
     <p>Automatically discovers canonical Robinhood Stock Tokens on chain 4663, scans all five Rustee-controlled addresses, and values non-zero positions using Robinhood's read-only Stock Token APIs.</p>
 
@@ -269,7 +288,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
       </select>
     </div>
 
-    <pre id="historyLog">Load the Portfolio first, then load history. Phase 2 never signs or sends transactions.</pre>
+    <pre id="historyLog">Load the Portfolio first, then load history. Phase 2 analytics never signs or sends transactions.</pre>
 
     <h3>Cost-basis ledger</h3>
     <p class="sourceNote">Because transfers between your own Rustee accounts are not purchases, Phase 2 does not invent a purchase price. Enter total USD cost basis for a position when known. It is stored only in this browser.</p>
@@ -348,6 +367,101 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
     <p>Every real move requires the connected Broker NFT owner, chain 4663, a fresh successful <code>eth_estimateGas</code> and <code>eth_call</code> simulation, then a separate wallet confirmation. The app never requests a seed phrase or private key.</p>
   </div>
 </div>
+
+
+<div id="operationsPane" class="tabpane">
+  <div class="card">
+    <span class="badge">PHASE 3 · OWNER-CONTROLLED OPERATIONS</span>
+    <h2>Rustee Operations Center</h2>
+    <p>Plan and execute safe asset routing across the Main Wallet, Vault, Trading, Rewards, and Identity accounts. Every transaction is simulated first and every live step requires its own wallet confirmation.</p>
+
+    <div class="opsHero">
+      <div class="opsPanel">
+        <h3>Smart Route Planner</h3>
+        <div class="controlgrid">
+          <div class="field"><label>Source</label>
+            <select id="opsSource">
+              <option value="OWNER">Main Wallet</option>
+              <option value="VAULT">Vault TBA</option>
+              <option value="TRADING">Trading TBA</option>
+              <option value="REWARDS">Rewards TBA</option>
+              <option value="IDENTITY">Identity TBA</option>
+            </select>
+          </div>
+          <div class="field"><label>Destination</label>
+            <select id="opsDestination">
+              <option value="TRADING">Trading TBA</option>
+              <option value="OWNER">Main Wallet</option>
+              <option value="VAULT">Vault TBA</option>
+              <option value="REWARDS">Rewards TBA</option>
+              <option value="IDENTITY">Identity TBA</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="controlgrid" style="margin-top:12px">
+          <div class="field"><label>Asset</label>
+            <select id="opsAsset">
+              <option value="ETH">ETH</option>
+              <option value="NVDA">NVDA</option>
+              <option value="WETH">WETH</option>
+              <option value="CUSTOM">Custom ERC-20</option>
+            </select>
+          </div>
+          <div class="field"><label>Amount</label><input id="opsAmount" inputmode="decimal" value="0.001"></div>
+        </div>
+        <div class="field" id="opsCustomWrap" style="display:none;margin-top:12px"><label>Custom ERC-20</label><input id="opsCustomToken" placeholder="0x…"></div>
+
+        <div class="actions" style="margin-top:14px">
+          <button class="primary" id="buildRoutePlan">Build route plan</button>
+          <button id="simulateRoutePlan">Simulate plan</button>
+          <button id="executeNextRouteStep" disabled>Execute next step</button>
+        </div>
+        <pre id="routePlanLog">No route planned.</pre>
+      </div>
+
+      <div class="opsPanel">
+        <h3>One-Tap Sweep Planner</h3>
+        <p class="sourceNote">Sweep ETH, WETH, and discovered canonical Stock Tokens from one TBA—or all four TBAs—back to the Broker NFT owner. Unknown tokens/NFTs are never moved automatically.</p>
+
+        <label>Scope</label>
+        <select id="sweepScope">
+          <option value="VAULT">Vault TBA</option>
+          <option value="TRADING">Trading TBA</option>
+          <option value="REWARDS">Rewards TBA</option>
+          <option value="IDENTITY">Identity TBA</option>
+          <option value="ALL">All four TBAs</option>
+        </select>
+
+        <label class="toggleline" style="margin-top:12px"><input type="checkbox" id="sweepIncludeEth" checked>Include ETH</label>
+        <label class="toggleline"><input type="checkbox" id="sweepIncludeWeth" checked>Include WETH</label>
+        <label class="toggleline"><input type="checkbox" id="sweepIncludeStocks" checked>Include discovered Stock Tokens</label>
+
+        <div class="actions" style="margin-top:14px">
+          <button class="primary" id="buildSweepPlan">Build sweep plan</button>
+          <button id="simulateSweepPlan">Simulate all</button>
+          <button id="executeNextSweepStep" disabled>Execute next sweep step</button>
+        </div>
+        <div class="warnline">“One-tap sweep” means one plan, not one signature. Each on-chain transaction still gets an individual wallet confirmation.</div>
+      </div>
+    </div>
+
+    <div class="opsStats">
+      <div class="opsStat"><small>Planned steps</small><strong id="opsPlannedCount">0</strong></div>
+      <div class="opsStat"><small>Simulation ready</small><strong id="opsReadyCount">0</strong></div>
+      <div class="opsStat"><small>Confirmed</small><strong id="opsDoneCount">0</strong></div>
+    </div>
+
+    <div class="planTableWrap">
+      <table class="planTable">
+        <thead><tr><th>#</th><th>Type</th><th>Asset</th><th>Amount</th><th>Route</th><th>Status</th><th>Tx</th></tr></thead>
+        <tbody id="opsPlanRows"><tr><td colspan="7">No active operations plan.</td></tr></tbody>
+      </table>
+    </div>
+    <pre id="opsLog">Operations Center ready. No transaction has been prepared.</pre>
+  </div>
+</div>
+
 
 <div class="footer">No seed phrase or private key is ever requested. Wallet signatures are performed only by the injected wallet provider.</div>
 </main>
@@ -803,6 +917,7 @@ document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tabpane').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));
   if(b.dataset.tab==='accountsPane') refreshAllAccounts().catch(e=>$('accountCenterLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='portfolioPane' && !terminalState.positions.length) discoverPortfolio().catch(e=>$('terminalLog').textContent='ERROR: '+e.message);
+  if(b.dataset.tab==='operationsPane'){try{refreshAllAccounts()}catch{}}
   if(b.dataset.tab==='historyPane'){
     if(!terminalState.positions.length) discoverPortfolio().then(()=>{renderCostBasisEditor();renderHistoryMetrics()}).catch(e=>$('historyLog').textContent='ERROR: '+e.message);
     else {renderCostBasisEditor();renderHistoryMetrics();}
@@ -1195,6 +1310,244 @@ $('recalcPnl').onclick=()=>{renderCostBasisEditor();renderHistoryMetrics()};
 $('exportLedger').onclick=exportLedgerJson;
 $('clearLedger').onclick=()=>{if(confirm('Clear locally stored cost-basis values? On-chain history is unaffected.')){localStorage.removeItem(COST_BASIS_KEY);renderCostBasisEditor();renderHistoryMetrics()}};
 $('historyAccountFilter').onchange=renderHistoryTable;
+
+
+let opsState={kind:null,steps:[],createdAt:null};
+
+function opsAssetToken(selId='opsAsset',customId='opsCustomToken'){
+  const t=$(selId).value;
+  if(t==='ETH') return {kind:'ETH',token:null,symbol:'ETH',decimals:18};
+  if(t==='NVDA') return {kind:'ERC20',token:NVDA,symbol:'NVDA',decimals:18};
+  if(t==='WETH') return {kind:'ERC20',token:WETH,symbol:'WETH',decimals:18};
+  const token=$(customId).value.trim();
+  if(!/^0x[0-9a-fA-F]{40}$/.test(token)) throw Error('Enter a valid custom ERC-20 contract');
+  return {kind:'ERC20',token,symbol:'TOKEN',decimals:null};
+}
+async function buildSingleStep(sourceKey,destKey,asset,amountUnits,symbol,decimals){
+  const source=ACCOUNT_MAP[sourceKey],dest=ACCOUNT_MAP[destKey];
+  if(sourceKey===destKey) throw Error('Source and destination must differ');
+
+  if(asset.kind==='ETH'){
+    if(sourceKey==='OWNER'){
+      return [{type:'DIRECT_ETH',sourceKey,destKey,symbol:'ETH',decimals:18,amountUnits,
+        route:`Main Wallet → ${ACCOUNT_LABELS[destKey]}`,
+        buildTx:()=>({from:OWNER,to:dest,value:hexQty(amountUnits),data:'0x'})}];
+    }
+    if(sourceKey==='TRADING'){
+      const withdraw={type:'TRADING_WITHDRAW_ETH',sourceKey:'TRADING',destKey:'OWNER',symbol:'ETH',decimals:18,amountUnits,
+        route:'Trading TBA → Main Wallet',
+        buildTx:()=>({from:OWNER,to:TRADING,data:'0x'+SEL_WITHDRAW_ETH+word(amountUnits)})};
+      if(destKey==='OWNER') return [withdraw];
+      const deposit={type:'OWNER_FORWARD_ETH',sourceKey:'OWNER',destKey,symbol:'ETH',decimals:18,amountUnits,
+        route:`Main Wallet → ${ACCOUNT_LABELS[destKey]}`,
+        buildTx:()=>({from:OWNER,to:dest,value:hexQty(amountUnits),data:'0x'}),dependsOnPrevious:true};
+      return [withdraw,deposit];
+    }
+    return [{type:'GENERIC_TBA_ETH',sourceKey,destKey,symbol:'ETH',decimals:18,amountUnits,
+      route:`${ACCOUNT_LABELS[sourceKey]} → ${ACCOUNT_LABELS[destKey]}`,
+      buildTx:()=>({from:OWNER,to:source,data:genericExecuteCalldata(dest,amountUnits,'0x')})}];
+  }
+
+  // ERC-20
+  const token=asset.token;
+  if(sourceKey==='OWNER'){
+    return [{type:'DIRECT_ERC20',sourceKey,destKey,token,symbol,decimals,amountUnits,
+      route:`Main Wallet → ${ACCOUNT_LABELS[destKey]}`,
+      buildTx:()=>({from:OWNER,to:token,data:transferCalldata(dest,amountUnits)})}];
+  }
+  if(sourceKey==='TRADING'){
+    const withdraw={type:'TRADING_WITHDRAW_TOKEN',sourceKey:'TRADING',destKey:'OWNER',token,symbol,decimals,amountUnits,
+      route:'Trading TBA → Main Wallet',
+      buildTx:()=>({from:OWNER,to:TRADING,data:withdrawTokenCalldata(token,amountUnits)})};
+    if(destKey==='OWNER') return [withdraw];
+    const forward={type:'OWNER_FORWARD_ERC20',sourceKey:'OWNER',destKey,token,symbol,decimals,amountUnits,
+      route:`Main Wallet → ${ACCOUNT_LABELS[destKey]}`,
+      buildTx:()=>({from:OWNER,to:token,data:transferCalldata(dest,amountUnits)}),dependsOnPrevious:true};
+    return [withdraw,forward];
+  }
+  return [{type:'GENERIC_TBA_ERC20',sourceKey,destKey,token,symbol,decimals,amountUnits,
+    route:`${ACCOUNT_LABELS[sourceKey]} → ${ACCOUNT_LABELS[destKey]}`,
+    buildTx:()=>({from:OWNER,to:source,data:genericExecuteCalldata(token,0n,transferCalldata(dest,amountUnits))})}];
+}
+
+async function resolveAssetInfo(asset){
+  if(asset.kind==='ETH') return asset;
+  if(asset.decimals==null) asset.decimals=await tokenDecimals(asset.token);
+  if(asset.symbol==='TOKEN') asset.symbol=await tokenSymbol(asset.token);
+  return asset;
+}
+function resetOps(kind){
+  opsState={kind,steps:[],createdAt:new Date().toISOString()};
+  renderOpsPlan();
+}
+function renderOpsPlan(){
+  const steps=opsState.steps;
+  $('opsPlannedCount').textContent=String(steps.length);
+  $('opsReadyCount').textContent=String(steps.filter(x=>x.status==='READY').length);
+  $('opsDoneCount').textContent=String(steps.filter(x=>x.status==='DONE').length);
+  $('opsPlanRows').innerHTML=steps.map((s,i)=>{
+    const cls=s.status==='DONE'?'planDone':s.status==='READY'?'planReady':s.status==='FAILED'?'planFail':'planPending';
+    return `<tr><td>${i+1}</td><td>${escapeHtml(s.type)}</td><td>${escapeHtml(s.symbol)}</td>
+      <td>${escapeHtml(unitsToDecimal(s.amountUnits,s.decimals,12))}</td><td class="routePath">${escapeHtml(s.route)}</td>
+      <td class="planStatus ${cls}">${escapeHtml(s.status||'PENDING')}</td>
+      <td>${s.txHash?`<a href="${BLOCKSCOUT}/tx/${s.txHash}" target="_blank" rel="noopener">${escapeHtml(short(s.txHash))} ↗</a>`:'—'}</td></tr>`;
+  }).join('')||'<tr><td colspan="7">No active operations plan.</td></tr>';
+  const next=steps.find(x=>x.status==='READY');
+  $('executeNextRouteStep').disabled=!(opsState.kind==='ROUTE'&&next);
+  $('executeNextSweepStep').disabled=!(opsState.kind==='SWEEP'&&next);
+}
+async function ensureOwnerAndChain(){
+  if(!account) await connect();
+  if(account.toLowerCase()!==OWNER.toLowerCase()) throw Error('Wrong owner wallet connected');
+  const cid=Number(BigInt(await rpc('eth_chainId')));
+  if(cid!==CHAIN) throw Error('Wrong network');
+}
+async function sourceBalance(sourceKey,asset){
+  const addr=ACCOUNT_MAP[sourceKey];
+  if(asset.kind==='ETH') return BigInt(await rpc('eth_getBalance',[addr,'latest']));
+  return erc20Balance(asset.token,addr);
+}
+async function buildRoutePlan(){
+  await ensureOwnerAndChain();
+  resetOps('ROUTE');
+  const sourceKey=$('opsSource').value,destKey=$('opsDestination').value;
+  let asset=await resolveAssetInfo(opsAssetToken());
+  const amountUnits=decimalToUnits($('opsAmount').value,asset.decimals);
+  if(amountUnits<=0n) throw Error('Amount must be greater than zero');
+  const bal=await sourceBalance(sourceKey,asset);
+  if(amountUnits>bal) throw Error(`Amount exceeds ${ACCOUNT_LABELS[sourceKey]} ${asset.symbol} balance`);
+  const steps=await buildSingleStep(sourceKey,destKey,asset,amountUnits,asset.symbol,asset.decimals);
+  opsState.steps=steps.map((s,i)=>({...s,id:i,status:'PENDING',gas:null,txHash:null}));
+  $('routePlanLog').textContent=`Route built: ${steps.map(s=>s.route).join(' → ')}\nSteps: ${steps.length}\nAsset: ${asset.symbol}\nAmount: ${unitsToDecimal(amountUnits,asset.decimals,12)}`;
+  $('opsLog').textContent='Route plan built. Simulate before execution.';
+  renderOpsPlan();
+}
+async function simulateOpsStep(step,index){
+  if(step.status==='DONE') return true;
+  if(step.dependsOnPrevious){
+    const prev=opsState.steps[index-1];
+    if(!prev||prev.status!=='DONE'){
+      step.status='WAITING';
+      return false;
+    }
+  }
+  const tx=step.buildTx();
+  try{
+    const gas=BigInt(await rpc('eth_estimateGas',[tx]));
+    const result=await rpc('eth_call',[tx,'latest']);
+    step.gas=gas;step.tx=tx;step.callResult=result;step.status='READY';step.simulatedAt=Date.now();
+    return true;
+  }catch(e){
+    step.status='FAILED';step.error=e.message;
+    return false;
+  }
+}
+async function simulateCurrentPlan(){
+  await ensureOwnerAndChain();
+  if(!opsState.steps.length) throw Error('Build a plan first');
+  let pass=0,fail=0,waiting=0;
+  for(let i=0;i<opsState.steps.length;i++){
+    const s=opsState.steps[i];
+    if(s.status==='DONE') continue;
+    const ok=await simulateOpsStep(s,i);
+    if(ok) pass++; else if(s.status==='WAITING') waiting++; else fail++;
+  }
+  $('opsLog').textContent=`Simulation complete.\nREADY: ${pass}\nWAITING ON PRIOR RECEIPT: ${waiting}\nFAILED: ${fail}\nNo transaction was sent.`;
+  renderOpsPlan();
+}
+async function executeNextOpsStep(kind){
+  await ensureOwnerAndChain();
+  if(opsState.kind!==kind) throw Error('Wrong plan type');
+  let idx=opsState.steps.findIndex(x=>x.status==='READY');
+  if(idx<0) throw Error('No simulated READY step. Simulate the plan first.');
+  const s=opsState.steps[idx];
+  if(Date.now()-(s.simulatedAt||0)>60000){
+    s.status='PENDING';renderOpsPlan();throw Error('Simulation expired. Simulate again.');
+  }
+  if(!confirm(`REAL MAINNET OPERATION\n\nStep ${idx+1}/${opsState.steps.length}\n${s.route}\n${unitsToDecimal(s.amountUnits,s.decimals,12)} ${s.symbol}\n\nThis requires a real wallet signature.`)) return;
+  const tx={...s.tx,gas:hexQty(s.gas*120n/100n)};
+  const hash=await ethereum.request({method:'eth_sendTransaction',params:[tx]});
+  s.status='SUBMITTED';s.txHash=hash;renderOpsPlan();
+  $('opsLog').textContent=`Waiting for step ${idx+1} receipt:\n${hash}`;
+  try{
+    const receipt=await waitReceipt(hash);
+    s.status='DONE';s.block=Number(BigInt(receipt.blockNumber));
+    // Dependent step can only be simulated now that prior transfer has landed.
+    const next=opsState.steps[idx+1];
+    if(next&&next.dependsOnPrevious){
+      next.status='PENDING';
+      await simulateOpsStep(next,idx+1);
+    }
+    $('opsLog').textContent=`CONFIRMED ✓\nStep ${idx+1}: ${s.route}\nTx: ${hash}\nBlock: ${s.block}\n${next?.status==='READY'?'Next dependent step has been freshly simulated and is ready.':''}`;
+    renderOpsPlan();
+    await refreshBalances();
+    try{await refreshAllAccounts()}catch{}
+    if(terminalState.positions.length) try{await discoverPortfolio()}catch{}
+  }catch(e){
+    s.status='FAILED';s.error=e.message;renderOpsPlan();throw e;
+  }
+}
+
+async function buildSweepPlan(){
+  await ensureOwnerAndChain();
+  if(!terminalState.positions.length){
+    try{await discoverPortfolio()}catch(e){console.warn('Portfolio discovery unavailable during sweep',e)}
+  }
+  resetOps('SWEEP');
+  const scope=$('sweepScope').value;
+  const sources=scope==='ALL'?['VAULT','TRADING','REWARDS','IDENTITY']:[scope];
+  const includeEth=$('sweepIncludeEth').checked,includeWeth=$('sweepIncludeWeth').checked,includeStocks=$('sweepIncludeStocks').checked;
+  const planned=[];
+
+  for(const sourceKey of sources){
+    const source=ACCOUNT_MAP[sourceKey];
+
+    if(includeEth){
+      try{
+        const bal=BigInt(await rpc('eth_getBalance',[source,'latest']));
+        if(bal>0n){
+          const asset={kind:'ETH',token:null,symbol:'ETH',decimals:18};
+          const ss=await buildSingleStep(sourceKey,'OWNER',asset,bal,'ETH',18);
+          planned.push(...ss);
+        }
+      }catch{}
+    }
+
+    const tokens=[];
+    if(includeWeth) tokens.push({token:WETH,symbol:'WETH',decimals:18});
+    if(includeStocks&&terminalState.positions.length){
+      for(const p of terminalState.positions){
+        if(!tokens.some(x=>x.token.toLowerCase()===p.token.toLowerCase()))
+          tokens.push({token:p.token,symbol:p.asset.tokenSymbol,decimals:p.decimals});
+      }
+    }
+
+    for(const t of tokens){
+      try{
+        const bal=await erc20Balance(t.token,source);
+        if(bal===0n) continue;
+        const asset={kind:'ERC20',token:t.token,symbol:t.symbol,decimals:t.decimals};
+        const ss=await buildSingleStep(sourceKey,'OWNER',asset,bal,t.symbol,t.decimals);
+        planned.push(...ss);
+      }catch{}
+    }
+  }
+
+  opsState.steps=planned.map((s,i)=>({...s,id:i,status:'PENDING',gas:null,txHash:null}));
+  $('opsLog').textContent=planned.length
+    ?`Sweep plan built with ${planned.length} transaction step(s).\nScope: ${scope}\nDestination: Main Wallet\nOnly ETH/WETH/discovered canonical Stock Tokens are included.`
+    :'Nothing eligible to sweep from the selected account(s).';
+  renderOpsPlan();
+}
+
+$('buildRoutePlan').onclick=()=>buildRoutePlan().catch(e=>{$('routePlanLog').textContent='ERROR: '+e.message;$('opsLog').textContent='ERROR: '+e.message});
+$('simulateRoutePlan').onclick=()=>simulateCurrentPlan().catch(e=>$('opsLog').textContent='ERROR: '+e.message);
+$('executeNextRouteStep').onclick=()=>executeNextOpsStep('ROUTE').catch(e=>$('opsLog').textContent='ERROR: '+e.message);
+$('buildSweepPlan').onclick=()=>buildSweepPlan().catch(e=>$('opsLog').textContent='ERROR: '+e.message);
+$('simulateSweepPlan').onclick=()=>simulateCurrentPlan().catch(e=>$('opsLog').textContent='ERROR: '+e.message);
+$('executeNextSweepStep').onclick=()=>executeNextOpsStep('SWEEP').catch(e=>$('opsLog').textContent='ERROR: '+e.message);
+$('opsAsset').onchange=()=>{$('opsCustomWrap').style.display=$('opsAsset').value==='CUSTOM'?'block':'none';resetOps(null)};
+['opsSource','opsDestination','opsAmount','opsCustomToken'].forEach(id=>$(id).addEventListener('change',()=>resetOps(null)));
 
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
 bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);
