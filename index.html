@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-goKbHDS9BWz4no+AQpKHYRhs4lG1rqHw91sP6fHP9tE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-f74IpUTqu8jrKS/v0KwsZTIXRKOmhIkuNZBvd6Qjw5U='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
 <title>Rustee Broker Portfolio Terminal v2.8.11 · CSP Wallet Fix</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
@@ -521,6 +521,11 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 
     <div class="card" style="margin:16px 0 0">
       <h3>Execution Plan</h3>
+      <div class="actions" style="margin-bottom:12px">
+        <button id="tradeInspectCustody">Inspect sell custody</button>
+        <button id="tradeResumeSell">Resume incomplete sell</button>
+      </div>
+      <pre id="tradeRecoveryLog">Recovery check idle. For an interrupted SELL, select SELL + the stock + the original amount, then inspect custody.</pre>
       <div id="tradePlan" class="tradePlan"><div class="emptyState">Build a plan after obtaining a route quote.</div></div>
       <pre id="tradeExecLog">No live transaction has been prepared. Every step requires a fresh simulation and separate owner-wallet confirmation.</pre>
     </div>
@@ -2247,7 +2252,7 @@ function exactInputPathCalldata(pathHex,recipient,amountIn,minOut){
 }
 function approveCalldata(spender,amount){return '0x'+SEL_APPROVE+addrWord(spender)+word(amount)}
 
-async function quoteTrade(){
+async function quoteTrade(recoveryMode=false){
   await ensureOwnerAndChain();
   await ensureTradeCatalog();
   const picked=selectedTradeAsset();
@@ -2282,7 +2287,7 @@ async function quoteTrade(){
     amountIn=decimalToUnits($('tradeTokenAmount').value,decimals);
     if(amountIn<=0n) throw Error('Sell amount must be greater than zero');
     const bal=await erc20Balance(picked.token,TRADING);
-    if(amountIn>bal) throw Error(`Sell amount exceeds Trading TBA ${picked.symbol} balance`);
+    if(!recoveryMode&&amountIn>bal) throw Error(`Sell amount exceeds Trading TBA ${picked.symbol} balance`);
     tokenIn=picked.token;tokenOut=WETH;inputSymbol=picked.symbol;outputSymbol='WETH';
   }
 
@@ -2348,6 +2353,90 @@ async function quoteTrade(){
   $('tradeBuildPlan').disabled=false;
   return tradeState.quote;
 }
+const TRADE_RECOVERY_KEY='rustee-incomplete-sell-v1';
+function saveTradeRecovery(extra={}){
+  try{
+    const q=tradeState.quote;
+    if(!q||q.side!=='SELL') return;
+    const data={
+      version:1,updatedAt:new Date().toISOString(),token:q.picked.token,symbol:q.picked.symbol,
+      amountUnits:q.amountIn.toString(),decimals:q.decimals,sellProceeds:q.sellProceeds||$('tradeSellProceeds').value,
+      steps:tradeState.steps.map(x=>({type:x.type,status:x.status,txHash:x.txHash||null,block:x.block||null})),...extra
+    };
+    localStorage.setItem(TRADE_RECOVERY_KEY,JSON.stringify(data));
+  }catch(e){console.warn('Could not save trade recovery',e)}
+}
+function clearTradeRecovery(){try{localStorage.removeItem(TRADE_RECOVERY_KEY)}catch{}}
+async function inspectSellCustody(){
+  await ensureOwnerAndChain();
+  await ensureTradeCatalog();
+  if($('tradeSide').value!=='SELL') throw Error('Select SELL first');
+  const picked=selectedTradeAsset();
+  const decimals=await tokenDecimals(picked.token);
+  const amount=decimalToUnits($('tradeTokenAmount').value,decimals);
+  if(amount<=0n) throw Error('Enter the original interrupted sell amount');
+  const [trading,owner,vault,weth,eth]=await Promise.all([
+    erc20Balance(picked.token,TRADING),erc20Balance(picked.token,OWNER),erc20Balance(picked.token,VAULT),
+    erc20Balance(WETH,VAULT),rpc('eth_getBalance',[VAULT,'latest']).then(BigInt)
+  ]);
+  const fmt=x=>unitsToDecimal(x,decimals,12);
+  const status=vault>=amount?'READY_FROM_VAULT':owner>=amount?'READY_FROM_OWNER':trading>=amount?'STILL_IN_TRADING':'NOT_LOCATED';
+  const human=status==='READY_FROM_VAULT'?'Interrupted stock is in Vault; resume at router approval.'
+    :status==='READY_FROM_OWNER'?'Interrupted stock is in Owner wallet; resume by staging it to Vault.'
+    :status==='STILL_IN_TRADING'?'Selected amount is still available in Trading TBA; use a normal new SELL plan.'
+    :'Selected amount is not wholly present in Trading, Owner, or Vault. Do not send another transaction until balances/history are reviewed.';
+  $('tradeRecoveryLog').textContent=
+    `SELL CUSTODY CHECK\nAsset: ${picked.symbol}\nRequested interrupted amount: ${fmt(amount)} ${picked.symbol}\n\n`+
+    `Trading TBA: ${fmt(trading)} ${picked.symbol}\nOwner EOA: ${fmt(owner)} ${picked.symbol}\nVault TBA: ${fmt(vault)} ${picked.symbol}\n`+
+    `Vault WETH: ${unitsToDecimal(weth,18,12)} WETH\nVault native ETH: ${fromWei(eth)} ETH\n\n${human}`;
+  return {picked,decimals,amount,trading,owner,vault,weth,eth,status};
+}
+async function resumeIncompleteSell(){
+  const c=await inspectSellCustody();
+  if(!['READY_FROM_OWNER','READY_FROM_VAULT'].includes(c.status))
+    throw Error(c.status==='STILL_IN_TRADING'?'Funds are still in Trading TBA; build a normal SELL instead.':'Cannot safely identify the interrupted amount in Owner or Vault.');
+
+  // Obtain a fresh route/min-output for the selected amount without withdrawing anything else.
+  $('tradeTokenAmount').value=unitsToDecimal(c.amount,c.decimals,c.decimals);
+  await quoteTrade(true);
+  const q=tradeState.quote;
+  q.sellProceeds=$('tradeSellProceeds').value;
+  q.vaultWethBefore=await erc20Balance(WETH,VAULT);
+  q.actualWethReceived=null;
+  const steps=[];
+  if(c.status==='READY_FROM_OWNER'){
+    steps.push({
+      type:'SELL_STAGE',label:`RECOVERY: Owner ${q.picked.symbol} → Vault`,symbol:q.picked.symbol,
+      amountUnits:q.amountIn,decimals:q.decimals,
+      buildTx:()=>({from:OWNER,to:q.picked.token,data:transferCalldata(VAULT,q.amountIn)})
+    });
+  }
+  steps.push({
+    type:'SELL_APPROVE',label:`RECOVERY: Vault approves Router for ${q.picked.symbol}`,
+    symbol:q.picked.symbol,amountUnits:q.amountIn,decimals:q.decimals,dependsOnPrevious:steps.length>0,
+    buildTx:()=>({from:OWNER,to:VAULT,data:genericExecuteCalldata(q.picked.token,0n,approveCalldata(ROUTER,q.amountIn))})
+  });
+  const swapData=q.bestRoute.kind==='PATH'
+    ?exactInputPathCalldata(q.bestRoute.path,VAULT,q.amountIn,q.minOut)
+    :exactInputSingleCalldata(q.picked.token,WETH,q.bestRoute.fee,VAULT,q.amountIn,q.minOut);
+  steps.push({
+    type:'SELL_SWAP',label:`RECOVERY: Vault ${q.picked.symbol} → WETH`,symbol:q.picked.symbol,
+    amountUnits:q.amountIn,decimals:q.decimals,dependsOnPrevious:true,
+    buildTx:()=>({from:OWNER,to:VAULT,data:genericExecuteCalldata(ROUTER,0n,swapData)})
+  });
+  if(q.sellProceeds==='ETH'){
+    steps.push({type:'SELL_UNWRAP',label:'RECOVERY: Vault WETH → native ETH',symbol:'WETH',amountUnits:0n,decimals:18,dependsOnPrevious:true,
+      buildTx:()=>{const amt=q.actualWethReceived;if(!amt||amt<=0n)throw Error('Actual WETH proceeds unavailable. Confirm swap first.');return {from:OWNER,to:VAULT,data:genericExecuteCalldata(WETH,0n,'0x2e1a7d4d'+word(amt))};}});
+  }
+  steps.push({type:'SELL_REVOKE',label:`Recovery safety: revoke Vault → Router allowance for ${q.picked.symbol}`,
+    symbol:q.picked.symbol,amountUnits:0n,decimals:q.decimals,dependsOnPrevious:true,optional:true,
+    buildTx:()=>({from:OWNER,to:VAULT,data:genericExecuteCalldata(q.picked.token,0n,approveCalldata(ROUTER,0n))})});
+  tradeState.steps=steps.map((x,i)=>({...x,id:i,status:'PENDING',gas:null,txHash:null,simulatedAt:null}));
+  saveTradeRecovery({mode:'RECOVERY',detectedLocation:c.status});
+  $('tradeExecLog').textContent=`RECOVERY PLAN BUILT ✓\nDetected: ${c.status==='READY_FROM_VAULT'?'stock already in Vault':'stock in Owner wallet'}\nNo additional Trading-TBA withdrawal will occur.\n${steps.length} remaining step(s). Simulate the first recovery step.`;
+  renderTradePlan();
+}
+
 async function buildTradePlan(){
   const q=tradeState.quote;
   if(!q) throw Error('Compare routes first');
@@ -2413,6 +2502,7 @@ async function buildTradePlan(){
     });
   }
   tradeState.steps=steps.map((s,i)=>({...s,id:i,status:'PENDING',gas:null,txHash:null,simulatedAt:null}));
+  if(q.side==='SELL') saveTradeRecovery({mode:'NORMAL'});
   $('tradeExecLog').textContent=`Execution plan built with ${steps.length} step(s). Simulate the first step.`;
   renderTradePlan();
 }
@@ -2469,11 +2559,12 @@ async function executeNextTradeStep(){
   const tx={...step.tx,gas:hexQty(step.gas*120n/100n)};
   const hash=await secureSendTransaction(tx,`Trade step · ${step.label}`);
   recordReceipt({hash,status:'PENDING',type:step.type,label:step.label,createdAt:new Date().toISOString()});
-  step.status='SUBMITTED';step.txHash=hash;renderTradePlan();
+  step.status='SUBMITTED';step.txHash=hash;saveTradeRecovery();renderTradePlan();
   $('tradeExecLog').textContent=`Submitted step ${idx+1}:\n${hash}\nWaiting for confirmation…`;
   try{
     const receipt=await waitReceipt(hash);
     step.status='DONE';step.block=Number(BigInt(receipt.blockNumber));
+    saveTradeRecovery();
     let proceedsLine='';
     if(step.type==='SELL_SWAP'){
       const afterWeth=await erc20Balance(WETH,VAULT);
@@ -2497,7 +2588,9 @@ async function executeNextTradeStep(){
     renderTradePlan();
     await refreshBalances();
     try{await refreshAllAccounts()}catch{}
-    if(idx+1===tradeState.steps.length){
+    const remainingRequired=tradeState.steps.some(x=>!x.optional&&!['DONE','SKIPPED'].includes(x.status));
+    if(!remainingRequired){
+      clearTradeRecovery();
       tradeState.quote=null;
       try{await discoverPortfolio()}catch{}
       try{await loadOnchainHistory()}catch{}
@@ -2508,7 +2601,7 @@ async function executeNextTradeStep(){
       const revoke=tradeState.steps.find(x=>x.type==='SELL_REVOKE');
       if(revoke)revoke.status='PENDING';
     }
-    renderTradePlan();throw e;
+    saveTradeRecovery({lastError:e.message});renderTradePlan();throw e;
   }
 }
 async function tradeUseFraction(frac){
@@ -2536,6 +2629,8 @@ document.querySelectorAll('[data-usd]').forEach(b=>b.onclick=()=>{$('tradeUsd').
 $('tradeUse25').onclick=()=>tradeUseFraction(.25).catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
 $('tradeUse50').onclick=()=>tradeUseFraction(.50).catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
 $('tradeUseMax').onclick=()=>tradeUseFraction(1).catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
+$('tradeInspectCustody').onclick=()=>inspectSellCustody().catch(e=>$('tradeRecoveryLog').textContent='ERROR: '+e.message);
+$('tradeResumeSell').onclick=()=>resumeIncompleteSell().catch(e=>$('tradeRecoveryLog').textContent='ERROR: '+e.message);
 $('tradeQuote').onclick=()=>quoteTrade().catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
 $('tradeBuildPlan').onclick=()=>buildTradePlan().catch(e=>$('tradeExecLog').textContent='ERROR: '+e.message);
 $('tradeSimulatePlan').onclick=()=>simulateNextTradeStep().catch(e=>$('tradeExecLog').textContent='ERROR: '+e.message);
