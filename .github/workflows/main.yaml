@@ -1,9 +1,8 @@
-name: Deploy Rustee Broker Portfolio Executor v1.4
+name: Deploy Rustee Broker Portfolio Executor v1.5
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,34 +16,29 @@ concurrency:
 
 jobs:
   deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Verify v1.4 withdrawal fix
+      - uses: actions/checkout@v4
+      - name: Verify v1.5 Account Center
         shell: bash
         run: |
           set -euo pipefail
           test -s index.html
-          grep -q "Portfolio Executor v1.4" index.html
-          grep -q "SEL_WITHDRAW_TOKEN='9e281a98'" index.html
-          grep -q "withdrawToken(address,uint256)" index.html
-          echo "PASS: v1.4 restricted Trading TBA withdrawal path detected"
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v3
+          grep -q "Portfolio Executor v1.5" index.html
+          grep -q "Rustee Account Center" index.html
+          grep -q "Universal Asset Mover" index.html
+          grep -q "withdrawTokenCalldata" index.html
+          grep -q "genericExecuteCalldata" index.html
+          grep -q "REWARDS='0xfd0d881d73ec1476f5da0ab78283149ea21c3b32'" index.html
+          grep -q "IDENTITY='0x496d7d47ae69d65d714413f0dc78c712ed92158d'" index.html
+          echo "PASS: v1.5 five-account portfolio + transfer center detected"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: .
-
-      - name: Deploy GitHub Pages
+      - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
