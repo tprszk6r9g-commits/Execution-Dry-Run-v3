@@ -1,4 +1,4 @@
-name: Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7.1
+name: Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7.2
 
 on:
   push:
@@ -277,6 +277,9 @@ jobs:
           test = "test"
           solc_version = "0.8.26"
           evm_version = "cancun"
+          optimizer = true
+          optimizer_runs = 200
+          via_ir = true
           fs_permissions = [{ access = "read-write", path = "./data" }]
           EOF
 
@@ -297,6 +300,7 @@ jobs:
               function snapshotState() external returns (uint256);
               function revertToState(uint256 snapshotId) external returns (bool);
               function writeFile(string calldata path,string calldata data) external;
+              function writeLine(string calldata path,string calldata data) external;
               function toString(uint256 value) external pure returns (string memory);
               function toString(int256 value) external pure returns (string memory);
           }
@@ -372,6 +376,27 @@ jobs:
                   }
               }
 
+              function appendRow(
+                  string memory direction,
+                  uint256 amountIn,
+                  bool ok,
+                  uint256 amountOut,
+                  int24 baselineTick,
+                  int24 postTick
+              ) internal {
+                  vm.writeLine(
+                      "data/v47-stress.csv",
+                      string.concat(
+                          direction,",",
+                          vm.toString(amountIn),",",
+                          ok ? "true" : "false",",",
+                          vm.toString(amountOut),",",
+                          vm.toString(int256(baselineTick)),",",
+                          vm.toString(int256(postTick))
+                      )
+                  );
+              }
+
               function testBidirectionalStress() public {
                   uint256[13] memory wethAmounts=[
                       uint256(0.0001 ether),
@@ -391,8 +416,10 @@ jobs:
 
                   (,int24 baselineTick,,,,,)=IPool(POOL).slot0();
 
-                  string memory csv=
-                      "direction,inputWei,success,outputWei,baselineTick,postTick\n";
+                  vm.writeFile(
+                      "data/v47-stress.csv",
+                      "direction,inputWei,success,outputWei,baselineTick,postTick\n"
+                  );
 
                   // Direction A: WETH -> STONK
                   for(uint256 i=0;i<wethAmounts.length;i++){
@@ -407,12 +434,13 @@ jobs:
                       vm.stopPrank();
 
                       (,int24 postTick,,,,,)=IPool(POOL).slot0();
-                      csv=string.concat(
-                        csv,
-                        "WETH_TO_STONK,",vm.toString(amt),",",
-                        ok?"true":"false",",",vm.toString(out),",",
-                        vm.toString(int256(baselineTick)),",",
-                        vm.toString(int256(postTick)),"\n"
+                      appendRow(
+                          "WETH_TO_STONK",
+                          amt,
+                          ok,
+                          out,
+                          baselineTick,
+                          postTick
                       );
                       require(vm.revertToState(snap),"revert A");
                   }
@@ -441,18 +469,18 @@ jobs:
                       vm.stopPrank();
 
                       (,int24 postTick,,,,,)=IPool(POOL).slot0();
-                      csv=string.concat(
-                        csv,
-                        "STONK_TO_WETH,",vm.toString(amt),",",
-                        ok?"true":"false",",",vm.toString(out),",",
-                        vm.toString(int256(baselineTick)),",",
-                        vm.toString(int256(postTick)),"\n"
+                      appendRow(
+                          "STONK_TO_WETH",
+                          amt,
+                          ok,
+                          out,
+                          baselineTick,
+                          postTick
                       );
                       require(vm.revertToState(snap),"revert B");
                   }
 
                   require(vm.revertToState(seedSnap),"seed revert");
-                  vm.writeFile("data/v47-stress.csv",csv);
               }
           }
           EOF
@@ -607,7 +635,7 @@ jobs:
               blockers.insert(0,"Both-direction stress suite did not produce sufficient successful trials")
 
           report={
-            "project":"Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7.1",
+            "project":"Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7.2",
             "network":"Robinhood Chain Mainnet + Fork",
             "chainId":4663,
             "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
