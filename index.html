@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee NVDA Manual Trade Executor</title>
+<title>Rustee Broker Portfolio Executor v1.2</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -22,7 +22,7 @@ pre{white-space:pre-wrap;word-break:break-all;max-height:330px;overflow:auto;bac
 </style>
 </head>
 <body><main>
-<span class="pill">Robinhood Chain · Mainnet 4663 · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Executor v1.2 · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -421,7 +421,9 @@ async function execute(){
 }
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
 bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);
-bind('official',checkOfficial);bind('fund',fundVault);bind('refreshBalances',refreshBalances);bind('simulate',simulate);bind('execute',execute);
+bind('official',checkOfficial);bind('fund',fundVault);
+$('refreshBalances').onclick=()=>{(async()=>{await refreshBalances();if(assetState)await loadAsset();})().catch(e=>alert(e.message))};
+bind('simulate',simulate);bind('execute',execute);
 bind('loadAsset',loadAsset);bind('simulateAssetMove',simulateAssetMove);bind('moveAsset',moveAsset);
 $('useMaxAsset').onclick=()=>{try{if(!assetState) throw Error('Load token first'); $('assetAmount').value=unitsToDecimal(assetState.tbaBal,assetState.decimals,assetState.decimals); assetMoveSimulation=null; $('moveAsset').disabled=true}catch(e){alert(e.message)}};
 $('assetToken').oninput=()=>{assetState=null;assetMoveSimulation=null;$('moveAsset').disabled=true};
@@ -435,7 +437,20 @@ NVDA: ${NVDA}
 SwapRouter02: ${ROUTER}
 QuoterV2: ${QUOTER}`;
 calcInputWei();
+let balanceRefreshTimer=null;
+function startBalanceAutoRefresh(){
+  if(balanceRefreshTimer) clearInterval(balanceRefreshTimer);
+  balanceRefreshTimer=setInterval(async()=>{
+    try{
+      if(account){
+        await refreshBalances();
+        if(assetState) await loadAsset();
+      }
+    }catch(e){ console.warn('Auto refresh failed',e); }
+  },15000);
+}
 if(window.ethereum){
+  startBalanceAutoRefresh();
   ethereum.on?.('accountsChanged',a=>{account=a?.[0]||null;$('wallet').textContent=account?short(account):'Not connected';quoteState=null;simulationState=null;$('execute').disabled=true});
   ethereum.on?.('chainChanged',()=>{quoteState=null;simulationState=null;$('execute').disabled=true;});
 }
