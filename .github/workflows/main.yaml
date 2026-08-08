@@ -1,4 +1,4 @@
-name: Deploy Rustee Broker Portfolio Executor v1.5
+name: Deploy Rustee Portfolio Terminal v2.1 Phase 2
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rustee-portfolio-pages
+  group: rustee-portfolio-terminal-pages
   cancel-in-progress: true
 
 jobs:
@@ -22,19 +22,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Verify v1.5 Account Center
+      - name: Verify Phase 2 terminal
         shell: bash
         run: |
           set -euo pipefail
           test -s index.html
-          grep -q "Portfolio Executor v1.5" index.html
-          grep -q "Rustee Account Center" index.html
+          grep -q "Portfolio Terminal v2.1" index.html
+          grep -q "History + P&amp;L" index.html
+          grep -q "blockscoutTokenTransfers" index.html
+          grep -q "COST_BASIS_KEY" index.html
           grep -q "Universal Asset Mover" index.html
           grep -q "withdrawTokenCalldata" index.html
-          grep -q "genericExecuteCalldata" index.html
-          grep -q "REWARDS='0xfd0d881d73ec1476f5da0ab78283149ea21c3b32'" index.html
-          grep -q "IDENTITY='0x496d7d47ae69d65d714413f0dc78c712ed92158d'" index.html
-          echo "PASS: v1.5 five-account portfolio + transfer center detected"
+          echo "PASS: Rustee Portfolio Terminal v2.1 Phase 2"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
