@@ -1,4 +1,4 @@
-name: Rustee v4.9.3.2 Data Streams + Registry V2 Fork Gate
+name: Rustee v4.9.3.3 Data Streams + Registry V2 Fork Gate
 
 on:
   push:
@@ -93,7 +93,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ! grep -R -E -- 'startBroadcast|broadcast\(|eth_sendRawTransaction|eth_sendTransaction' src test .github/workflows/main.yaml
+
+          if grep -R -E -- 'startBroadcast|broadcast\(|eth_sendRawTransaction|eth_sendTransaction' src test 2>/dev/null; then
+            echo "ERROR: broadcast/write primitive detected"
+            exit 1
+          fi
+
+          echo "PASS: no broadcast primitives found in src/ or test/"
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
