@@ -1,4 +1,4 @@
-name: Deploy Rustee Portfolio Terminal v2.5 Phase 5
+name: Deploy Rustee Portfolio Terminal v2.6 Phase 6
 
 on:
   push:
@@ -25,19 +25,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify Phase 5 terminal
+      - name: Verify Phase 6 terminal
         shell: bash
         run: |
           set -euo pipefail
           test -s index.html
-          grep -q "Portfolio Terminal v2.5" index.html
+          grep -q "Portfolio Terminal v2.6" index.html
           grep -q "Rustee Command Center" index.html
           grep -q "refreshCommandCenter" index.html
           grep -q "RECEIPT_KEY" index.html
+          grep -q "Policy &amp; Security Console" index.html
+          grep -q "runSecurityPreflight" index.html
+          grep -q "getTradingPolicy()" index.html
           grep -q "Rustee Multi-Asset Trading Terminal" index.html
           grep -q "Rustee Operations Center" index.html
           grep -q "USDG" index.html
-          echo "PASS: Rustee Portfolio Terminal v2.5 Phase 5"
+          echo "PASS: Rustee Portfolio Terminal v2.6 Phase 6"
 
       - name: Build same-origin public snapshots
         shell: bash
@@ -57,7 +60,7 @@ jobs:
             "0x496d7d47ae69d65d714413f0dc78c712ed92158d"]
           now=datetime.datetime.now(datetime.timezone.utc).isoformat()
           def get(url,timeout=20):
-              req=urllib.request.Request(url,headers={"Accept":"application/json","User-Agent":"Rustee-Portfolio-Terminal-v2.5"})
+              req=urllib.request.Request(url,headers={"Accept":"application/json","User-Agent":"Rustee-Portfolio-Terminal-v2.6"})
               last=None
               for i in range(3):
                   try:
