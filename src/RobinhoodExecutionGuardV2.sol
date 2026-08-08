@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-/// @notice Prototype chain-specific guard for fork review only.
-/// It deliberately does NOT model Robinhood's websocket sequencer feed as AggregatorV3.
 contract RobinhoodExecutionGuardV2 {
     uint256 public constant ROBINHOOD_CHAIN_ID = 4663;
     address public immutable owner;
