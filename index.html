@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Portfolio Terminal v2.4.1 · Phase 4.1</title>
+<title>Rustee Broker Portfolio Terminal v2.5 · Phase 5</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -114,12 +114,38 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 .tradeReady{color:var(--teal)}.tradeDone{color:var(--green)}.tradeFail{color:var(--red)}.tradeWait{color:var(--muted)}
 @media(max-width:650px){.tradeHero{grid-template-columns:1fr}.quoteGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+
+.commandHero{display:grid;grid-template-columns:1.25fr .75fr;gap:12px}
+.commandCard{border:1px solid var(--line);border-radius:22px;padding:18px;background:linear-gradient(145deg,#07271f,#041914)}
+.commandCard h3{margin:0 0 12px;font-size:22px}
+.commandMetrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.commandMetric{padding:14px;border:1px solid var(--line);border-radius:16px;background:#051713}
+.commandMetric small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.1em}
+.commandMetric strong{display:block;font-size:22px;margin-top:6px}
+.healthGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.healthItem{display:flex;justify-content:space-between;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#051713}
+.healthItem span{color:var(--muted);font-size:12px}.healthItem b{font-size:12px}
+.healthGood{color:var(--green)}.healthWarn{color:var(--orange)}.healthBad{color:var(--red)}
+.quickDock{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:12px}
+.quickDock button{margin:0;padding:13px 8px;font-size:13px}
+.receiptList{display:grid;gap:10px}
+.receipt{border:1px solid var(--line);border-radius:16px;padding:13px;background:#051713}
+.receiptHead{display:flex;justify-content:space-between;gap:10px}.receiptMeta{font-size:11px;color:var(--muted);word-break:break-all;margin-top:5px}
+.receiptConfirmed{color:var(--green)}.receiptPending{color:var(--orange)}.receiptFailed{color:var(--red)}
+.miniAlloc{display:grid;gap:8px;margin-top:10px}
+.miniAllocRow{display:grid;grid-template-columns:100px 1fr 70px;gap:8px;align-items:center}
+.miniAllocRow span{font-size:11px;color:var(--muted)}
+.miniBar{height:8px;background:#0a3028;border-radius:999px;overflow:hidden}.miniBar i{display:block;height:100%;background:var(--teal)}
+.commandSection{margin-top:14px}
+.stickyStatus{position:fixed;right:14px;bottom:82px;z-index:60;max-width:320px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:rgba(4,18,15,.95);font-size:11px;color:var(--muted);backdrop-filter:blur(10px)}
+@media(max-width:650px){.commandHero{grid-template-columns:1fr}.quickDock{grid-template-columns:repeat(2,minmax(0,1fr))}.healthGrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body><main>
 
 <div class="tabs">
-  <button class="tabbtn active" data-tab="overviewPane">Overview</button>
+  <button class="tabbtn active" data-tab="commandPane">Command</button>
+  <button class="tabbtn" data-tab="overviewPane">Overview</button>
   <button class="tabbtn" data-tab="portfolioPane">Portfolio</button>
   <button class="tabbtn" data-tab="tradePane">Trade</button>
   <button class="tabbtn" data-tab="historyPane">History + P&amp;L</button>
@@ -127,9 +153,58 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <button class="tabbtn" data-tab="transferPane">Move Assets</button>
   <button class="tabbtn" data-tab="operationsPane">Operations</button>
 </div>
-<div id="overviewPane" class="tabpane active">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.4.1 · Phase 4.1 · Manual Signature Only</span>
+<div id="commandPane" class="tabpane active">
+  <div class="card">
+    <span class="badge">PHASE 5 · COMMAND CENTER</span>
+    <h2>Rustee Command Center</h2>
+    <p>Unified status for portfolio, TBAs, recent activity, snapshots, RPC health, and terminal receipts.</p>
+    <div class="commandHero">
+      <div class="commandCard">
+        <h3>Portfolio at a glance</h3>
+        <div class="commandMetrics">
+          <div class="commandMetric"><small>Stock-token value</small><strong id="cmdPortfolioUsd">—</strong></div>
+          <div class="commandMetric"><small>Positions</small><strong id="cmdPositions">—</strong></div>
+          <div class="commandMetric"><small>Trading TBA NVDA</small><strong id="cmdTradingNvda">—</strong></div>
+          <div class="commandMetric"><small>Vault ETH</small><strong id="cmdVaultEth">—</strong></div>
+        </div>
+        <div class="quickDock">
+          <button class="primary" data-open-tab="tradePane">Trade</button>
+          <button data-open-tab="transferPane">Move</button>
+          <button data-open-tab="operationsPane">Operations</button>
+          <button data-open-tab="historyPane">History</button>
+        </div>
+      </div>
+      <div class="commandCard">
+        <h3>System health</h3>
+        <div class="healthGrid">
+          <div class="healthItem"><span>Chain</span><b id="healthChain">—</b></div>
+          <div class="healthItem"><span>RPC</span><b id="healthRpc">—</b></div>
+          <div class="healthItem"><span>Catalog</span><b id="healthCatalog">—</b></div>
+          <div class="healthItem"><span>Prices</span><b id="healthPrices">—</b></div>
+          <div class="healthItem"><span>History</span><b id="healthHistory">—</b></div>
+          <div class="healthItem"><span>Wallet</span><b id="healthWallet">—</b></div>
+        </div>
+        <div class="actions" style="margin-top:12px"><button class="primary" id="refreshCommandCenter">Refresh all</button></div>
+      </div>
+    </div>
+    <div class="commandHero commandSection">
+      <div class="commandCard"><h3>Account allocation</h3><div id="cmdAllocation" class="miniAlloc"><div class="emptyState">Load portfolio to calculate allocation.</div></div></div>
+      <div class="commandCard"><h3>Recent activity</h3><div id="cmdRecentActivity" class="receiptList"><div class="emptyState">No activity loaded yet.</div></div></div>
+    </div>
+    <div class="commandSection commandCard">
+      <h3>Live transaction receipts</h3>
+      <div class="actions"><button id="refreshReceipts">Refresh receipts</button><button id="clearReceipts">Clear local log</button></div>
+      <div id="receiptList" class="receiptList" style="margin-top:12px"><div class="emptyState">No locally recorded transactions yet.</div></div>
+    </div>
+    <pre id="commandLog">Command Center ready.</pre>
+  </div>
+</div>
+<div id="stickyCommandStatus" class="stickyStatus">Rustee terminal ready.</div>
+
+<div id="overviewPane" class="tabpane">
+
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.5 · Phase 5 · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -1000,6 +1075,7 @@ async function executeUniversalMove(){
   if(!confirm(`REAL MAINNET MOVE\n\n${ACCOUNT_LABELS[s.sourceKey]} → ${ACCOUNT_LABELS[s.destKey]}\n${unitsToDecimal(s.amountUnits,s.decimals,12)} ${s.symbol}\n\nReview the wallet confirmation carefully.`)) return;
   const sendTx={...s.tx,gas:hexQty(s.gas*120n/100n)};
   const hash=await ethereum.request({method:'eth_sendTransaction',params:[sendTx]});
+  recordReceipt({hash,status:'PENDING',type:'ASSET_MOVE',label:`${ACCOUNT_LABELS[s.sourceKey]} → ${ACCOUNT_LABELS[s.destKey]} · ${s.symbol}`,createdAt:new Date().toISOString()});
   $('executeUniversalMove').disabled=true;
   $('universalMoveLog').textContent='Submitted:\n'+hash+'\nWaiting for confirmation…';
   const receipt=await waitReceipt(hash);
@@ -1013,6 +1089,7 @@ document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tabbtn').forEach(x=>x.classList.toggle('active',x===b));
   document.querySelectorAll('.tabpane').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));
   if(b.dataset.tab==='accountsPane') refreshAllAccounts().catch(e=>$('accountCenterLog').textContent='ERROR: '+e.message);
+  if(b.dataset.tab==='commandPane') refreshCommandCenter().catch(e=>$('commandLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='portfolioPane' && !terminalState.positions.length) discoverPortfolio().catch(e=>$('terminalLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='tradePane') ensureTradeCatalog().catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='operationsPane'){try{refreshAllAccounts()}catch{}}
@@ -1566,6 +1643,7 @@ async function executeNextOpsStep(kind){
   if(!confirm(`REAL MAINNET OPERATION\n\nStep ${idx+1}/${opsState.steps.length}\n${s.route}\n${unitsToDecimal(s.amountUnits,s.decimals,12)} ${s.symbol}\n\nThis requires a real wallet signature.`)) return;
   const tx={...s.tx,gas:hexQty(s.gas*120n/100n)};
   const hash=await ethereum.request({method:'eth_sendTransaction',params:[tx]});
+  recordReceipt({hash,status:'PENDING',type:s.type,label:s.route,createdAt:new Date().toISOString()});
   s.status='SUBMITTED';s.txHash=hash;renderOpsPlan();
   $('opsLog').textContent=`Waiting for step ${idx+1} receipt:\n${hash}`;
   try{
@@ -1884,6 +1962,7 @@ async function executeNextTradeStep(){
   if(!confirm(`REAL MAINNET TRADE STEP\n\n${idx+1}/${tradeState.steps.length}\n${step.label}\n\nReview the wallet destination and gas carefully.`)) return;
   const tx={...step.tx,gas:hexQty(step.gas*120n/100n)};
   const hash=await ethereum.request({method:'eth_sendTransaction',params:[tx]});
+  recordReceipt({hash,status:'PENDING',type:step.type,label:step.label,createdAt:new Date().toISOString()});
   step.status='SUBMITTED';step.txHash=hash;renderTradePlan();
   $('tradeExecLog').textContent=`Submitted step ${idx+1}:\n${hash}\nWaiting for confirmation…`;
   try{
@@ -1931,6 +2010,40 @@ $('tradeQuote').onclick=()=>quoteTrade().catch(e=>$('tradeQuoteLog').textContent
 $('tradeBuildPlan').onclick=()=>buildTradePlan().catch(e=>$('tradeExecLog').textContent='ERROR: '+e.message);
 $('tradeSimulatePlan').onclick=()=>simulateNextTradeStep().catch(e=>$('tradeExecLog').textContent='ERROR: '+e.message);
 $('tradeExecuteNext').onclick=()=>executeNextTradeStep().catch(e=>$('tradeExecLog').textContent='ERROR: '+e.message);
+
+
+const RECEIPT_KEY='rustee-terminal-receipts-v2';
+function readReceiptLog(){try{return JSON.parse(localStorage.getItem(RECEIPT_KEY)||'[]')}catch{return []}}
+function writeReceiptLog(x){localStorage.setItem(RECEIPT_KEY,JSON.stringify(x.slice(0,50)))}
+function recordReceipt(item){const log=readReceiptLog();const i=log.findIndex(x=>x.hash===item.hash);if(i>=0)log.splice(i,1);log.unshift({...item,updatedAt:new Date().toISOString()});writeReceiptLog(log);renderReceipts()}
+function setSticky(msg){$('stickyCommandStatus').textContent=msg}
+async function refreshRecordedReceipts(){const log=readReceiptLog();let changed=false;for(const r of log){if(r.status==='CONFIRMED'||r.status==='FAILED')continue;try{const rec=await rpc('eth_getTransactionReceipt',[r.hash]);if(rec){r.status=rec.status==='0x1'?'CONFIRMED':'FAILED';r.block=Number(BigInt(rec.blockNumber));changed=true}}catch{}}if(changed)writeReceiptLog(log);renderReceipts()}
+function renderReceipts(){const log=readReceiptLog();$('receiptList').innerHTML=log.map(r=>{const cls=r.status==='CONFIRMED'?'receiptConfirmed':r.status==='FAILED'?'receiptFailed':'receiptPending';return `<div class="receipt"><div class="receiptHead"><b>${escapeHtml(r.label||r.type||'Transaction')}</b><b class="${cls}">${escapeHtml(r.status||'PENDING')}</b></div><div class="receiptMeta">${escapeHtml(r.hash||'')}<br>${r.block?'Block '+r.block+' · ':''}${escapeHtml(r.createdAt||r.updatedAt||'')}</div><div class="actions"><button onclick="window.open('${BLOCKSCOUT}/tx/${escapeHtml(r.hash)}','_blank')">Explorer ↗</button></div></div>`}).join('')||'<div class="emptyState">No locally recorded transactions yet.</div>'}
+function commandStockSummary(){const keys=['OWNER','VAULT','TRADING','REWARDS','IDENTITY'];let total=0,count=0,per={OWNER:0,VAULT:0,TRADING:0,REWARDS:0,IDENTITY:0};for(const key of keys)for(const p of terminalState.positions){const bal=p.balances[key]||0n;if(bal===0n)continue;count++;const v=currentPositionUsd(key,p);if(v!=null){total+=v;per[key]+=v}}return {total,count,per}}
+function renderCommandAllocation(){const x=commandStockSummary(),max=Math.max(...Object.values(x.per),0);$('cmdAllocation').innerHTML=Object.entries(x.per).map(([k,v])=>`<div class="miniAllocRow"><span>${escapeHtml(ACCOUNT_LABELS[k])}</span><div class="miniBar"><i style="width:${max?Math.min(100,v/max*100):0}%"></i></div><b>${money(v)}</b></div>`).join('');$('cmdPortfolioUsd').textContent=money(x.total);$('cmdPositions').textContent=String(x.count)}
+function renderCommandActivity(){const events=(historyState.events||[]).slice(0,6);$('cmdRecentActivity').innerHTML=events.map(e=>`<div class="receipt"><div class="receiptHead"><b>${escapeHtml(e.symbol)} · ${escapeHtml(e.direction)}</b><b>${escapeHtml(e.amount)}</b></div><div class="receiptMeta">${escapeHtml(typeof e.account==='string'?e.account:(ACCOUNT_LABELS[e.account]||e.account||''))}<br>${escapeHtml(e.txHash||'')}</div></div>`).join('')||'<div class="emptyState">No indexed Stock Token activity loaded yet.</div>'}
+function ageLabel(ts){if(!ts)return {txt:'Unavailable',cls:'healthWarn'};const min=Math.max(0,(Date.now()-new Date(ts).getTime())/60000);return {txt:min<1?'<1m':Math.round(min)+'m',cls:min<=30?'healthGood':min<=90?'healthWarn':'healthBad'}}
+async function refreshCommandCenter(){
+ setSticky('Refreshing…');$('commandLog').textContent='Refreshing chain, balances, snapshots, portfolio, history and receipts…';
+ let chainOk=false,rpcOk=false;
+ try{const cid=Number(BigInt(await rpc('eth_chainId')));chainOk=cid===CHAIN;$('healthChain').textContent=cid+(chainOk?' ✓':' ✕');$('healthChain').className=chainOk?'healthGood':'healthBad';const bn=await rpc('eth_blockNumber');rpcOk=!!bn;$('healthRpc').textContent=rpcOk?'ONLINE ✓':'OFFLINE ✕';$('healthRpc').className=rpcOk?'healthGood':'healthBad'}catch{$('healthChain').textContent='ERROR';$('healthRpc').textContent='ERROR'}
+ try{await primeStaticData()}catch{}
+ for(const [id,obj] of [['healthCatalog',staticData.assets],['healthPrices',staticData.prices],['healthHistory',staticData.history]]){const x=ageLabel(obj?.generatedAt);$(id).textContent=x.txt;$(id).className=x.cls}
+ $('healthWallet').textContent=account?'CONNECTED ✓':'READ ONLY';$('healthWallet').className=account?'healthGood':'healthWarn';
+ try{const [v,n]=await Promise.all([rpc('eth_getBalance',[VAULT,'latest']),erc20Balance(NVDA,TRADING)]);$('cmdVaultEth').textContent=fromWei(BigInt(v));$('cmdTradingNvda').textContent=unitsToDecimal(n,18,8)}catch{}
+ if(!terminalState.positions.length){try{await discoverPortfolio()}catch{}}else{try{await refreshTerminalPrices(false);renderTerminal()}catch{}}
+ renderCommandAllocation();
+ if(!historyState.events.length){try{await loadOnchainHistory()}catch{}}
+ renderCommandActivity();await refreshRecordedReceipts();
+ $('commandLog').textContent=`PASS — Command Center refreshed.\nPortfolio positions: ${commandStockSummary().count}\nLocal receipts: ${readReceiptLog().length}`;
+ setSticky('Rustee refreshed · '+new Date().toLocaleTimeString());
+}
+function openTabById(id){const btn=[...document.querySelectorAll('.tabbtn')].find(x=>x.dataset.tab===id);if(btn)btn.click()}
+document.querySelectorAll('[data-open-tab]').forEach(b=>b.onclick=()=>openTabById(b.dataset.openTab));
+$('refreshCommandCenter').onclick=()=>refreshCommandCenter().catch(e=>$('commandLog').textContent='ERROR: '+e.message);
+$('refreshReceipts').onclick=()=>refreshRecordedReceipts();
+$('clearReceipts').onclick=()=>{if(confirm('Clear only the local receipt display? On-chain transactions are unaffected.')){localStorage.removeItem(RECEIPT_KEY);renderReceipts()}};
+renderReceipts();
 
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
 bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);
