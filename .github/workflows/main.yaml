@@ -40,6 +40,12 @@ jobs:
       - name: Build Robinhood stock-token snapshots
         run: python scripts/update_robinhood_snapshots.py
 
+      - name: Build Rustee history snapshot
+        run: python scripts/update_rustee_history.py
+
+      - name: Regenerate frontend integrity manifest
+        run: python scripts/update_integrity.py
+
       - name: Verify snapshots
         run: |
           python - <<'PY'
@@ -48,14 +54,25 @@ jobs:
 
           assets = json.loads(Path("data/robinhood-assets.json").read_text())
           prices = json.loads(Path("data/robinhood-prices.json").read_text())
+          history = json.loads(Path("data/rustee-history.json").read_text())
+          integrity = json.loads(Path("data/integrity.json").read_text())
 
           assert assets.get("chainId") == 4663
           assert len(assets.get("assets", [])) > 0
           assert prices.get("chainId") == 4663
           assert len(prices.get("quotesBySymbol", {})) > 0
+          assert history.get("chainId") == 4663
+          assert history.get("generatedAt")
+          assert len(history.get("byAddress", {})) > 0
+          assert integrity.get("generatedAt")
+          assert set(integrity.get("sha256", {})) == {
+              "index.html", "data/robinhood-assets.json",
+              "data/robinhood-prices.json", "data/rustee-history.json"
+          }
 
           print("Assets:", len(assets["assets"]))
           print("Quotes:", len(prices["quotesBySymbol"]))
+          print("History addresses:", len(history["byAddress"]))
           print("Generated:", prices.get("generatedAt"))
           PY
 
