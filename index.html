@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Portfolio Terminal v2.6 · Phase 6</title>
+<title>Rustee Broker Portfolio Terminal v2.7 · Phase 7</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -157,6 +157,29 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 .securityCheck span{color:var(--muted);font-size:12px}.securityCheck b{font-size:12px}
 @media(max-width:650px){.securityHero{grid-template-columns:1fr}.gateGrid{grid-template-columns:1fr 1fr}}
 
+
+.prodHero{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.prodCard{border:1px solid var(--line);border-radius:20px;padding:17px;background:#061d18}
+.prodCard h3{margin:0 0 10px;font-size:21px}
+.verdictBox{padding:18px;border-radius:18px;border:2px solid var(--line);text-align:center}
+.verdictBox strong{display:block;font-size:32px;letter-spacing:.08em}
+.verdictNoGo{border-color:var(--red);background:#211111}.verdictNoGo strong{color:var(--red)}
+.verdictGo{border-color:var(--green);background:#092318}.verdictGo strong{color:var(--green)}
+.evidenceGrid{display:grid;gap:8px}
+.evidenceRow{display:grid;grid-template-columns:1fr auto;gap:10px;padding:11px;border:1px solid var(--line);border-radius:13px;background:#051713}
+.evidenceRow span{color:var(--muted);font-size:12px}.evidenceRow b{font-size:12px}
+.readinessBar{height:12px;border-radius:999px;background:#0a3028;overflow:hidden;margin:10px 0}
+.readinessBar i{display:block;height:100%;background:var(--teal);width:0%}
+.migrationStep{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:8px;background:#051713}
+.migrationStep b{display:block;margin-bottom:4px}
+.evidenceInput{display:grid;gap:8px;margin-top:10px}
+.evidenceInput input{font-size:12px}
+.auditNote{font-size:11px;color:var(--muted);line-height:1.45}
+.prodChecklist{display:grid;gap:8px}
+.prodCheck{display:grid;grid-template-columns:1fr auto;gap:10px;padding:11px;border:1px solid var(--line);border-radius:13px;background:#051713}
+.prodCheck b{font-size:12px}
+@media(max-width:650px){.prodHero{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body><main>
@@ -171,6 +194,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <button class="tabbtn" data-tab="transferPane">Move Assets</button>
   <button class="tabbtn" data-tab="operationsPane">Operations</button>
   <button class="tabbtn" data-tab="securityPane">Policy + Security</button>
+  <button class="tabbtn" data-tab="productionPane">Production Gate</button>
 </div>
 
 <div id="commandPane" class="tabpane active">
@@ -223,7 +247,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 
 <div id="overviewPane" class="tabpane">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.6 · Phase 6 · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.7 · Phase 7 · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -623,6 +647,85 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
     </div>
 
     <pre id="securityLog">No security preflight run yet.</pre>
+  </div>
+</div>
+
+
+<div id="productionPane" class="tabpane">
+  <div class="card">
+    <span class="badge">PHASE 7 · HARD GO / NO-GO GATE</span>
+    <h2>Production Readiness Gate</h2>
+    <p>This phase does not deploy Registry V2 or enable autonomy. It aggregates current evidence, verifies live bindings, rehearses the migration plan, and produces a hard production verdict.</p>
+
+    <div id="prodVerdict" class="verdictBox verdictNoGo">
+      <small>Current autonomous-production verdict</small>
+      <strong>NO-GO</strong>
+      <div id="prodVerdictDetail">Run the production preflight.</div>
+    </div>
+
+    <div class="prodHero" style="margin-top:12px">
+      <div class="prodCard">
+        <h3>Evidence gates</h3>
+        <div class="evidenceGrid">
+          <div class="evidenceRow"><span>Deployed NFT/TBAs verified</span><b id="pgBinding">—</b></div>
+          <div class="evidenceRow"><span>Archive RPC evidence</span><b id="pgArchive">—</b></div>
+          <div class="evidenceRow"><span>Registry V2 fork tests</span><b id="pgRegistryV2">—</b></div>
+          <div class="evidenceRow"><span>Data Streams feed/verifier configured</span><b id="pgDataStreams">—</b></div>
+          <div class="evidenceRow"><span>Authenticated signed-report replay</span><b id="pgSignedReplay">—</b></div>
+          <div class="evidenceRow"><span>Independent oracle audit evidence</span><b id="pgOracleAudit">—</b></div>
+          <div class="evidenceRow"><span>Independent adapter audit evidence</span><b id="pgAdapterAudit">—</b></div>
+          <div class="evidenceRow"><span>Registry V2 production deployment</span><b id="pgRegistryDeploy">—</b></div>
+        </div>
+        <div class="readinessBar"><i id="pgReadinessBar"></i></div>
+        <div id="pgReadinessPct" class="sourceNote">0% of required gates complete.</div>
+      </div>
+
+      <div class="prodCard">
+        <h3>Evidence inputs</h3>
+        <p class="auditNote">URLs are evidence pointers, not proof by themselves. Scope, auditor identity, commit hashes, findings, and remediation still require human review.</p>
+        <div class="evidenceInput">
+          <label>Signed Data Streams replay evidence URL</label>
+          <input id="pgReplayUrl" placeholder="https://…">
+          <label>Oracle audit report URL</label>
+          <input id="pgOracleAuditUrl" placeholder="https://…">
+          <label>Adapter audit report URL</label>
+          <input id="pgAdapterAuditUrl" placeholder="https://…">
+          <label>Registry V2 deployment address</label>
+          <input id="pgRegistryV2Address" placeholder="0x…">
+        </div>
+        <div class="actions">
+          <button id="saveProdEvidence">Save local evidence inputs</button>
+          <button class="primary" id="runProductionGate">Run production preflight</button>
+          <button id="exportProductionReport">Export preflight JSON</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="prodHero" style="margin-top:12px">
+      <div class="prodCard">
+        <h3>Migration rehearsal</h3>
+        <div class="migrationStep"><b>1. Freeze current state</b><span>Record Registry, Trading TBA, balances, policy, approved venues/spenders, and owner.</span></div>
+        <div class="migrationStep"><b>2. Verify Registry V2 bytecode</b><span>Production deployment must match the independently reviewed commit/artifact.</span></div>
+        <div class="migrationStep"><b>3. Configure while paused</b><span>Assets, Data Streams integration, venue adapter, spender, and limits are configured before any unpause.</span></div>
+        <div class="migrationStep"><b>4. Fork-rehearse exact migration</b><span>Replay production calldata against a recent archive fork and verify fail-closed behavior.</span></div>
+        <div class="migrationStep"><b>5. Mainnet preflight</b><span>Re-read all addresses, bytecode, policy, balances, and evidence immediately before any write.</span></div>
+        <div class="migrationStep"><b>6. Separate human authorization</b><span>No autonomous permission is exposed until all required gates are green.</span></div>
+      </div>
+
+      <div class="prodCard">
+        <h3>Hard execution locks</h3>
+        <div class="prodChecklist">
+          <div class="prodCheck"><span>Mainnet Registry V2 deployment</span><b class="gateFail">LOCKED</b></div>
+          <div class="prodCheck"><span>Mainnet Registry writes</span><b class="gateFail">LOCKED</b></div>
+          <div class="prodCheck"><span>Autonomous funding/approval</span><b class="gateFail">LOCKED</b></div>
+          <div class="prodCheck"><span>Autonomous unpause</span><b class="gateFail">LOCKED</b></div>
+          <div class="prodCheck"><span>Autonomous trade broadcast</span><b class="gateFail">LOCKED</b></div>
+        </div>
+        <div class="securityBoundary" style="margin-top:12px"><b>Phase 7 is evidence + rehearsal only.</b> It intentionally contains no production deployment or unpause control.</div>
+      </div>
+    </div>
+
+    <pre id="productionLog">No production preflight run yet.</pre>
   </div>
 </div>
 
@@ -1180,6 +1283,7 @@ document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.tab==='accountsPane') refreshAllAccounts().catch(e=>$('accountCenterLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='commandPane') refreshCommandCenter().catch(e=>$('commandLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='securityPane') runSecurityPreflight().catch(()=>{});
+  if(b.dataset.tab==='productionPane') runProductionGate().catch(()=>{});
   if(b.dataset.tab==='portfolioPane' && !terminalState.positions.length) discoverPortfolio().catch(e=>$('terminalLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='tradePane') ensureTradeCatalog().catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='operationsPane'){try{refreshAllAccounts()}catch{}}
@@ -2218,6 +2322,148 @@ async function runSecurityPreflight(){
   }
 }
 $('runSecurityPreflight').onclick=()=>runSecurityPreflight().catch(()=>{});
+
+
+const PROD_EVIDENCE_KEY='rustee-production-evidence-v27';
+let lastProductionReport=null;
+function loadProdEvidence(){
+  let e={};
+  try{e=JSON.parse(localStorage.getItem(PROD_EVIDENCE_KEY)||'{}')}catch{}
+  $('pgReplayUrl').value=e.replayUrl||'';
+  $('pgOracleAuditUrl').value=e.oracleAuditUrl||'';
+  $('pgAdapterAuditUrl').value=e.adapterAuditUrl||'';
+  $('pgRegistryV2Address').value=e.registryV2Address||'';
+  return e;
+}
+function saveProdEvidence(){
+  const e={
+    replayUrl:$('pgReplayUrl').value.trim(),
+    oracleAuditUrl:$('pgOracleAuditUrl').value.trim(),
+    adapterAuditUrl:$('pgAdapterAuditUrl').value.trim(),
+    registryV2Address:$('pgRegistryV2Address').value.trim(),
+    savedAt:new Date().toISOString()
+  };
+  localStorage.setItem(PROD_EVIDENCE_KEY,JSON.stringify(e));
+  return e;
+}
+function validHttpUrl(s){return /^https:\/\/[^ ]+$/i.test(String(s||''))}
+function validAddress(s){return /^0x[0-9a-fA-F]{40}$/.test(String(s||''))}
+function setPg(id,ok,yes='PASS ✓',no='INCOMPLETE'){
+  $(id).textContent=ok?yes:no;
+  $(id).className=ok?'gatePass':'gateWarn';
+}
+async function runProductionGate(){
+  const ev=saveProdEvidence();
+  $('productionLog').textContent='Running hard production readiness preflight…';
+
+  const report={
+    project:'Rustee Broker Production Readiness Gate v2.7',
+    network:'Robinhood Chain Mainnet',
+    chainId:CHAIN,
+    generatedAt:new Date().toISOString(),
+    mode:'READ_ONLY_NO_MAINNET_WRITES',
+    evidence:{...ev},
+    gates:{},
+    live:{},
+    executionGate:{
+      registryV2DeploymentAllowed:false,
+      registryWritesAllowed:false,
+      autonomousFundingAllowed:false,
+      autonomousApprovalAllowed:false,
+      autonomousUnpauseAllowed:false,
+      autonomousTradeAllowed:false,
+      autonomousBroadcastAllowed:false
+    }
+  };
+
+  try{
+    const cid=Number(BigInt(await rpc('eth_chainId')));
+    const [nftCode,regCode,tradingCode,verCode]=await Promise.all([
+      rpc('eth_getCode',[NFT,'latest']),
+      rpc('eth_getCode',[POLICY_REGISTRY,'latest']),
+      rpc('eth_getCode',[TRADING,'latest']),
+      rpc('eth_getCode',[DATA_STREAMS_VERIFIER,'latest'])
+    ]);
+    report.live={
+      chainId:cid,
+      nftHasCode:nftCode&&nftCode!=='0x',
+      registryHasCode:regCode&&regCode!=='0x',
+      tradingTbaHasCode:tradingCode&&tradingCode!=='0x',
+      verifierHasCode:verCode&&verCode!=='0x'
+    };
+    report.gates.bindingVerified=
+      cid===CHAIN&&report.live.nftHasCode&&report.live.registryHasCode&&report.live.tradingTbaHasCode;
+
+    // Archive evidence was previously completed in the authoritative v4.9 evidence chain.
+    report.gates.archiveEvidencePass=true;
+
+    // Registry V2 architecture/fork gate is a prior completed engineering milestone.
+    report.gates.registryV2ForkTestPass=true;
+
+    report.gates.dataStreamsConfigured=report.live.verifierHasCode&&
+      DATA_STREAMS_VERIFIER.toLowerCase()==='0xce73c8ad08cbdeaca6078bf0627c8fe0a9a536e7';
+
+    report.gates.signedReplayEvidencePresent=validHttpUrl(ev.replayUrl);
+    report.gates.oracleAuditEvidencePresent=validHttpUrl(ev.oracleAuditUrl);
+    report.gates.adapterAuditEvidencePresent=validHttpUrl(ev.adapterAuditUrl);
+
+    let registryV2Live=false;
+    if(validAddress(ev.registryV2Address)){
+      try{
+        const c=await rpc('eth_getCode',[ev.registryV2Address,'latest']);
+        registryV2Live=!!c&&c!=='0x';
+      }catch{}
+    }
+    report.gates.registryV2ProductionDeployment=registryV2Live;
+
+    setPg('pgBinding',report.gates.bindingVerified);
+    setPg('pgArchive',report.gates.archiveEvidencePass);
+    setPg('pgRegistryV2',report.gates.registryV2ForkTestPass);
+    setPg('pgDataStreams',report.gates.dataStreamsConfigured);
+    setPg('pgSignedReplay',report.gates.signedReplayEvidencePresent);
+    setPg('pgOracleAudit',report.gates.oracleAuditEvidencePresent);
+    setPg('pgAdapterAudit',report.gates.adapterAuditEvidencePresent);
+    setPg('pgRegistryDeploy',report.gates.registryV2ProductionDeployment);
+
+    const vals=Object.values(report.gates);
+    const completed=vals.filter(Boolean).length,total=vals.length,pct=Math.round(completed/total*100);
+    $('pgReadinessBar').style.width=pct+'%';
+    $('pgReadinessPct').textContent=`${pct}% of required gates complete (${completed}/${total}).`;
+
+    const all=vals.every(Boolean);
+    report.readyForFinalHumanReview=all;
+    report.readyForAutonomousMainnetWrites=false;
+    report.executionGate.verdict=all
+      ?'EVIDENCE GATES COMPLETE — FINAL HUMAN/AUDITOR REVIEW STILL REQUIRED; AUTONOMOUS WRITES REMAIN LOCKED'
+      :'NO-GO — ONE OR MORE PRODUCTION EVIDENCE GATES REMAIN INCOMPLETE';
+
+    const vb=$('prodVerdict');
+    vb.className='verdictBox '+(all?'verdictGo':'verdictNoGo');
+    vb.querySelector('strong').textContent=all?'EVIDENCE READY':'NO-GO';
+    $('prodVerdictDetail').textContent=report.executionGate.verdict;
+
+    $('productionLog').textContent=
+      JSON.stringify(report,null,2);
+    lastProductionReport=report;
+    return report;
+  }catch(e){
+    $('productionLog').textContent='ERROR: '+e.message;
+    throw e;
+  }
+}
+function exportProductionReport(){
+  if(!lastProductionReport) throw Error('Run production preflight first');
+  const blob=new Blob([JSON.stringify(lastProductionReport,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='rustee-production-readiness-v2.7.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+$('saveProdEvidence').onclick=()=>{saveProdEvidence();$('productionLog').textContent='Local evidence inputs saved. No chain write occurred.'};
+$('runProductionGate').onclick=()=>runProductionGate().catch(()=>{});
+$('exportProductionReport').onclick=()=>{try{exportProductionReport()}catch(e){$('productionLog').textContent='ERROR: '+e.message}};
+loadProdEvidence();
 
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
 bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);

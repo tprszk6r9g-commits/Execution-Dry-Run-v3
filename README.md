@@ -1,17 +1,19 @@
-# Rustee Portfolio Terminal v2.6 — Phase 6 Policy & Security
+# Rustee Portfolio Terminal v2.7 — Phase 7 Production Readiness Gate
 
-Phase 6 adds a read-only Policy & Security Console.
+Adds a hard GO/NO-GO evidence layer for the autonomous production architecture.
 
-It reads the deployed StockTokenRegistry trading policy and the allowlist state for the
-current router, checks bytecode for the Registry, Trading TBA, and Data Streams verifier,
-shows snapshot freshness and wallet/chain integrity, and clearly separates:
+The terminal now aggregates:
+- live deployed binding checks;
+- archive-evidence milestone;
+- Registry V2 fork-test milestone;
+- Data Streams verifier presence;
+- signed-report replay evidence input;
+- independent oracle audit evidence input;
+- independent adapter audit evidence input;
+- Registry V2 production deployment evidence.
 
-- deployed/manual owner-signed execution — proven
-- Registry V2 architecture — fork tested
-- signed Data Streams replay — incomplete
-- independent security review — incomplete
-- Registry V2 production migration — not deployed
-- autonomous mainnet execution — locked
+Even if every evidence field is present, the terminal does not unlock autonomous writes.
+It changes the verdict only to `EVIDENCE READY`, meaning final human/auditor review can begin.
 
-No setter, unpause, approval, funding, or policy-broadcast controls are introduced in
-Phase 6. The console is intentionally read-only.
+No Registry setter, deployment, funding, approval, unpause, or autonomous-trade control is
+included in Phase 7.
