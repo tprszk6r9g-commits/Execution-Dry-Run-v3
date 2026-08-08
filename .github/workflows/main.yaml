@@ -1,4 +1,4 @@
-name: Rustee v4.9.3.1 Data Streams + Registry V2 Fork Gate
+name: Rustee v4.9.3.2 Data Streams + Registry V2 Fork Gate
 
 on:
   push:
@@ -87,7 +87,7 @@ jobs:
           version: stable
 
       - name: Fork-test Registry V2 prototype
-        run: forge test --fork-url "${{ secrets.ARCHIVE_RPC_URL }}" -vv
+        run: forge test --match-path test/RegistryV2Fork.t.sol --fork-url "${{ secrets.ARCHIVE_RPC_URL }}" -vv
 
       - name: Verify no broadcast primitives
         shell: bash
