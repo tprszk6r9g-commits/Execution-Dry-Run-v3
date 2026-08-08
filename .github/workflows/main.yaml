@@ -1,4 +1,4 @@
-name: Deploy Rustee Portfolio Terminal v2.3 Phase 3 Operations
+name: Deploy Rustee Portfolio Terminal v2.4 Phase 4 Trading
 
 on:
   push:
@@ -26,12 +26,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify v2.3 operations terminal
+      - name: Verify v2.4 trading terminal
         shell: bash
         run: |
           set -euo pipefail
           test -s index.html
-          grep -q "Portfolio Terminal v2.3" index.html
+          grep -q "Portfolio Terminal v2.4" index.html
           grep -q "primeStaticData" index.html
           grep -q "data/robinhood-assets.json" index.html
           grep -q "History + P&amp;L" index.html
@@ -39,7 +39,11 @@ jobs:
           grep -q "Rustee Operations Center" index.html
           grep -q "buildSweepPlan" index.html
           grep -q "buildRoutePlan" index.html
-          echo "PASS: v2.3 operations terminal detected"
+          grep -q "Rustee Multi-Asset Trading Terminal" index.html
+          grep -q "quoteTrade" index.html
+          grep -q "SELL_APPROVE" index.html
+          grep -q "exactInputSingleCalldata" index.html
+          echo "PASS: v2.4 trading terminal detected"
 
       - name: Build same-origin Robinhood and Blockscout snapshots
         shell: bash
@@ -65,7 +69,7 @@ jobs:
           def get(url,timeout=20):
               req=urllib.request.Request(url,headers={
                   "Accept":"application/json",
-                  "User-Agent":"Rustee-Portfolio-Terminal-v2.3"
+                  "User-Agent":"Rustee-Portfolio-Terminal-v2.4"
               })
               last=None
               for i in range(3):
