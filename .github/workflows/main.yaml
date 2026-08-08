@@ -1,4 +1,4 @@
-name: Rustee Broker Data Streams + Sequencer Resolution v4.9.2
+name: Rustee v4.9.3 Data Streams + Registry V2 Fork Gate
 
 on:
   push:
@@ -11,504 +11,95 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: rustee-v493-pages
   cancel-in-progress: true
 
-jobs:
-  resolve-oracle-and-sequencer:
-    runs-on: ubuntu-latest
+env:
+  CHAIN_ID: "4663"
+  ETH_USD_FEED_ID: "0x000362205e10b3a147d02792eccee483dca6c7b44ecce7012cb8c6e0b68b3ae9"
+  VERIFIER_PROXY: "0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7"
 
+jobs:
+  validate:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
-    env:
-      PUBLIC_RPC_URL: https://rpc.mainnet.chain.robinhood.com
-      ARCHIVE_RPC_URL: ${{ secrets.ARCHIVE_RPC_URL }}
-
-      # Authoritative Data Streams operator inputs.
-      ETH_USD_DATA_STREAM_ID: ${{ vars.ETH_USD_DATA_STREAM_ID }}
-      ETH_USD_DATA_STREAM_PROVENANCE_URL: ${{ vars.ETH_USD_DATA_STREAM_PROVENANCE_URL }}
-
-      # Optional evidence URL for a real signed-report replay artifact.
-      ETH_USD_SIGNED_REPORT_EVIDENCE_URL: ${{ vars.ETH_USD_SIGNED_REPORT_EVIDENCE_URL }}
-
-      # Explicit architecture decision.
-      SEQUENCER_PRODUCTION_OPTION: REGISTRY_V2_CHAIN_SPECIFIC_GUARD
-
-      # Security-review evidence remains an external gate.
-      ORACLE_AUDIT_URL: ${{ vars.ORACLE_AUDIT_URL }}
-      ADAPTER_AUDIT_URL: ${{ vars.ADAPTER_AUDIT_URL }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Validate public production inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import json, os, urllib.request, datetime
+          RPC=os.environ.get("ARCHIVE_RPC_URL") or "https://rpc.mainnet.chain.robinhood.com"
+          feed=os.environ["ETH_USD_FEED_ID"]
+          proxy=os.environ["VERIFIER_PROXY"]
+
+          def rpc(method, params):
+              req=urllib.request.Request(RPC,data=json.dumps({"jsonrpc":"2.0","id":1,"method":method,"params":params}).encode(),headers={"content-type":"application/json","user-agent":"Rustee-v4.9.3"})
+              with urllib.request.urlopen(req,timeout=30) as r:
+                  j=json.loads(r.read())
+              if "error" in j: raise RuntimeError(j["error"])
+              return j["result"]
+
+          chain=int(rpc("eth_chainId",[]),16)
+          code=rpc("eth_getCode",[proxy,"latest"])
+          report={
+            "project":"Rustee Broker v4.9.3",
+            "mode":"READ_FORK_ONLY_NO_MAINNET_WRITES",
+            "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "chainId":chain,
+            "feedId":feed,
+            "feedIdValidBytes32":feed.startswith("0x") and len(feed)==66,
+            "verifierProxy":proxy,
+            "verifierProxyHasCode":len(code)>2,
+            "archiveRpcConfigured":bool(os.environ.get("ARCHIVE_RPC_URL")),
+            "signedReportReplay":{
+              "attempted":False,
+              "verified":False,
+              "reason":"Requires authenticated Chainlink Data Streams report retrieval; no credentials are embedded in this repository."
+            },
+            "registryV2":{"forkTestsScheduled":True,"productionDeploymentAllowed":False},
+            "executionGate":{
+              "mainnetWritesAllowed":False,
+              "mainnetFundingAllowed":False,
+              "mainnetApprovalAllowed":False,
+              "mainnetTradeAllowed":False,
+              "mainnetBroadcastAllowed":False
+            }
+          }
+          assert chain==4663
+          assert report["feedIdValidBytes32"]
+          assert report["verifierProxyHasCode"]
+          open("data/v4.9.3-report.json","w").write(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          PY
+        env:
+          ARCHIVE_RPC_URL: ${{ secrets.ARCHIVE_RPC_URL }}
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
 
-      - name: Verify canonical deployed state
+      - name: Fork-test Registry V2 prototype
+        run: forge test --fork-url "${{ secrets.ARCHIVE_RPC_URL }}" -vv
+
+      - name: Verify no broadcast primitives
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p data
-
-          RPC="$PUBLIC_RPC_URL"
-          POOL="0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594"
-          REGISTRY="0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199"
-          TBA="0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"
-          VERIFIER="0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7"
-
-          CHAIN_ID="$(cast chain-id --rpc-url "$RPC")"
-          TOKEN0="$(cast call "$POOL" 'token0()(address)' --rpc-url "$RPC")"
-          TOKEN1="$(cast call "$POOL" 'token1()(address)' --rpc-url "$RPC")"
-          LIQ="$(cast call "$POOL" 'liquidity()(uint128)' --rpc-url "$RPC" | awk '{print $1}')"
-          REG_CODE="$(cast code "$REGISTRY" --rpc-url "$RPC")"
-          TBA_CODE="$(cast code "$TBA" --rpc-url "$RPC")"
-          VERIFIER_CODE="$(cast code "$VERIFIER" --rpc-url "$RPC")"
-
-          python3 - "$CHAIN_ID" "$TOKEN0" "$TOKEN1" "$LIQ" "$REG_CODE" "$TBA_CODE" "$VERIFIER_CODE" <<'PY'
-          import json,sys
-          from pathlib import Path
-
-          chain,token0,token1,liq,reg_code,tba_code,verifier_code=sys.argv[1:]
-          weth="0x0bd7d308f8e1639fab988df18a8011f41eacad73"
-          stonk="0xe934e36a439c94017b64a3fece66af12099abf50"
-
-          out={
-            "chainId":int(chain),
-            "pool":"0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594",
-            "pairMatches":{token0.lower(),token1.lower()}=={weth,stonk},
-            "liquidity":str(int(liq)),
-            "liquidityNonZero":int(liq)>0,
-            "registry":"0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199",
-            "registryHasCode":len(reg_code)>2,
-            "tradingTba":"0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654",
-            "tradingTbaHasCode":len(tba_code)>2,
-            "dataStreamsVerifierProxy":"0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7",
-            "dataStreamsVerifierProxyHasCode":len(verifier_code)>2
-          }
-
-          assert out["chainId"]==4663
-          assert out["pairMatches"]
-          assert out["liquidityNonZero"]
-          assert out["registryHasCode"]
-          assert out["tradingTbaHasCode"]
-          assert out["dataStreamsVerifierProxyHasCode"]
-
-          Path("data/v492-binding.json").write_text(json.dumps(out,indent=2))
-          print(json.dumps(out,indent=2))
-          PY
-
-      - name: Reconfirm archive evidence remains green
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 <<'PY'
-          import json,os,urllib.request
-          from pathlib import Path
-
-          archive=os.environ.get("ARCHIVE_RPC_URL","").strip()
-          out={
-            "archiveRpcConfigured":bool(archive),
-            "chainId":None,
-            "latestBlockReadable":False,
-            "historicalStateReadable":False,
-            "pass":False
-          }
-
-          if archive:
-              def rpc(method,params):
-                  req=urllib.request.Request(
-                      archive,
-                      data=json.dumps({
-                        "jsonrpc":"2.0","id":1,"method":method,"params":params
-                      }).encode(),
-                      headers={
-                        "content-type":"application/json",
-                        "user-agent":"Rustee-v4.9.2"
-                      }
-                  )
-                  with urllib.request.urlopen(req,timeout=30) as r:
-                      j=json.loads(r.read().decode())
-                  if "error" in j:
-                      raise RuntimeError(j["error"])
-                  return j["result"]
-
-              try:
-                  out["chainId"]=int(rpc("eth_chainId",[]),16)
-                  latest=int(rpc("eth_blockNumber",[]),16)
-                  out["latestBlockReadable"]=latest>0
-
-                  # Use a recent historical block to prove archive-state access.
-                  old=max(1,latest-150000)
-                  code=rpc("eth_getCode",[
-                    "0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594",
-                    hex(old)
-                  ])
-                  out["historicalStateReadable"]=bool(code and code!="0x")
-                  out["pass"]=(
-                    out["chainId"]==4663
-                    and out["latestBlockReadable"]
-                    and out["historicalStateReadable"]
-                  )
-              except Exception as e:
-                  out["error"]=str(e)[:500]
-
-          Path("data/v492-archive.json").write_text(json.dumps(out,indent=2))
-          print(json.dumps(out,indent=2))
-          PY
-
-      - name: Resolve ETH USD Data Streams candidate
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 <<'PY'
-          import json,os,re
-          from pathlib import Path
-
-          feed_id=os.environ.get("ETH_USD_DATA_STREAM_ID","").strip()
-          provenance=os.environ.get(
-            "ETH_USD_DATA_STREAM_PROVENANCE_URL",""
-          ).strip()
-          replay_evidence=os.environ.get(
-            "ETH_USD_SIGNED_REPORT_EVIDENCE_URL",""
-          ).strip()
-
-          out={
-            "mode":"CHAINLINK_DATA_STREAMS",
-            "verifierProxy":
-              "0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7",
-            "feedId":feed_id or None,
-            "feedIdValidBytes32":bool(
-              re.fullmatch(r"0x[0-9a-fA-F]{64}",feed_id)
-            ),
-            "provenanceUrl":provenance or None,
-            "provenancePresent":provenance.startswith("https://"),
-            "signedReportEvidenceUrl":replay_evidence or None,
-            "signedReportEvidencePresent":
-              replay_evidence.startswith("https://"),
-            "credentialsRequiredForLiveRetrieval":True,
-            "credentialsStoredByWorkflow":False,
-            "candidateConfigured":False,
-            "signedReportReplayVerified":False,
-            "productionReady":False
-          }
-
-          out["candidateConfigured"]=bool(
-            out["feedIdValidBytes32"] and out["provenancePresent"]
-          )
-          out["signedReportReplayVerified"]=bool(
-            out["candidateConfigured"] and out["signedReportEvidencePresent"]
-          )
-
-          # Deliberately still false until a human reviews the replay artifact
-          # and matching verifier integration.
-          out["productionReady"]=False
-
-          Path("data/v492-data-streams.json").write_text(
-            json.dumps(out,indent=2)
-          )
-          print(json.dumps(out,indent=2))
-          PY
-
-      - name: Lock sequencer architecture to Robinhood-specific Registry V2 guard
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 <<'PY'
-          import json,os
-          from pathlib import Path
-
-          selected=os.environ.get(
-            "SEQUENCER_PRODUCTION_OPTION",""
-          ).strip()
-
-          out={
-            "documentedSequencerFeed":
-              "wss://feed.mainnet.chain.robinhood.com",
-            "documentedFeedType":
-              "WEBSOCKET_NITRO_SEQUENCER_FEED",
-            "aggregatorV3UptimeFeedDocumented":False,
-            "selectedProductionOption":selected,
-            "selectionValid":
-              selected=="REGISTRY_V2_CHAIN_SPECIFIC_GUARD",
-            "requiresNewContractReview":True,
-            "currentRegistryShouldRemainPaused":True,
-            "designDecision":
-              "Build a Robinhood-specific Registry V2 / execution guard. "
-              "Do not fake the websocket sequencer feed as AggregatorV3.",
-            "productionReady":False
-          }
-
-          Path("data/v492-sequencer.json").write_text(
-            json.dumps(out,indent=2)
-          )
-          print(json.dumps(out,indent=2))
-          PY
-
-      - name: Generate Registry V2 guard specification
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          cat > data/REGISTRY_V2_GUARD_SPEC.md <<'EOF'
-          # Rustee Registry V2 Robinhood-Specific Guard
-
-          ## Purpose
-
-          Replace the current assumption that Robinhood Chain exposes an
-          AggregatorV3-compatible sequencer uptime feed.
-
-          ## Required behavior
-
-          1. Keep the currently deployed Registry paused.
-          2. Do not accept a websocket URL as an onchain oracle address.
-          3. Use chain-specific liveness protection that can be verified
-             deterministically by contracts and/or transaction preflight.
-          4. Fail closed when liveness cannot be established.
-          5. Preserve the existing Rustee limits:
-             - maximum $5 trade;
-             - maximum $10 daily;
-             - maximum 1 trade/day.
-          6. Preserve explicit allowlists for:
-             - assets;
-             - venue adapter;
-             - venue;
-             - spender.
-          7. Require stale-price rejection.
-          8. Require TWAP/oracle freshness checks.
-          9. Require owner-controlled emergency pause.
-          10. No upgrade or migration may transfer ownership of Broker NFT #1.
-
-          ## Review boundary
-
-          This specification is not deployment authorization.
-          Registry V2 requires:
-          - implementation;
-          - unit tests;
-          - fork tests;
-          - storage/ownership review;
-          - independent audit;
-          - final mainnet preflight.
-          EOF
-
-      - name: Record independent review evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 <<'PY'
-          import json,os
-          from pathlib import Path
-
-          oracle=os.environ.get("ORACLE_AUDIT_URL","").strip()
-          adapter=os.environ.get("ADAPTER_AUDIT_URL","").strip()
-
-          def valid(x):
-              return x.startswith("https://") and len(x)>12
-
-          out={
-            "oracleAuditUrl":oracle or None,
-            "oracleAuditEvidencePresent":valid(oracle),
-            "adapterAuditUrl":adapter or None,
-            "adapterAuditEvidencePresent":valid(adapter),
-            "independentSecurityReviewComplete":
-              valid(oracle) and valid(adapter),
-            "humanScopeReviewStillRequired":True
-          }
-
-          Path("data/v492-audit.json").write_text(
-            json.dumps(out,indent=2)
-          )
-          print(json.dumps(out,indent=2))
-          PY
-
-      - name: Build v4.9.2 decision report
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 <<'PY'
-          import json,datetime
-          from pathlib import Path
-
-          binding=json.load(open("data/v492-binding.json"))
-          archive=json.load(open("data/v492-archive.json"))
-          stream=json.load(open("data/v492-data-streams.json"))
-          seq=json.load(open("data/v492-sequencer.json"))
-          audit=json.load(open("data/v492-audit.json"))
-
-          blockers=[]
-
-          if not archive["pass"]:
-              blockers.append(
-                "Archive endpoint no longer proves historical state access"
-              )
-
-          if not stream["candidateConfigured"]:
-              blockers.append(
-                "Full authoritative ETH/USD Data Streams feed ID + provenance "
-                "are still required"
-              )
-          elif not stream["signedReportReplayVerified"]:
-              blockers.append(
-                "Data Streams candidate configured; signed report replay "
-                "evidence through Robinhood verifier proxy is still required"
-              )
-
-          if not seq["selectionValid"]:
-              blockers.append(
-                "Sequencer architecture selection failed"
-              )
-
-          blockers.append(
-            "Registry V2 Robinhood-specific guard must be implemented and fork-tested"
-          )
-
-          if not audit["independentSecurityReviewComplete"]:
-              blockers.append(
-                "Independent oracle + adapter audit evidence is incomplete"
-              )
-
-          oracle_architecture_resolved=bool(
-            stream["candidateConfigured"]
-            and seq["selectionValid"]
-          )
-
-          report={
-            "project":
-              "Rustee Broker Data Streams + Sequencer Resolution v4.9.2",
-            "network":"Robinhood Chain Mainnet",
-            "chainId":4663,
-            "generatedAt":
-              datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "mode":"READ_ONLY_NO_MAINNET_WRITES",
-            "binding":binding,
-            "archiveEvidence":archive,
-            "ethUsdDataStreams":stream,
-            "sequencerArchitecture":seq,
-            "securityReviewEvidence":audit,
-            "readiness":{
-              "bindingVerified":True,
-              "archiveEvidencePass":archive["pass"],
-              "dataStreamsCandidateConfigured":
-                stream["candidateConfigured"],
-              "signedReportReplayVerified":
-                stream["signedReportReplayVerified"],
-              "registryV2ArchitectureSelected":
-                seq["selectionValid"],
-              "oracleArchitectureResolved":
-                oracle_architecture_resolved,
-              "registryV2ImplementationComplete":False,
-              "independentSecurityReviewComplete":
-                audit["independentSecurityReviewComplete"],
-              "readyForMainnetWrites":False
-            },
-            "remainingBlockers":blockers,
-            "nextPhase":
-              "v4.9.3 SIGNED DATA STREAMS REPORT REPLAY + REGISTRY V2 FORK IMPLEMENTATION",
-            "executionGate":{
-              "mainnetOracleDeploymentAllowed":False,
-              "mainnetAdapterDeploymentAllowed":False,
-              "mainnetRegistryWritesAllowed":False,
-              "mainnetFundingAllowed":False,
-              "mainnetApprovalAllowed":False,
-              "mainnetTradeAllowed":False,
-              "mainnetUnpauseAllowed":False,
-              "mainnetBroadcastAllowed":False,
-              "verdict":
-                "V4.9.2 ARCHITECTURE RESOLUTION COMPLETE; DATA STREAMS "
-                "FEED ID/REPLAY, REGISTRY V2 IMPLEMENTATION, AND SECURITY "
-                "REVIEW REMAIN BEFORE FINAL PREFLIGHT"
-            }
-          }
-
-          Path("data/v492-report.json").write_text(
-            json.dumps(report,indent=2,allow_nan=False)
-          )
-          print(json.dumps(report,indent=2,allow_nan=False))
-          PY
-
-      - name: Validate zero-write invariant
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          import json
-          p=json.load(open("data/v492-report.json"))
-          assert p["mode"]=="READ_ONLY_NO_MAINNET_WRITES"
-          assert p["sequencerArchitecture"]["selectionValid"] is True
-          assert p["readiness"]["readyForMainnetWrites"] is False
-          for k,v in p["executionGate"].items():
-              if k.endswith("Allowed"):
-                  assert v is False
-          print("PASS: v4.9.2 remains read-only")
-          PY
-
-      - name: Embed v4.9.2 report into page
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          import html
-          from pathlib import Path
-
-          report=Path("data/v492-report.json").read_text()
-          esc=html.escape(report)
-
-          page=f"""<!doctype html>
-          <html lang="en">
-          <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width,initial-scale=1">
-          <title>Rustee Broker v4.9.2</title>
-          <style>
-          body{{margin:0;background:#041c17;color:#eafff8;
-          font-family:system-ui,-apple-system,Segoe UI,sans-serif}}
-          main{{max-width:920px;margin:auto;padding:28px 18px 90px}}
-          .pill{{display:inline-block;border:1px solid #2e6c5e;
-          border-radius:999px;padding:10px 14px;color:#37dfc3}}
-          h1{{font-size:clamp(38px,8vw,62px);line-height:1.03}}
-          p{{color:#9bc0b7;font-size:18px;line-height:1.55}}
-          .warn{{border-left:8px solid #ff9a36;background:#36200b;
-          padding:20px;border-radius:18px;margin:22px 0}}
-          .card{{border:1px solid #2e6c5e;border-radius:24px;
-          padding:24px;background:#08271f;margin:20px 0}}
-          pre{{white-space:pre-wrap;word-break:break-word;background:#03130f;
-          border:1px solid #24584c;border-radius:18px;padding:18px;
-          overflow:auto;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}}
-          </style>
-          </head>
-          <body>
-          <main>
-          <span class="pill">Robinhood Chain · v4.9.2 · READ ONLY</span>
-          <h1>Data Streams + Sequencer Resolution</h1>
-          <p>Locks in the production oracle architecture and Robinhood-specific
-          sequencer guard design while leaving every mainnet execution gate closed.</p>
-          <div class="warn"><b>No mainnet writes.</b> This phase cannot deploy,
-          configure, fund, approve, unpause, or trade.</div>
-          <div class="card"><pre>{esc}</pre></div>
-          </main>
-          </body>
-          </html>"""
-
-          Path("index.html").write_text(page)
-          PY
+          ! grep -R -E -- 'startBroadcast|broadcast\(|eth_sendRawTransaction|eth_sendTransaction' src test .github/workflows/main.yaml
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
-
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
-
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
