@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Portfolio Terminal v2.3 · Phase 3</title>
+<title>Rustee Broker Portfolio Terminal v2.4 · Phase 4</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -94,6 +94,26 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 .warnline{border-left:5px solid var(--orange);padding:10px 12px;background:#21170b;border-radius:12px;color:#f6e7d2;font-size:13px;line-height:1.45}
 @media(max-width:650px){.opsHero{grid-template-columns:1fr}.opsStats{grid-template-columns:1fr}}
 
+
+.tradeHero{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}
+.tradePanel{border:1px solid var(--line);border-radius:20px;padding:17px;background:#061d18}
+.tradePanel h3{margin:0 0 10px;font-size:21px}
+.quickAmounts{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.quickAmounts button{padding:10px 14px}
+.quoteGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0}
+.quoteCell{border:1px solid var(--line);border-radius:14px;padding:11px;background:#051713}
+.quoteCell small{display:block;color:var(--muted);font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+.quoteCell strong{display:block;margin-top:5px;font-size:16px;word-break:break-word}
+.routeOption{display:grid;grid-template-columns:1fr auto;gap:10px;border-top:1px solid #1d4b42;padding:10px 0}
+.routeBest{color:var(--green);font-weight:800}
+.tradePlan{border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:12px}
+.tradeStep{display:grid;grid-template-columns:34px 1fr auto;gap:9px;padding:11px;border-bottom:1px solid #1d4b42;align-items:center}
+.tradeStep:last-child{border-bottom:0}
+.tradeStepNo{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#0a3028;font-weight:800}
+.tradeStatus{font-size:11px;font-weight:800}
+.tradeReady{color:var(--teal)}.tradeDone{color:var(--green)}.tradeFail{color:var(--red)}.tradeWait{color:var(--muted)}
+@media(max-width:650px){.tradeHero{grid-template-columns:1fr}.quoteGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 </style>
 </head>
 <body><main>
@@ -101,6 +121,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 <div class="tabs">
   <button class="tabbtn active" data-tab="overviewPane">Overview</button>
   <button class="tabbtn" data-tab="portfolioPane">Portfolio</button>
+  <button class="tabbtn" data-tab="tradePane">Trade</button>
   <button class="tabbtn" data-tab="historyPane">History + P&amp;L</button>
   <button class="tabbtn" data-tab="accountsPane">Accounts</button>
   <button class="tabbtn" data-tab="transferPane">Move Assets</button>
@@ -108,7 +129,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 </div>
 <div id="overviewPane" class="tabpane active">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.3 · Phase 3 · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.4 · Phase 4 · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -227,7 +248,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 
 <div id="portfolioPane" class="tabpane">
   <div class="card">
-    <span class="badge">PHASE 3 · OPERATIONS + SMART ROUTING</span>
+    <span class="badge">PHASE 4 · MULTI-ASSET BUY + SELL TERMINAL</span>
     <h2>Rustee Portfolio Terminal</h2>
     <p>Automatically discovers canonical Robinhood Stock Tokens on chain 4663, scans all five Rustee-controlled addresses, and values non-zero positions using Robinhood's read-only Stock Token APIs.</p>
 
@@ -259,6 +280,80 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
   </div>
 </div>
 
+
+
+<div id="tradePane" class="tabpane">
+  <div class="card">
+    <span class="badge">PHASE 4 · MANUAL OWNER-SIGNED TRADING</span>
+    <h2>Rustee Multi-Asset Trading Terminal</h2>
+    <p>Select a canonical Robinhood Stock Token discovered by the Portfolio Terminal. Buy routes spend ETH from the Vault and deliver the stock token to Trading. Sell routes recover the stock token from Trading, stage it through the owner into Vault, approve the router, and swap it to WETH.</p>
+
+    <div class="tradeHero">
+      <div class="tradePanel">
+        <h3>Order Ticket</h3>
+        <div class="controlgrid">
+          <div class="field"><label>Side</label>
+            <select id="tradeSide"><option value="BUY">BUY</option><option value="SELL">SELL</option></select>
+          </div>
+          <div class="field"><label>Canonical Stock Token</label>
+            <select id="tradeAsset"><option value="">Load Portfolio catalog first</option></select>
+          </div>
+        </div>
+
+        <div id="buySizing">
+          <label>Approximate USD target</label>
+          <input id="tradeUsd" type="number" min="0.10" max="5" step="0.10" value="1.00">
+          <div class="quickAmounts">
+            <button data-usd="1">$1</button><button data-usd="2">$2</button><button data-usd="5">$5</button>
+          </div>
+          <label>ETH/USD reference used only to size ETH input</label>
+          <input id="tradeEthUsd" type="number" min="1" step="0.01" value="1900">
+        </div>
+
+        <div id="sellSizing" style="display:none">
+          <label>Stock-token amount to sell</label>
+          <input id="tradeTokenAmount" inputmode="decimal" placeholder="0.001">
+          <div class="quickAmounts"><button id="tradeUse25">25%</button><button id="tradeUse50">50%</button><button id="tradeUseMax">MAX</button></div>
+        </div>
+
+        <label>Maximum slippage</label>
+        <select id="tradeSlippage">
+          <option value="0.5">0.5%</option>
+          <option value="1" selected>1.0%</option>
+          <option value="2">2.0%</option>
+          <option value="3">3.0%</option>
+        </select>
+
+        <div class="actions" style="margin-top:14px">
+          <button class="primary" id="tradeQuote">Compare routes</button>
+          <button id="tradeBuildPlan">Build execution plan</button>
+          <button id="tradeSimulatePlan">Simulate next step</button>
+          <button id="tradeExecuteNext" disabled>Execute next step</button>
+        </div>
+      </div>
+
+      <div class="tradePanel">
+        <h3>Live Order Preview</h3>
+        <div class="quoteGrid">
+          <div class="quoteCell"><small>Selected</small><strong id="tradeSelected">—</strong></div>
+          <div class="quoteCell"><small>Best fee</small><strong id="tradeBestFee">—</strong></div>
+          <div class="quoteCell"><small>Expected output</small><strong id="tradeExpected">—</strong></div>
+          <div class="quoteCell"><small>Minimum output</small><strong id="tradeMinimum">—</strong></div>
+        </div>
+        <div id="tradeRoutes"><div class="emptyState">No route quote yet.</div></div>
+        <pre id="tradeQuoteLog">Trade terminal is idle.</pre>
+      </div>
+    </div>
+
+    <div class="card" style="margin:16px 0 0">
+      <h3>Execution Plan</h3>
+      <div id="tradePlan" class="tradePlan"><div class="emptyState">Build a plan after obtaining a route quote.</div></div>
+      <pre id="tradeExecLog">No live transaction has been prepared. Every step requires a fresh simulation and separate owner-wallet confirmation.</pre>
+    </div>
+
+    <div class="warnline">Phase 4 is an execution interface, not a recommendation engine. It never chooses which stock you should buy or sell. The operator selects the asset, direction, amount, and slippage.</div>
+  </div>
+</div>
 
 <div id="historyPane" class="tabpane">
   <div class="card">
@@ -480,7 +575,7 @@ const ROUTER='0xCaf681a66D020601342297493863E78C959E5cb2';
 const QUOTER='0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7';
 const SEL_OWNER='8da5cb5b', SEL_BALANCE='70a08231', SEL_EXECUTE='51945447';
 const SEL_QUOTE='c6a5026a', SEL_EXACT_INPUT='04e45aaf';
-const SEL_TRANSFER='a9059cbb', SEL_DECIMALS='313ce567', SEL_SYMBOL='95d89b41';
+const SEL_TRANSFER='a9059cbb', SEL_DECIMALS='313ce567', SEL_SYMBOL='95d89b41', SEL_APPROVE='095ea7b3';
 const SEL_WITHDRAW_TOKEN='9e281a98', SEL_WITHDRAW_ETH='f14210a6';
 
 let account=null, quoteState=null, simulationState=null, assetState=null, assetMoveSimulation=null;
@@ -917,6 +1012,7 @@ document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tabpane').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));
   if(b.dataset.tab==='accountsPane') refreshAllAccounts().catch(e=>$('accountCenterLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='portfolioPane' && !terminalState.positions.length) discoverPortfolio().catch(e=>$('terminalLog').textContent='ERROR: '+e.message);
+  if(b.dataset.tab==='tradePane') ensureTradeCatalog().catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='operationsPane'){try{refreshAllAccounts()}catch{}}
   if(b.dataset.tab==='historyPane'){
     if(!terminalState.positions.length) discoverPortfolio().then(()=>{renderCostBasisEditor();renderHistoryMetrics()}).catch(e=>$('historyLog').textContent='ERROR: '+e.message);
@@ -1161,6 +1257,7 @@ async function discoverPortfolio(){
     $('catalogStatus').className='statusChip good';
     const scanned=await scanCanonicalStockBalances(assets);
     terminalState.positions=await enrichStockPositions(scanned);
+    if(typeof populateTradeAssets==='function') populateTradeAssets();
     await refreshTerminalPrices(false);
     renderTerminal();
   }finally{$('discoverPortfolio').disabled=false}
@@ -1548,6 +1645,236 @@ $('simulateSweepPlan').onclick=()=>simulateCurrentPlan().catch(e=>$('opsLog').te
 $('executeNextSweepStep').onclick=()=>executeNextOpsStep('SWEEP').catch(e=>$('opsLog').textContent='ERROR: '+e.message);
 $('opsAsset').onchange=()=>{$('opsCustomWrap').style.display=$('opsAsset').value==='CUSTOM'?'block':'none';resetOps(null)};
 ['opsSource','opsDestination','opsAmount','opsCustomToken'].forEach(id=>$(id).addEventListener('change',()=>resetOps(null)));
+
+
+let tradeState={quote:null,steps:[],side:'BUY',asset:null};
+
+function tradeReset(){
+  tradeState={quote:null,steps:[],side:$('tradeSide').value,asset:null};
+  $('tradeExecuteNext').disabled=true;
+  $('tradePlan').innerHTML='<div class="emptyState">Build a plan after obtaining a route quote.</div>';
+  $('tradeRoutes').innerHTML='<div class="emptyState">No route quote yet.</div>';
+  ['tradeBestFee','tradeExpected','tradeMinimum'].forEach(id=>$(id).textContent='—');
+}
+function populateTradeAssets(){
+  if(!terminalState.catalog?.length) return;
+  const active=terminalState.catalog
+    .map(a=>({a,d:tokenDeployment(a)}))
+    .filter(x=>x.d&&x.d.contractAddress)
+    .sort((x,y)=>String(x.a.tokenSymbol).localeCompare(String(y.a.tokenSymbol)));
+  const current=$('tradeAsset').value;
+  $('tradeAsset').innerHTML='<option value="">Select stock…</option>'+active.map(x=>
+    `<option value="${escapeHtml(x.d.contractAddress)}" data-symbol="${escapeHtml(x.a.tokenSymbol)}">${escapeHtml(x.a.tokenSymbol)} — ${escapeHtml(x.a.tokenName||'Stock Token')}</option>`
+  ).join('');
+  if(active.some(x=>x.d.contractAddress.toLowerCase()===current.toLowerCase())) $('tradeAsset').value=current;
+}
+async function ensureTradeCatalog(){
+  if(!terminalState.catalog?.length) await loadRobinhoodCatalog(false);
+  populateTradeAssets();
+}
+function selectedTradeAsset(){
+  const token=$('tradeAsset').value;
+  if(!token) throw Error('Select a canonical Stock Token');
+  const asset=terminalState.catalog.find(a=>{
+    const d=tokenDeployment(a);return d&&d.contractAddress.toLowerCase()===token.toLowerCase();
+  });
+  if(!asset) throw Error('Selected token is not in the canonical chain-4663 catalog');
+  return {asset,token,symbol:asset.tokenSymbol};
+}
+function quoteSingleCalldata(tokenIn,tokenOut,amountIn,fee){
+  // QuoterV2 quoteExactInputSingle((address,address,uint256,uint24,uint160))
+  return '0x'+SEL_QUOTE+addrWord(tokenIn)+addrWord(tokenOut)+word(amountIn)+word(fee)+word(0);
+}
+function exactInputSingleCalldata(tokenIn,tokenOut,fee,recipient,amountIn,minOut){
+  return '0x'+SEL_EXACT_INPUT+addrWord(tokenIn)+addrWord(tokenOut)+word(fee)+addrWord(recipient)+word(amountIn)+word(minOut)+word(0);
+}
+function approveCalldata(spender,amount){return '0x'+SEL_APPROVE+addrWord(spender)+word(amount)}
+
+async function quoteTrade(){
+  await ensureOwnerAndChain();
+  await ensureTradeCatalog();
+  const picked=selectedTradeAsset();
+  const side=$('tradeSide').value;
+  const decimals=await tokenDecimals(picked.token);
+  const tiers=[500n,3000n,10000n];
+  let amountIn,tokenIn,tokenOut,inputSymbol,outputSymbol;
+
+  if(side==='BUY'){
+    const usd=Number($('tradeUsd').value),ethUsd=Number($('tradeEthUsd').value);
+    if(!(usd>0&&usd<=5)) throw Error('Enter a USD target above $0 and no more than $5');
+    if(!(ethUsd>0)) throw Error('ETH/USD sizing reference must be positive');
+    amountIn=decimalToWei((usd/ethUsd).toFixed(18));
+    tokenIn=WETH;tokenOut=picked.token;inputSymbol='ETH';outputSymbol=picked.symbol;
+  }else{
+    amountIn=decimalToUnits($('tradeTokenAmount').value,decimals);
+    if(amountIn<=0n) throw Error('Sell amount must be greater than zero');
+    const bal=await erc20Balance(picked.token,TRADING);
+    if(amountIn>bal) throw Error(`Sell amount exceeds Trading TBA ${picked.symbol} balance`);
+    tokenIn=picked.token;tokenOut=WETH;inputSymbol=picked.symbol;outputSymbol='WETH';
+  }
+
+  const results=[];
+  for(const fee of tiers){
+    const data=quoteSingleCalldata(tokenIn,tokenOut,amountIn,fee);
+    try{
+      const raw=await rpc('eth_call',[{to:QUOTER,data},'latest']);
+      const out=BigInt('0x'+raw.slice(2,66));
+      if(out>0n) results.push({fee,amountOut:out});
+      else results.push({fee,error:'zero output'});
+    }catch(e){results.push({fee,error:e.message})}
+  }
+  const ok=results.filter(x=>x.amountOut).sort((a,b)=>a.amountOut>b.amountOut?-1:1);
+  if(!ok.length) throw Error(`No quoted ${inputSymbol}→${outputSymbol} route found`);
+  const best=ok[0],slip=Number($('tradeSlippage').value);
+  const minOut=best.amountOut*BigInt(Math.floor((100-slip)*100))/10000n;
+  const outputDecimals=side==='BUY'?decimals:18;
+  tradeState={quote:{
+    time:Date.now(),side,picked,decimals,amountIn,tokenIn,tokenOut,inputSymbol,outputSymbol,
+    outputDecimals,bestFee:best.fee,quotedOut:best.amountOut,minOut,results,slippage:slip
+  },steps:[],side,asset:picked};
+
+  $('tradeSelected').textContent=`${side} ${picked.symbol}`;
+  $('tradeBestFee').textContent=(Number(best.fee)/10000).toFixed(2)+'%';
+  $('tradeExpected').textContent=unitsToDecimal(best.amountOut,outputDecimals,10)+' '+outputSymbol;
+  $('tradeMinimum').textContent=unitsToDecimal(minOut,outputDecimals,10)+' '+outputSymbol;
+  $('tradeRoutes').innerHTML=results.map(r=>`<div class="routeOption"><div>${(Number(r.fee)/10000).toFixed(2)}% fee</div><div class="${r===best?'routeBest':''}">${r.amountOut?unitsToDecimal(r.amountOut,outputDecimals,10)+' '+outputSymbol:'Unavailable'}</div></div>`).join('');
+  $('tradeQuoteLog').textContent=
+    `PASS — route comparison complete.\nSide: ${side}\nCanonical asset: ${picked.symbol}\nContract: ${picked.token}\n`+
+    `Input: ${unitsToDecimal(amountIn,side==='BUY'?18:decimals,12)} ${inputSymbol}\nBest fee: ${Number(best.fee)}\n`+
+    `Expected: ${unitsToDecimal(best.amountOut,outputDecimals,12)} ${outputSymbol}\nMinimum: ${unitsToDecimal(minOut,outputDecimals,12)} ${outputSymbol}\n`+
+    `Quote expires in 60 seconds.`;
+  $('tradeBuildPlan').disabled=false;
+  return tradeState.quote;
+}
+async function buildTradePlan(){
+  const q=tradeState.quote;
+  if(!q) throw Error('Compare routes first');
+  if(Date.now()-q.time>60000) throw Error('Quote expired. Compare routes again.');
+  const steps=[];
+
+  if(q.side==='BUY'){
+    const vaultBal=BigInt(await rpc('eth_getBalance',[VAULT,'latest']));
+    if(vaultBal<q.amountIn) throw Error(`Vault needs ${fromWei(q.amountIn)} ETH for this buy. Fund Vault first.`);
+    const routerData=exactInputSingleCalldata(WETH,q.picked.token,q.bestFee,TRADING,q.amountIn,q.minOut);
+    const data=genericExecuteCalldata(ROUTER,q.amountIn,routerData);
+    steps.push({
+      type:'BUY_SWAP',label:`Vault ETH → ${q.picked.symbol} → Trading TBA`,
+      symbol:q.picked.symbol,amountUnits:q.amountIn,decimals:18,
+      buildTx:()=>({from:OWNER,to:VAULT,data})
+    });
+  }else{
+    // Restricted Trading account cannot call arbitrary router methods.
+    // Stage through Owner and generic Vault, then approve and swap token -> WETH into Vault.
+    steps.push({
+      type:'SELL_WITHDRAW',label:`Trading ${q.picked.symbol} → Owner`,
+      symbol:q.picked.symbol,amountUnits:q.amountIn,decimals:q.decimals,
+      buildTx:()=>({from:OWNER,to:TRADING,data:withdrawTokenCalldata(q.picked.token,q.amountIn)})
+    });
+    steps.push({
+      type:'SELL_STAGE',label:`Owner ${q.picked.symbol} → Vault`,
+      symbol:q.picked.symbol,amountUnits:q.amountIn,decimals:q.decimals,dependsOnPrevious:true,
+      buildTx:()=>({from:OWNER,to:q.picked.token,data:transferCalldata(VAULT,q.amountIn)})
+    });
+    steps.push({
+      type:'SELL_APPROVE',label:`Vault approves Router for ${q.picked.symbol}`,
+      symbol:q.picked.symbol,amountUnits:q.amountIn,decimals:q.decimals,dependsOnPrevious:true,
+      buildTx:()=>({from:OWNER,to:VAULT,data:genericExecuteCalldata(q.picked.token,0n,approveCalldata(ROUTER,q.amountIn))})
+    });
+    const swapData=exactInputSingleCalldata(q.picked.token,WETH,q.bestFee,VAULT,q.amountIn,q.minOut);
+    steps.push({
+      type:'SELL_SWAP',label:`Vault ${q.picked.symbol} → WETH`,
+      symbol:q.picked.symbol,amountUnits:q.amountIn,decimals:q.decimals,dependsOnPrevious:true,
+      buildTx:()=>({from:OWNER,to:VAULT,data:genericExecuteCalldata(ROUTER,0n,swapData)})
+    });
+  }
+  tradeState.steps=steps.map((s,i)=>({...s,id:i,status:'PENDING',gas:null,txHash:null,simulatedAt:null}));
+  $('tradeExecLog').textContent=`Execution plan built with ${steps.length} step(s). Simulate the first step.`;
+  renderTradePlan();
+}
+function renderTradePlan(){
+  const s=tradeState.steps;
+  $('tradePlan').innerHTML=s.map((x,i)=>{
+    const cls=x.status==='READY'?'tradeReady':x.status==='DONE'?'tradeDone':x.status==='FAILED'?'tradeFail':'tradeWait';
+    return `<div class="tradeStep"><div class="tradeStepNo">${i+1}</div><div><b>${escapeHtml(x.label)}</b><div class="holdingMeta">${escapeHtml(x.type)}</div></div><div class="tradeStatus ${cls}">${escapeHtml(x.status||'PENDING')}</div></div>`;
+  }).join('')||'<div class="emptyState">Build a plan after obtaining a route quote.</div>';
+  $('tradeExecuteNext').disabled=!s.some(x=>x.status==='READY');
+}
+async function simulateNextTradeStep(){
+  await ensureOwnerAndChain();
+  if(!tradeState.steps.length) throw Error('Build execution plan first');
+  let idx=tradeState.steps.findIndex(x=>x.status!=='DONE');
+  if(idx<0) throw Error('Trade plan is already complete');
+  const step=tradeState.steps[idx];
+  if(step.dependsOnPrevious && (idx===0||tradeState.steps[idx-1].status!=='DONE')){
+    throw Error('Previous transaction must confirm first');
+  }
+  const tx=step.buildTx();
+  try{
+    const gas=BigInt(await rpc('eth_estimateGas',[tx]));
+    const result=await rpc('eth_call',[tx,'latest']);
+    step.tx=tx;step.gas=gas;step.callResult=result;step.status='READY';step.simulatedAt=Date.now();
+    $('tradeExecLog').textContent=`PASS — step ${idx+1}/${tradeState.steps.length} simulated.\n${step.label}\nEstimated gas: ${gas}\neth_call: ${result}`;
+    renderTradePlan();
+  }catch(e){
+    step.status='FAILED';step.error=e.message;renderTradePlan();throw e;
+  }
+}
+async function executeNextTradeStep(){
+  await ensureOwnerAndChain();
+  const idx=tradeState.steps.findIndex(x=>x.status==='READY');
+  if(idx<0) throw Error('Simulate the next step first');
+  const step=tradeState.steps[idx];
+  if(Date.now()-(step.simulatedAt||0)>60000){step.status='PENDING';renderTradePlan();throw Error('Simulation expired. Simulate again.')}
+  if(!confirm(`REAL MAINNET TRADE STEP\n\n${idx+1}/${tradeState.steps.length}\n${step.label}\n\nReview the wallet destination and gas carefully.`)) return;
+  const tx={...step.tx,gas:hexQty(step.gas*120n/100n)};
+  const hash=await ethereum.request({method:'eth_sendTransaction',params:[tx]});
+  step.status='SUBMITTED';step.txHash=hash;renderTradePlan();
+  $('tradeExecLog').textContent=`Submitted step ${idx+1}:\n${hash}\nWaiting for confirmation…`;
+  try{
+    const receipt=await waitReceipt(hash);
+    step.status='DONE';step.block=Number(BigInt(receipt.blockNumber));
+    $('tradeExecLog').textContent=`CONFIRMED ✓\nStep ${idx+1}: ${step.label}\nTx: ${hash}\nBlock: ${step.block}\n`+
+      (idx+1<tradeState.steps.length?'Now simulate the next step.':'Trade plan complete. Refreshing portfolio…');
+    renderTradePlan();
+    await refreshBalances();
+    try{await refreshAllAccounts()}catch{}
+    if(idx+1===tradeState.steps.length){
+      tradeState.quote=null;
+      try{await discoverPortfolio()}catch{}
+      try{await loadOnchainHistory()}catch{}
+    }
+  }catch(e){
+    step.status='FAILED';step.error=e.message;renderTradePlan();throw e;
+  }
+}
+async function tradeUseFraction(frac){
+  await ensureTradeCatalog();
+  const p=selectedTradeAsset();
+  const dec=await tokenDecimals(p.token);
+  const bal=await erc20Balance(p.token,TRADING);
+  const amount=bal*BigInt(Math.round(frac*10000))/10000n;
+  $('tradeTokenAmount').value=unitsToDecimal(amount,dec,dec);
+  tradeReset();
+}
+$('tradeSide').onchange=()=>{
+  const sell=$('tradeSide').value==='SELL';
+  $('buySizing').style.display=sell?'none':'block';
+  $('sellSizing').style.display=sell?'block':'none';
+  tradeReset();
+};
+$('tradeAsset').onchange=tradeReset;
+$('tradeSlippage').onchange=tradeReset;
+$('tradeUsd').oninput=tradeReset;
+$('tradeEthUsd').oninput=tradeReset;
+$('tradeTokenAmount').oninput=tradeReset;
+document.querySelectorAll('[data-usd]').forEach(b=>b.onclick=()=>{$('tradeUsd').value=b.dataset.usd;tradeReset()});
+$('tradeUse25').onclick=()=>tradeUseFraction(.25).catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
+$('tradeUse50').onclick=()=>tradeUseFraction(.50).catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
+$('tradeUseMax').onclick=()=>tradeUseFraction(1).catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
+$('tradeQuote').onclick=()=>quoteTrade().catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
+$('tradeBuildPlan').onclick=()=>buildTradePlan().catch(e=>$('tradeExecLog').textContent='ERROR: '+e.message);
+$('tradeSimulatePlan').onclick=()=>simulateNextTradeStep().catch(e=>$('tradeExecLog').textContent='ERROR: '+e.message);
+$('tradeExecuteNext').onclick=()=>executeNextTradeStep().catch(e=>$('tradeExecLog').textContent='ERROR: '+e.message);
 
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
 bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);

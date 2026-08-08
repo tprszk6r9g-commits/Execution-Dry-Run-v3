@@ -1,32 +1,29 @@
-# Rustee Portfolio Terminal v2.3 — Phase 3 Operations
+# Rustee Portfolio Terminal v2.4 — Phase 4 Trading
 
-Phase 3 adds a top-tier **Operations Center** while preserving the working resilient-data Portfolio, History + P&L, Account Center, Universal Asset Mover, NVDA trade executor, and Trading-TBA withdrawal path.
+Phase 4 adds a manual, owner-signed **Multi-Asset Buy + Sell Terminal** while preserving Portfolio discovery, resilient price/history snapshots, P&L, Account Center, Universal Asset Mover, Operations Center, the proven NVDA buy path, and restricted Trading-TBA withdrawals.
 
-## New in Phase 3
+## Buy
+- Canonical Stock Token selector populated from Robinhood chain-4663 asset metadata.
+- $1 / $2 / $5 / custom sizing up to the current $5 UI ceiling.
+- compares 0.05%, 0.30%, and 1.00% QuoterV2 fee tiers.
+- operator-controlled slippage.
+- Vault ETH -> router -> selected Stock Token -> Trading TBA.
+- exact gas estimation and `eth_call` simulation before wallet signing.
 
-### Smart Route Planner
-- Main Wallet ↔ Vault / Trading / Rewards / Identity
-- Vault / Rewards / Identity → any Rustee account through generic `BrokerAccount.execute`
-- Trading TBA → Owner through restricted `withdrawToken()` / `withdrawETH()`
-- Trading TBA → another TBA automatically becomes a two-step route:
-  1. Trading → Owner
-  2. Owner → destination
-- ETH, NVDA, WETH, and custom ERC-20 support
-- exact amount/balance validation
-- per-step `eth_estimateGas` + `eth_call`
-- 60-second simulation expiry
-- explorer links for confirmed transactions
+## Sell
+The restricted Trading TBA intentionally cannot call arbitrary routers. A sell is therefore a transparent four-step owner-controlled lifecycle:
 
-### One-Tap Sweep Planner
-- Sweep Vault, Trading, Rewards, Identity, or all four
-- optional ETH
-- optional WETH
-- optional automatically discovered canonical Robinhood Stock Tokens
-- never auto-sweeps unknown tokens or NFTs
-- creates one controlled plan but preserves one wallet confirmation per transaction
-- per-step status: Pending / Ready / Submitted / Done / Failed
+1. Trading TBA `withdrawToken()` -> Main Owner.
+2. Main Owner transfers the selected Stock Token -> Vault.
+3. Vault generic account approves SwapRouter02.
+4. Vault swaps Stock Token -> WETH, retained in Vault.
 
-## Safety boundary
-Phase 3 does **not** create a bot signer or bypass wallet confirmation. Each real transaction is explicitly confirmed by the Broker NFT owner.
+Every step is separately simulated and separately confirmed in the wallet. There is no hidden batch signing or autonomous execution.
 
-The Trading TBA remains restricted: when routing Trading → another TBA, assets first recover to the current NFT owner and then move to the destination in a separately simulated transaction.
+## Safety
+- only canonical chain-4663 assets from the Robinhood catalog appear in the standard selector;
+- the terminal does not recommend assets or trade direction;
+- quotes expire after 60 seconds;
+- simulations expire after 60 seconds;
+- every mainnet transaction requires explicit owner-wallet confirmation;
+- the existing policy/Registry autonomous path remains separate.
