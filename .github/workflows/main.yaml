@@ -1,4 +1,4 @@
-name: Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7
+name: Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7.1
 
 on:
   push:
@@ -264,6 +264,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          # v4.7.1 isolation fix: Forge compiles every Solidity file under
+          # src/test before --match-test filtering. Remove stale generated
+          # tests from earlier phases so RusteeFork.t.sol cannot break this run.
+          rm -rf src test out cache
+          mkdir -p src test data
 
           cat > foundry.toml <<'EOF'
           [profile.default]
@@ -601,7 +607,7 @@ jobs:
               blockers.insert(0,"Both-direction stress suite did not produce sufficient successful trials")
 
           report={
-            "project":"Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7",
+            "project":"Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7.1",
             "network":"Robinhood Chain Mainnet + Fork",
             "chainId":4663,
             "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
