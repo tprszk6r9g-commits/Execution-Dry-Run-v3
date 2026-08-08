@@ -6,7 +6,7 @@ It remains strictly read-only and cannot broadcast any mainnet transaction.
 
 ## Repository variables
 
-Set only values you can document authoritatively:
+Set only values you can document authoritatively. `ARCHIVE_RPC_URL` must be a GitHub Actions **secret**; the remaining non-sensitive inputs may be repository variables:
 
 - `ARCHIVE_RPC_URL`
 - `ETH_USD_FEED_ADDRESS`
