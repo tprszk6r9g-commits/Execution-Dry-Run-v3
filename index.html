@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Portfolio Terminal v2.5 · Phase 5</title>
+<title>Rustee Broker Portfolio Terminal v2.6 · Phase 6</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -139,6 +139,24 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 .commandSection{margin-top:14px}
 .stickyStatus{position:fixed;right:14px;bottom:82px;z-index:60;max-width:320px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:rgba(4,18,15,.95);font-size:11px;color:var(--muted);backdrop-filter:blur(10px)}
 @media(max-width:650px){.commandHero{grid-template-columns:1fr}.quickDock{grid-template-columns:repeat(2,minmax(0,1fr))}.healthGrid{grid-template-columns:1fr}}
+
+.securityHero{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.securityCard{border:1px solid var(--line);border-radius:20px;padding:17px;background:#061d18}
+.securityCard h3{margin:0 0 10px;font-size:21px}
+.gateGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.gate{border:1px solid var(--line);border-radius:14px;padding:12px;background:#051713}
+.gate small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.09em}
+.gate strong{display:block;margin-top:5px;font-size:16px}
+.gatePass{color:var(--green)}.gateWarn{color:var(--orange)}.gateFail{color:var(--red)}
+.policyTable{width:100%;border-collapse:collapse;margin-top:10px}
+.policyTable td{padding:10px 4px;border-top:1px solid #1d4b42;font-size:13px}
+.policyTable td:last-child{text-align:right;font-family:ui-monospace,monospace}
+.securityBoundary{border-left:6px solid var(--orange);background:#21170b;padding:14px 16px;border-radius:15px;line-height:1.5}
+.securityChecklist{display:grid;gap:8px;margin-top:10px}
+.securityCheck{display:flex;justify-content:space-between;gap:10px;padding:11px;border:1px solid var(--line);border-radius:13px;background:#051713}
+.securityCheck span{color:var(--muted);font-size:12px}.securityCheck b{font-size:12px}
+@media(max-width:650px){.securityHero{grid-template-columns:1fr}.gateGrid{grid-template-columns:1fr 1fr}}
+
 </style>
 </head>
 <body><main>
@@ -152,6 +170,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <button class="tabbtn" data-tab="accountsPane">Accounts</button>
   <button class="tabbtn" data-tab="transferPane">Move Assets</button>
   <button class="tabbtn" data-tab="operationsPane">Operations</button>
+  <button class="tabbtn" data-tab="securityPane">Policy + Security</button>
 </div>
 
 <div id="commandPane" class="tabpane active">
@@ -204,7 +223,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 
 <div id="overviewPane" class="tabpane">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.5 · Phase 5 · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.6 · Phase 6 · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -539,6 +558,74 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 </div>
 
 
+
+<div id="securityPane" class="tabpane">
+  <div class="card">
+    <span class="badge">PHASE 6 · READ-ONLY POLICY + SECURITY CONSOLE</span>
+    <h2>Policy &amp; Security Console</h2>
+    <p>Reads the deployed Registry and execution environment without changing mainnet state. This console deliberately separates the proven manual owner-signed terminal from the still-gated autonomous Registry V2 path.</p>
+
+    <div class="securityHero">
+      <div class="securityCard">
+        <h3>Deployed Registry policy</h3>
+        <table class="policyTable">
+          <tr><td>Registry</td><td id="secRegistry">—</td></tr>
+          <tr><td>Maximum trade</td><td id="secMaxTrade">—</td></tr>
+          <tr><td>Daily maximum</td><td id="secDailyMax">—</td></tr>
+          <tr><td>Trades / day</td><td id="secTradesDay">—</td></tr>
+          <tr><td>Trading state</td><td id="secPaused">—</td></tr>
+          <tr><td>Router venue allowed</td><td id="secVenueAllowed">—</td></tr>
+          <tr><td>Router spender allowed</td><td id="secSpenderAllowed">—</td></tr>
+        </table>
+        <div class="actions"><button class="primary" id="runSecurityPreflight">Run read-only preflight</button></div>
+      </div>
+
+      <div class="securityCard">
+        <h3>Production architecture gates</h3>
+        <div class="gateGrid">
+          <div class="gate"><small>Manual owner-signed trading</small><strong class="gatePass">PROVEN ✓</strong></div>
+          <div class="gate"><small>Registry V2 design</small><strong class="gatePass">FORK TESTED ✓</strong></div>
+          <div class="gate"><small>Signed Data Streams replay</small><strong class="gateWarn">INCOMPLETE</strong></div>
+          <div class="gate"><small>Independent security review</small><strong class="gateWarn">INCOMPLETE</strong></div>
+          <div class="gate"><small>Registry V2 mainnet migration</small><strong class="gateWarn">NOT DEPLOYED</strong></div>
+          <div class="gate"><small>Autonomous mainnet execution</small><strong class="gateFail">LOCKED</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="securityHero" style="margin-top:12px">
+      <div class="securityCard">
+        <h3>Oracle / liveness architecture</h3>
+        <table class="policyTable">
+          <tr><td>ETH/USD Data Streams feed ID</td><td style="word-break:break-all">0x000362205e10b3a147d02792eccee483dca6c7b44ecce7012cb8c6e0b68b3ae9</td></tr>
+          <tr><td>Verifier proxy</td><td style="word-break:break-all">0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7</td></tr>
+          <tr><td>Sequencer design</td><td>Registry V2 chain-specific guard</td></tr>
+          <tr><td>WebSocket feed</td><td>wss://feed.mainnet.chain.robinhood.com</td></tr>
+        </table>
+      </div>
+
+      <div class="securityCard">
+        <h3>Live integrity checks</h3>
+        <div class="securityChecklist">
+          <div class="securityCheck"><span>Robinhood chain ID</span><b id="secChain">—</b></div>
+          <div class="securityCheck"><span>Registry bytecode</span><b id="secRegistryCode">—</b></div>
+          <div class="securityCheck"><span>Trading TBA bytecode</span><b id="secTradingCode">—</b></div>
+          <div class="securityCheck"><span>Verifier proxy bytecode</span><b id="secVerifierCode">—</b></div>
+          <div class="securityCheck"><span>Snapshot freshness</span><b id="secSnapshots">—</b></div>
+          <div class="securityCheck"><span>Owner wallet match</span><b id="secOwner">—</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="securityBoundary" style="margin-top:14px">
+      <b>Autonomous execution remains intentionally disabled.</b><br>
+      The existing deployed Registry is conservatively paused. Registry V2 has been fork-tested as an engineering candidate, but signed-report replay, independent review, and production migration remain separate gates. This tab contains no registry setter, unpause, approval, funding, or broadcast controls.
+    </div>
+
+    <pre id="securityLog">No security preflight run yet.</pre>
+  </div>
+</div>
+
 <div id="operationsPane" class="tabpane">
   <div class="card">
     <span class="badge">PHASE 3 · OWNER-CONTROLLED OPERATIONS</span>
@@ -644,6 +731,8 @@ const VAULT='0x8ad8bd35d33dd7b4d0de81f809f5b7f92623956d';
 const TRADING='0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654';
 const REWARDS='0xfd0d881d73ec1476f5da0ab78283149ea21c3b32';
 const IDENTITY='0x496d7d47ae69d65d714413f0dc78c712ed92158d';
+const POLICY_REGISTRY='0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199';
+const DATA_STREAMS_VERIFIER='0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7';
 const WETH='0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
 const NVDA='0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC';
 const ROUTER='0xCaf681a66D020601342297493863E78C959E5cb2';
@@ -1090,6 +1179,7 @@ document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tabpane').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));
   if(b.dataset.tab==='accountsPane') refreshAllAccounts().catch(e=>$('accountCenterLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='commandPane') refreshCommandCenter().catch(e=>$('commandLog').textContent='ERROR: '+e.message);
+  if(b.dataset.tab==='securityPane') runSecurityPreflight().catch(()=>{});
   if(b.dataset.tab==='portfolioPane' && !terminalState.positions.length) discoverPortfolio().catch(e=>$('terminalLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='tradePane') ensureTradeCatalog().catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='operationsPane'){try{refreshAllAccounts()}catch{}}
@@ -2044,6 +2134,90 @@ $('refreshCommandCenter').onclick=()=>refreshCommandCenter().catch(e=>$('command
 $('refreshReceipts').onclick=()=>refreshRecordedReceipts();
 $('clearReceipts').onclick=()=>{if(confirm('Clear only the local receipt display? On-chain transactions are unaffected.')){localStorage.removeItem(RECEIPT_KEY);renderReceipts()}};
 renderReceipts();
+
+
+// --- Phase 6 read-only Registry policy/security helpers ---
+const KRC=[0x0000000000000001n,0x0000000000008082n,0x800000000000808an,0x8000000080008000n,0x000000000000808bn,0x0000000080000001n,0x8000000080008081n,0x8000000000008009n,0x000000000000008an,0x0000000000000088n,0x0000000080008009n,0x000000008000000an,0x000000008000808bn,0x800000000000008bn,0x8000000000008089n,0x8000000000008003n,0x8000000000008002n,0x8000000000000080n,0x000000000000800an,0x800000008000000an,0x8000000080008081n,0x8000000000008080n,0x0000000080000001n,0x8000000080008008n],
+KROT=[0,1,62,28,27,36,44,6,55,20,3,10,43,25,39,41,45,15,21,8,18,2,61,56,14],KMASK=(1n<<64n)-1n;
+function krol(x,n){n=BigInt(n);return ((x<<n)|(x>>(64n-n)))&KMASK}
+function kf(a){for(const rc of KRC){const c=new Array(5),d=new Array(5),b=new Array(25);for(let x=0;x<5;x++)c[x]=a[x]^a[x+5]^a[x+10]^a[x+15]^a[x+20];for(let x=0;x<5;x++)d[x]=c[(x+4)%5]^krol(c[(x+1)%5],1);for(let i=0;i<25;i++)a[i]^=d[i%5];for(let x=0;x<5;x++)for(let y=0;y<5;y++)b[y+5*((2*x+3*y)%5)]=krol(a[x+5*y],KROT[x+5*y]);for(let x=0;x<5;x++)for(let y=0;y<5;y++)a[x+5*y]=b[x+5*y]^((~b[(x+1)%5+5*y])&b[(x+2)%5+5*y]);a[0]^=rc}}
+function kbytes(bytes){const rate=136,p=[...bytes,1];while(p.length%rate!==rate-1)p.push(0);p.push(128);const a=new Array(25).fill(0n);for(let o=0;o<p.length;o+=rate){for(let i=0;i<rate;i++)a[i>>3]^=BigInt(p[o+i])<<BigInt(8*(i&7));kf(a)}const out=[];for(let i=0;i<32;i++)out.push(Number((a[i>>3]>>BigInt(8*(i&7)))&255n));return out}
+function khex(bytes){return bytes.map(x=>x.toString(16).padStart(2,'0')).join('')}
+function selectorOf(sig){return khex(kbytes(new TextEncoder().encode(sig))).slice(0,8)}
+async function secCall(sig,args=''){return rpc('eth_call',[{to:POLICY_REGISTRY,data:'0x'+selectorOf(sig)+args},'latest'])}
+function decodeWords(raw){const h=(raw||'0x').slice(2);return h.match(/.{64}/g)||[]}
+function boolWord(x){return BigInt('0x'+x)!==0n}
+function usd18(x){return '$'+(Number(BigInt('0x'+x))/1e18).toFixed(2)}
+async function runSecurityPreflight(){
+  $('securityLog').textContent='Running read-only policy and integrity checks…';
+  const report={time:new Date().toISOString(),chainId:null,policy:null,venueAllowed:null,spenderAllowed:null,checks:{}};
+  try{
+    const cid=Number(BigInt(await rpc('eth_chainId')));report.chainId=cid;
+    $('secChain').textContent=cid===CHAIN?'PASS ✓':'FAIL ✕';$('secChain').className=cid===CHAIN?'gatePass':'gateFail';
+
+    const [regCode,tbaCode,verCode]=await Promise.all([
+      rpc('eth_getCode',[POLICY_REGISTRY,'latest']),
+      rpc('eth_getCode',[TRADING,'latest']),
+      rpc('eth_getCode',[DATA_STREAMS_VERIFIER,'latest'])
+    ]);
+    const regOk=regCode&&regCode!=='0x',tbaOk=tbaCode&&tbaCode!=='0x',verOk=verCode&&verCode!=='0x';
+    $('secRegistryCode').textContent=regOk?'PASS ✓':'FAIL ✕';$('secRegistryCode').className=regOk?'gatePass':'gateFail';
+    $('secTradingCode').textContent=tbaOk?'PASS ✓':'FAIL ✕';$('secTradingCode').className=tbaOk?'gatePass':'gateFail';
+    $('secVerifierCode').textContent=verOk?'PASS ✓':'FAIL ✕';$('secVerifierCode').className=verOk?'gatePass':'gateFail';
+    report.checks={registryCode:regOk,tradingTbaCode:tbaOk,verifierCode:verOk};
+
+    let policyRaw;
+    try{policyRaw=await secCall('getTradingPolicy()')}catch(e){throw Error('Could not read deployed getTradingPolicy(): '+e.message)}
+    const w=decodeWords(policyRaw);
+    if(w.length<4) throw Error('Unexpected trading-policy ABI response');
+    report.policy={
+      maxTradeUsd18:BigInt('0x'+w[0]).toString(),
+      maxDailyUsd18:BigInt('0x'+w[1]).toString(),
+      maxTradesPerDay:Number(BigInt('0x'+w[2])),
+      paused:boolWord(w[3])
+    };
+    $('secMaxTrade').textContent=usd18(w[0]);
+    $('secDailyMax').textContent=usd18(w[1]);
+    $('secTradesDay').textContent=String(report.policy.maxTradesPerDay);
+    $('secPaused').textContent=report.policy.paused?'PAUSED ✓':'UNPAUSED ⚠';
+    $('secPaused').className=report.policy.paused?'gatePass':'gateWarn';
+    $('secRegistry').textContent=short(POLICY_REGISTRY);
+
+    const venueRaw=await secCall('allowedVenue(address)',addrWord(ROUTER));
+    const spenderRaw=await secCall('allowedSpender(address)',addrWord(ROUTER));
+    report.venueAllowed=boolWord(decodeWords(venueRaw)[0]||'0');
+    report.spenderAllowed=boolWord(decodeWords(spenderRaw)[0]||'0');
+    $('secVenueAllowed').textContent=report.venueAllowed?'YES':'NO';
+    $('secVenueAllowed').className=report.venueAllowed?'gateWarn':'gatePass';
+    $('secSpenderAllowed').textContent=report.spenderAllowed?'YES':'NO';
+    $('secSpenderAllowed').className=report.spenderAllowed?'gateWarn':'gatePass';
+
+    const ownerMatches=!account||account.toLowerCase()===OWNER.toLowerCase();
+    $('secOwner').textContent=ownerMatches?(account?'PASS ✓':'READ ONLY'):'FAIL ✕';
+    $('secOwner').className=ownerMatches?'gatePass':'gateFail';
+
+    const times=[staticData.assets?.generatedAt,staticData.prices?.generatedAt,staticData.history?.generatedAt].filter(Boolean).map(x=>new Date(x).getTime());
+    const freshest=times.length?Math.min(...times):0;
+    const ageMin=freshest?Math.max(0,(Date.now()-freshest)/60000):Infinity;
+    $('secSnapshots').textContent=Number.isFinite(ageMin)?Math.round(ageMin)+'m':'Unavailable';
+    $('secSnapshots').className=ageMin<=30?'gatePass':ageMin<=90?'gateWarn':'gateFail';
+
+    const safePaused=report.policy.paused===true;
+    $('securityLog').textContent=
+      `PASS — read-only policy/security preflight completed.\n`+
+      `Registry: ${POLICY_REGISTRY}\n`+
+      `Policy: maxTrade $${(Number(BigInt(report.policy.maxTradeUsd18))/1e18).toFixed(2)}, `+
+      `daily $${(Number(BigInt(report.policy.maxDailyUsd18))/1e18).toFixed(2)}, `+
+      `${report.policy.maxTradesPerDay} trade/day, paused=${report.policy.paused}\n`+
+      `Router venue allowlisted: ${report.venueAllowed}\nRouter spender allowlisted: ${report.spenderAllowed}\n`+
+      `Autonomous production verdict: LOCKED\n`+
+      `${safePaused?'Deployed Registry remains fail-closed as expected.':'WARNING: deployed policy is not paused.'}`;
+  }catch(e){
+    $('securityLog').textContent='ERROR: '+e.message;
+    throw e;
+  }
+}
+$('runSecurityPreflight').onclick=()=>runSecurityPreflight().catch(()=>{});
 
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
 bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);

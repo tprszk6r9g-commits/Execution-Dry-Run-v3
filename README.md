@@ -1,8 +1,17 @@
-# Rustee Portfolio Terminal v2.5 — Phase 5 Command Center
+# Rustee Portfolio Terminal v2.6 — Phase 6 Policy & Security
 
-Adds a phone-first Command Center with portfolio summary, TBA balance highlights,
-allocation, recent activity, chain/RPC/snapshot health, quick navigation, live local
-receipt tracking, and automatic best-effort refresh.
+Phase 6 adds a read-only Policy & Security Console.
 
-All earlier trade, move, sweep, portfolio, history, P&L, multihop routing, simulation,
-and explicit wallet-confirmation protections remain.
+It reads the deployed StockTokenRegistry trading policy and the allowlist state for the
+current router, checks bytecode for the Registry, Trading TBA, and Data Streams verifier,
+shows snapshot freshness and wallet/chain integrity, and clearly separates:
+
+- deployed/manual owner-signed execution — proven
+- Registry V2 architecture — fork tested
+- signed Data Streams replay — incomplete
+- independent security review — incomplete
+- Registry V2 production migration — not deployed
+- autonomous mainnet execution — locked
+
+No setter, unpause, approval, funding, or policy-broadcast controls are introduced in
+Phase 6. The console is intentionally read-only.
