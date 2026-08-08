@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Portfolio Terminal v2.7 · Phase 7</title>
+<title>Rustee Broker Portfolio Terminal v2.8.1 · Remediation</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -180,6 +180,21 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 .prodCheck b{font-size:12px}
 @media(max-width:650px){.prodHero{grid-template-columns:1fr}}
 
+
+.replayHero{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.replayCard{border:1px solid var(--line);border-radius:20px;padding:17px;background:#061d18}
+.replayCard h3{margin:0 0 10px;font-size:21px}
+.evidenceBadge{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid var(--line);font-size:11px;margin:3px 5px 3px 0}
+.evidencePass{color:var(--green)}.evidenceWarn{color:var(--orange)}.evidenceFail{color:var(--red)}
+.replayGrid{display:grid;gap:8px}
+.replayRow{display:grid;grid-template-columns:1fr auto;gap:10px;padding:11px;border:1px solid var(--line);border-radius:13px;background:#051713}
+.replayRow span{color:var(--muted);font-size:12px}.replayRow b{font-size:12px}
+.replayInput{display:grid;gap:8px}
+.replayInput textarea{width:100%;min-height:120px;padding:12px;border-radius:14px;border:1px solid var(--line);background:#04120f;color:var(--text);font:12px ui-monospace,monospace}
+.scopeCard{border:1px solid var(--line);border-radius:16px;padding:13px;background:#051713;margin-top:9px}
+.scopeCard b{display:block;margin-bottom:4px}.scopeCard span{font-size:11px;color:var(--muted)}
+@media(max-width:650px){.replayHero{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body><main>
@@ -195,6 +210,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <button class="tabbtn" data-tab="operationsPane">Operations</button>
   <button class="tabbtn" data-tab="securityPane">Policy + Security</button>
   <button class="tabbtn" data-tab="productionPane">Production Gate</button>
+  <button class="tabbtn" data-tab="evidencePane">Evidence + Replay</button>
 </div>
 
 <div id="commandPane" class="tabpane active">
@@ -247,7 +263,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 
 <div id="overviewPane" class="tabpane">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.7 · Phase 7 · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.1 · Remediation · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -637,13 +653,16 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
           <div class="securityCheck"><span>Verifier proxy bytecode</span><b id="secVerifierCode">—</b></div>
           <div class="securityCheck"><span>Snapshot freshness</span><b id="secSnapshots">—</b></div>
           <div class="securityCheck"><span>Owner wallet match</span><b id="secOwner">—</b></div>
+          <div class="securityCheck"><span>Owner EOA Stock Tokens</span><b id="secOwnerStocks">—</b></div>
+          <div class="securityCheck"><span>Vault router allowances</span><b id="secAllowances">—</b></div>
+
         </div>
       </div>
     </div>
 
     <div class="securityBoundary" style="margin-top:14px">
       <b>Autonomous execution remains intentionally disabled.</b><br>
-      The existing deployed Registry is conservatively paused. Registry V2 has been fork-tested as an engineering candidate, but signed-report replay, independent review, and production migration remain separate gates. This tab contains no registry setter, unpause, approval, funding, or broadcast controls.
+      The existing deployed Registry is conservatively paused. Registry V2 has been fork-tested as an engineering candidate, but signed-report replay, independent review, and production migration remain separate gates. This tab contains no registry setter, unpause, approval, funding, or broadcast controls. SwapRouter02 deadline-free execution is accepted only for the manual ≤$5 path with minOut and 60-second quote/simulation TTL; contract-level deadline enforcement is a Registry V2 requirement.
     </div>
 
     <pre id="securityLog">No security preflight run yet.</pre>
@@ -726,6 +745,92 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
     </div>
 
     <pre id="productionLog">No production preflight run yet.</pre>
+  </div>
+</div>
+
+
+<div id="evidencePane" class="tabpane">
+  <div class="card">
+    <span class="badge">PHASE 8 · EVIDENCE INGESTION + REPLAY VERIFICATION</span>
+    <h2>Evidence &amp; Signed-Report Replay Console</h2>
+    <p>This phase remains read-only. It ingests audit/replay evidence, validates structure and scope, and records a machine-readable production evidence bundle. It does not deploy Registry V2, unpause trading, or broadcast autonomous transactions.</p>
+
+    <div class="replayHero">
+      <div class="replayCard">
+        <h3>Signed Data Streams replay evidence</h3>
+        <div class="replayInput">
+          <label>Evidence URL</label>
+          <input id="replayEvidenceUrl" placeholder="https://…">
+          <label>Feed ID</label>
+          <input id="replayFeedId" value="0x000362205e10b3a147d02792eccee483dca6c7b44ecce7012cb8c6e0b68b3ae9">
+          <label>Verifier proxy</label>
+          <input id="replayVerifier" value="0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7">
+          <label>Signed report / replay JSON</label>
+          <textarea id="replayJson" placeholder='{"feedId":"0x...","verifier":"0x...","verified":true,...}'></textarea>
+        </div>
+        <div class="actions">
+          <button class="primary" id="validateReplayEvidence">Validate replay evidence</button>
+          <button id="saveReplayEvidence">Save locally</button>
+        </div>
+        <div class="replayGrid" style="margin-top:10px">
+          <div class="replayRow"><span>Feed ID format</span><b id="replayFeedGate">—</b></div>
+          <div class="replayRow"><span>Verifier matches production proxy</span><b id="replayVerifierGate">—</b></div>
+          <div class="replayRow"><span>Report JSON parses</span><b id="replayJsonGate">—</b></div>
+          <div class="replayRow"><span>Replay marked verified</span><b id="replayVerifiedGate">—</b></div>
+          <div class="replayRow"><span>Evidence URL present</span><b id="replayUrlGate">—</b></div>
+        </div>
+      </div>
+
+      <div class="replayCard">
+        <h3>Independent review evidence</h3>
+        <div class="replayInput">
+          <label>Oracle / Registry V2 audit URL</label>
+          <input id="auditOracleUrl" placeholder="https://…">
+          <label>Adapter / execution-path audit URL</label>
+          <input id="auditAdapterUrl" placeholder="https://…">
+          <label>Reviewed commit / artifact hash</label>
+          <input id="auditCommitHash" placeholder="commit SHA or artifact hash">
+          <label>Remediation summary</label>
+          <textarea id="auditRemediation" placeholder="Summarize findings, severity, and remediation status."></textarea>
+        </div>
+        <div class="actions">
+          <button class="primary" id="validateAuditEvidence">Validate audit evidence</button>
+          <button id="saveAuditEvidence">Save locally</button>
+        </div>
+
+        <div class="scopeCard"><b>Required scope: Registry V2</b><span>Pause semantics, liveness/sequencer guard, Data Streams integration, owner authorization, failure modes.</span></div>
+        <div class="scopeCard"><b>Required scope: Adapter / venue path</b><span>Router calldata, recipient enforcement, approvals, allowance reset/revoke, minOut, deadline policy, token accounting.</span></div>
+        <div class="scopeCard"><b>Required scope: Migration</b><span>Bytecode/artifact identity, configuration while paused, archive-fork rehearsal, rollback/emergency procedure.</span></div>
+      </div>
+    </div>
+
+    <div class="replayHero" style="margin-top:12px">
+      <div class="replayCard">
+        <h3>Evidence bundle status</h3>
+        <div id="evidenceBadges">
+          <span class="evidenceBadge evidenceWarn">Replay: incomplete</span>
+          <span class="evidenceBadge evidenceWarn">Oracle audit: incomplete</span>
+          <span class="evidenceBadge evidenceWarn">Adapter audit: incomplete</span>
+          <span class="evidenceBadge evidenceWarn">Reviewed commit: incomplete</span>
+        </div>
+        <div class="actions">
+          <button class="primary" id="buildEvidenceBundle">Build evidence bundle</button>
+          <button id="exportEvidenceBundle">Export JSON</button>
+        </div>
+      </div>
+
+      <div class="replayCard">
+        <h3>Autonomy exposure gate</h3>
+        <div class="verdictBox verdictNoGo" id="evidenceVerdict">
+          <small>Autonomous mainnet execution</small>
+          <strong>LOCKED</strong>
+          <div id="evidenceVerdictDetail">Independent review and replay verification remain mandatory.</div>
+        </div>
+        <p class="auditNote">Even a fully populated evidence bundle does not itself authorize mainnet writes. It only makes the package ready for final human/auditor review and a separate migration decision.</p>
+      </div>
+    </div>
+
+    <pre id="evidenceLog">No Phase 8 evidence validation run yet.</pre>
   </div>
 </div>
 
@@ -843,8 +948,14 @@ const QUOTER='0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7';
 const SEL_OWNER='8da5cb5b', SEL_BALANCE='70a08231', SEL_EXECUTE='51945447';
 const SEL_QUOTE='c6a5026a', SEL_EXACT_INPUT='04e45aaf';
 const USDG='0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
+// Manual owner-signed trade safety ceilings.
+// MAX_AMOUNT_IN_WEI is authoritative and independent of operator-entered price.
+const MAX_AMOUNT_IN_WEI=5_000_000_000_000_000n; // 0.005 ETH
+const MAX_TRADE_USD=5;
+const ETH_USD_TOLERANCE=0.25; // ±25% when a usable snapshot reference exists
+
 const SEL_QUOTE_PATH='cdca1753', SEL_EXACT_INPUT_PATH='b858183f';
-const SEL_TRANSFER='a9059cbb', SEL_DECIMALS='313ce567', SEL_SYMBOL='95d89b41', SEL_APPROVE='095ea7b3';
+const SEL_TRANSFER='a9059cbb', SEL_DECIMALS='313ce567', SEL_SYMBOL='95d89b41', SEL_APPROVE='095ea7b3', SEL_ALLOWANCE='dd62ed3e';
 const SEL_WITHDRAW_TOKEN='9e281a98', SEL_WITHDRAW_ETH='f14210a6';
 
 let account=null, quoteState=null, simulationState=null, assetState=null, assetMoveSimulation=null;
@@ -863,11 +974,17 @@ function decimalToWei(s){
 }
 function formatToken18(v,dec=8){let x=BigInt(v),a=x/10n**18n,b=(x%10n**18n).toString().padStart(18,'0').slice(0,dec);return `${a}.${b}`}
 function calcInputWei(){
-  const usd=Number($('usdTarget').value), ethUsd=Number($('ethUsd').value);
+  const usd=Number($('usdTarget').value),ethUsd=Number($('ethUsd').value);
   if(!(usd>0&&ethUsd>0)) throw Error('USD target and ETH/USD must be positive');
-  const eth=usd/ethUsd;
+  if(usd>MAX_TRADE_USD) throw Error(`USD target exceeds $${MAX_TRADE_USD}`);
+  const ref=snapshotEthUsd();
+  if(ref&&Math.abs(ethUsd-ref)/ref>ETH_USD_TOLERANCE)
+    throw Error(`ETH/USD reference differs from snapshot by more than ${Math.round(ETH_USD_TOLERANCE*100)}%`);
+  const eth=usd/ethUsd,wei=decimalToWei(eth.toFixed(18));
+  if(wei>MAX_AMOUNT_IN_WEI)
+    throw Error(`Computed input ${fromWei(wei)} ETH exceeds hard ceiling ${fromWei(MAX_AMOUNT_IN_WEI)} ETH`);
   $('ethInput').textContent=eth.toFixed(8)+' ETH';
-  return decimalToWei(eth.toFixed(18));
+  return wei;
 }
 function routerCalldata(amountIn,minOut,fee){
   return '0x'+SEL_EXACT_INPUT+
@@ -1284,6 +1401,7 @@ document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.tab==='commandPane') refreshCommandCenter().catch(e=>$('commandLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='securityPane') runSecurityPreflight().catch(()=>{});
   if(b.dataset.tab==='productionPane') runProductionGate().catch(()=>{});
+  if(b.dataset.tab==='evidencePane') buildEvidenceBundle();
   if(b.dataset.tab==='portfolioPane' && !terminalState.positions.length) discoverPortfolio().catch(e=>$('terminalLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='tradePane') ensureTradeCatalog().catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='operationsPane'){try{refreshAllAccounts()}catch{}}
@@ -1325,6 +1443,20 @@ async function loadLocalSnapshot(path){
   try{return await fetchJson(path+'?v='+Date.now(),7000)}catch{return null}
 }
 let staticData={assets:null,prices:null,history:null};
+function snapshotEthUsd(){
+  const q=staticData.prices?.quotesBySymbol;
+  if(!q)return null;
+  for(const sym of ['ETH','WETH']){
+    const row=q[sym];
+    if(!row)continue;
+    for(const field of ['price','lastPrice','markPrice','ask','bid']){
+      const v=Number(row[field]);
+      if(Number.isFinite(v)&&v>0)return v;
+    }
+  }
+  return null;
+}
+
 async function primeStaticData(){
   const [assets,prices,history]=await Promise.all([
     loadLocalSnapshot('data/robinhood-assets.json'),
@@ -1998,9 +2130,24 @@ async function quoteTrade(){
 
   if(side==='BUY'){
     const usd=Number($('tradeUsd').value),ethUsd=Number($('tradeEthUsd').value);
-    if(!(usd>0&&usd<=5)) throw Error('Enter a USD target above $0 and no more than $5');
+    if(!(usd>0&&usd<=MAX_TRADE_USD))
+      throw Error(`Enter a USD target above $0 and no more than $${MAX_TRADE_USD}`);
     if(!(ethUsd>0)) throw Error('ETH/USD sizing reference must be positive');
+
+    const ref=snapshotEthUsd();
+    if(ref&&Math.abs(ethUsd-ref)/ref>ETH_USD_TOLERANCE)
+      throw Error(
+        `ETH/USD reference ${ethUsd} disagrees with snapshot ${ref.toFixed(2)} by more than `+
+        `${Math.round(ETH_USD_TOLERANCE*100)}%. Correct it or refresh snapshots.`
+      );
+
     amountIn=decimalToWei((usd/ethUsd).toFixed(18));
+    if(amountIn>MAX_AMOUNT_IN_WEI)
+      throw Error(
+        `Computed input ${fromWei(amountIn)} ETH exceeds hard ceiling `+
+        `${fromWei(MAX_AMOUNT_IN_WEI)} ETH. Check ETH/USD reference.`
+      );
+
     tokenIn=WETH;tokenOut=picked.token;inputSymbol='ETH';outputSymbol=picked.symbol;
   }else{
     amountIn=decimalToUnits($('tradeTokenAmount').value,decimals);
@@ -2114,6 +2261,11 @@ async function buildTradePlan(){
       symbol:q.picked.symbol,amountUnits:q.amountIn,decimals:q.decimals,dependsOnPrevious:true,
       buildTx:()=>({from:OWNER,to:VAULT,data:genericExecuteCalldata(ROUTER,0n,swapData)})
     });
+    steps.push({
+      type:'SELL_REVOKE',label:`Revoke Vault → Router allowance for ${q.picked.symbol}`,
+      symbol:q.picked.symbol,amountUnits:0n,decimals:q.decimals,dependsOnPrevious:true,optional:true,
+      buildTx:()=>({from:OWNER,to:VAULT,data:genericExecuteCalldata(q.picked.token,0n,approveCalldata(ROUTER,0n))})
+    });
   }
   tradeState.steps=steps.map((s,i)=>({...s,id:i,status:'PENDING',gas:null,txHash:null,simulatedAt:null}));
   $('tradeExecLog').textContent=`Execution plan built with ${steps.length} step(s). Simulate the first step.`;
@@ -2123,18 +2275,30 @@ function renderTradePlan(){
   const s=tradeState.steps;
   $('tradePlan').innerHTML=s.map((x,i)=>{
     const cls=x.status==='READY'?'tradeReady':x.status==='DONE'?'tradeDone':x.status==='FAILED'?'tradeFail':'tradeWait';
-    return `<div class="tradeStep"><div class="tradeStepNo">${i+1}</div><div><b>${escapeHtml(x.label)}</b><div class="holdingMeta">${escapeHtml(x.type)}</div></div><div class="tradeStatus ${cls}">${escapeHtml(x.status||'PENDING')}</div></div>`;
+    const custodyWarn=x.type==='SELL_WITHDRAW'
+      ?'<div class="warnline">Assets sit in the Owner EOA until SELL_STAGE confirms — outside TBA custody.</div>'
+      :'';
+    const optionalNote=x.optional?'<div class="holdingMeta">Recovery-only step; needed if swap fails or is abandoned with allowance remaining.</div>':'';
+    return `<div class="tradeStep"><div class="tradeStepNo">${i+1}</div><div><b>${escapeHtml(x.label)}</b><div class="holdingMeta">${escapeHtml(x.type)}</div>${custodyWarn}${optionalNote}</div><div class="tradeStatus ${cls}">${escapeHtml(x.status||'PENDING')}</div></div>`;
   }).join('')||'<div class="emptyState">Build a plan after obtaining a route quote.</div>';
   $('tradeExecuteNext').disabled=!s.some(x=>x.status==='READY');
 }
 async function simulateNextTradeStep(){
   await ensureOwnerAndChain();
   if(!tradeState.steps.length) throw Error('Build execution plan first');
-  let idx=tradeState.steps.findIndex(x=>x.status!=='DONE');
+  let idx=tradeState.steps.findIndex(x=>['PENDING','WAITING','READY'].includes(x.status));
+  if(idx<0){
+    const failedSwap=tradeState.steps.findIndex(x=>x.type==='SELL_SWAP'&&x.status==='FAILED');
+    const revokeIdx=tradeState.steps.findIndex(x=>x.type==='SELL_REVOKE'&&x.status!=='DONE'&&x.status!=='SKIPPED');
+    if(failedSwap>=0&&revokeIdx>=0){idx=revokeIdx;tradeState.steps[idx].status='PENDING'}
+  }
   if(idx<0) throw Error('Trade plan is already complete');
   const step=tradeState.steps[idx];
-  if(step.dependsOnPrevious && (idx===0||tradeState.steps[idx-1].status!=='DONE')){
-    throw Error('Previous transaction must confirm first');
+  if(step.dependsOnPrevious){
+    const prev=idx>0?tradeState.steps[idx-1]:null;
+    const recoveryAllowed=step.optional&&prev?.type==='SELL_SWAP'&&prev?.status==='FAILED';
+    if(!prev||(!recoveryAllowed&&prev.status!=='DONE'))
+      throw Error('Previous transaction must confirm first');
   }
   const tx=step.buildTx();
   try{
@@ -2153,7 +2317,10 @@ async function executeNextTradeStep(){
   if(idx<0) throw Error('Simulate the next step first');
   const step=tradeState.steps[idx];
   if(Date.now()-(step.simulatedAt||0)>60000){step.status='PENDING';renderTradePlan();throw Error('Simulation expired. Simulate again.')}
-  if(!confirm(`REAL MAINNET TRADE STEP\n\n${idx+1}/${tradeState.steps.length}\n${step.label}\n\nReview the wallet destination and gas carefully.`)) return;
+  const custodyNote=step.type==='SELL_WITHDRAW'
+    ?'\n\nAfter this step the stock token is in the Owner wallet, NOT a TBA. Complete SELL_STAGE in the same session.'
+    :'';
+  if(!confirm(`REAL MAINNET TRADE STEP\n\n${idx+1}/${tradeState.steps.length}\n${step.label}${custodyNote}\n\nReview the wallet destination and gas carefully.`)) return;
   const tx={...step.tx,gas:hexQty(step.gas*120n/100n)};
   const hash=await ethereum.request({method:'eth_sendTransaction',params:[tx]});
   recordReceipt({hash,status:'PENDING',type:step.type,label:step.label,createdAt:new Date().toISOString()});
@@ -2162,8 +2329,13 @@ async function executeNextTradeStep(){
   try{
     const receipt=await waitReceipt(hash);
     step.status='DONE';step.block=Number(BigInt(receipt.blockNumber));
+    if(step.type==='SELL_SWAP'){
+      const revoke=tradeState.steps.find(x=>x.type==='SELL_REVOKE');
+      if(revoke)revoke.status='SKIPPED';
+    }
     $('tradeExecLog').textContent=`CONFIRMED ✓\nStep ${idx+1}: ${step.label}\nTx: ${hash}\nBlock: ${step.block}\n`+
-      (idx+1<tradeState.steps.length?'Now simulate the next step.':'Trade plan complete. Refreshing portfolio…');
+      (step.type==='SELL_SWAP'?'Exact-input swap confirmed; exact router allowance should be consumed. Recovery revoke skipped.\n':'')+
+      (tradeState.steps.some(x=>['PENDING','READY'].includes(x.status))?'Simulate the next step.':'Trade plan complete. Refreshing portfolio…');
     renderTradePlan();
     await refreshBalances();
     try{await refreshAllAccounts()}catch{}
@@ -2173,7 +2345,12 @@ async function executeNextTradeStep(){
       try{await loadOnchainHistory()}catch{}
     }
   }catch(e){
-    step.status='FAILED';step.error=e.message;renderTradePlan();throw e;
+    step.status='FAILED';step.error=e.message;
+    if(step.type==='SELL_SWAP'){
+      const revoke=tradeState.steps.find(x=>x.type==='SELL_REVOKE');
+      if(revoke)revoke.status='PENDING';
+    }
+    renderTradePlan();throw e;
   }
 }
 async function tradeUseFraction(frac){
@@ -2300,9 +2477,41 @@ async function runSecurityPreflight(){
     $('secOwner').textContent=ownerMatches?(account?'PASS ✓':'READ ONLY'):'FAIL ✕';
     $('secOwner').className=ownerMatches?'gatePass':'gateFail';
 
+    // Detect Stock Tokens parked in the Owner EOA. This can indicate an
+    // interrupted SELL_WITHDRAW -> SELL_STAGE lifecycle. Reporting only.
+    if(!terminalState.positions.length){try{await discoverPortfolio()}catch{}}
+    const ownerStockSymbols=[];
+    for(const pos of terminalState.positions){
+      if((pos.balances.OWNER||0n)>0n) ownerStockSymbols.push(pos.asset.tokenSymbol);
+    }
+    $('secOwnerStocks').textContent=ownerStockSymbols.length
+      ?`WARN ${ownerStockSymbols.length}: ${ownerStockSymbols.join(', ')}`
+      :'NONE ✓';
+    $('secOwnerStocks').className=ownerStockSymbols.length?'gateWarn':'gatePass';
+
+    // Read-only exact allowance residue check for canonical Stock Tokens
+    // currently tracked by the terminal.
+    const staleAllowances=[];
+    for(const pos of terminalState.positions){
+      try{
+        const raw=await rpc('eth_call',[{
+          to:pos.token,
+          data:'0x'+SEL_ALLOWANCE+addrWord(VAULT)+addrWord(ROUTER)
+        },'latest']);
+        const amount=BigInt(raw||'0x0');
+        if(amount>0n)staleAllowances.push(`${pos.asset.tokenSymbol}:${amount}`);
+      }catch{}
+    }
+    $('secAllowances').textContent=staleAllowances.length
+      ?`WARN ${staleAllowances.length}`
+      :'ZERO ✓';
+    $('secAllowances').className=staleAllowances.length?'gateWarn':'gatePass';
+
     const times=[staticData.assets?.generatedAt,staticData.prices?.generatedAt,staticData.history?.generatedAt].filter(Boolean).map(x=>new Date(x).getTime());
-    const freshest=times.length?Math.min(...times):0;
-    const ageMin=freshest?Math.max(0,(Date.now()-freshest)/60000):Infinity;
+    // Deliberately the OLDEST snapshot: the gate is only as good as the most
+    // stale feed. Do not change this Math.min to Math.max.
+    const oldestSnapshot=times.length?Math.min(...times):0;
+    const ageMin=oldestSnapshot?Math.max(0,(Date.now()-oldestSnapshot)/60000):Infinity;
     $('secSnapshots').textContent=Number.isFinite(ageMin)?Math.round(ageMin)+'m':'Unavailable';
     $('secSnapshots').className=ageMin<=30?'gatePass':ageMin<=90?'gateWarn':'gateFail';
 
@@ -2314,6 +2523,8 @@ async function runSecurityPreflight(){
       `daily $${(Number(BigInt(report.policy.maxDailyUsd18))/1e18).toFixed(2)}, `+
       `${report.policy.maxTradesPerDay} trade/day, paused=${report.policy.paused}\n`+
       `Router venue allowlisted: ${report.venueAllowed}\nRouter spender allowlisted: ${report.spenderAllowed}\n`+
+      `Owner EOA stock positions: ${ownerStockSymbols.length?ownerStockSymbols.join(', '):'none'}\n`+
+      `Non-zero Vault→Router allowances: ${staleAllowances.length?staleAllowances.join(', '):'none'}\n`+
       `Autonomous production verdict: LOCKED\n`+
       `${safePaused?'Deployed Registry remains fail-closed as expected.':'WARNING: deployed policy is not paused.'}`;
   }catch(e){
@@ -2464,6 +2675,152 @@ $('saveProdEvidence').onclick=()=>{saveProdEvidence();$('productionLog').textCon
 $('runProductionGate').onclick=()=>runProductionGate().catch(()=>{});
 $('exportProductionReport').onclick=()=>{try{exportProductionReport()}catch(e){$('productionLog').textContent='ERROR: '+e.message}};
 loadProdEvidence();
+
+
+const EVIDENCE_KEY='rustee-phase8-evidence-v28';
+let lastEvidenceBundle=null;
+function phase8Load(){
+  let x={};
+  try{x=JSON.parse(localStorage.getItem(EVIDENCE_KEY)||'{}')}catch{}
+  $('replayEvidenceUrl').value=x.replayEvidenceUrl||$('pgReplayUrl')?.value||'';
+  $('replayFeedId').value=x.replayFeedId||$('replayFeedId').value;
+  $('replayVerifier').value=x.replayVerifier||$('replayVerifier').value;
+  $('replayJson').value=x.replayJson||'';
+  $('auditOracleUrl').value=x.auditOracleUrl||$('pgOracleAuditUrl')?.value||'';
+  $('auditAdapterUrl').value=x.auditAdapterUrl||$('pgAdapterAuditUrl')?.value||'';
+  $('auditCommitHash').value=x.auditCommitHash||'';
+  $('auditRemediation').value=x.auditRemediation||'';
+  return x;
+}
+function phase8Save(){
+  const x={
+    replayEvidenceUrl:$('replayEvidenceUrl').value.trim(),
+    replayFeedId:$('replayFeedId').value.trim(),
+    replayVerifier:$('replayVerifier').value.trim(),
+    replayJson:$('replayJson').value.trim(),
+    auditOracleUrl:$('auditOracleUrl').value.trim(),
+    auditAdapterUrl:$('auditAdapterUrl').value.trim(),
+    auditCommitHash:$('auditCommitHash').value.trim(),
+    auditRemediation:$('auditRemediation').value.trim(),
+    savedAt:new Date().toISOString()
+  };
+  localStorage.setItem(EVIDENCE_KEY,JSON.stringify(x));
+  return x;
+}
+function gateText(id,ok,pass='PASS ✓',fail='INCOMPLETE'){
+  $(id).textContent=ok?pass:fail;
+  $(id).className=ok?'evidencePass':'evidenceWarn';
+}
+function parseReplayJson(){
+  const raw=$('replayJson').value.trim();
+  if(!raw)return null;
+  try{return JSON.parse(raw)}catch{return false}
+}
+function validateReplayEvidence(){
+  const x=phase8Save(),j=parseReplayJson();
+  const feedOk=/^0x[0-9a-fA-F]{64}$/.test(x.replayFeedId);
+  const verifierOk=x.replayVerifier.toLowerCase()===DATA_STREAMS_VERIFIER.toLowerCase();
+  const jsonOk=!!j&&j!==false;
+  const verifiedOk=jsonOk&&(j.verified===true||j.signedReportReplayVerified===true||j.productionVerified===true);
+  const urlOk=validHttpUrl(x.replayEvidenceUrl);
+  gateText('replayFeedGate',feedOk);
+  gateText('replayVerifierGate',verifierOk);
+  gateText('replayJsonGate',jsonOk);
+  gateText('replayVerifiedGate',verifiedOk);
+  gateText('replayUrlGate',urlOk);
+  $('evidenceLog').textContent=JSON.stringify({
+    replay:{feedOk,verifierOk,jsonOk,verifiedOk,urlOk},
+    parsedReport:jsonOk?j:null
+  },null,2);
+  return {feedOk,verifierOk,jsonOk,verifiedOk,urlOk,parsed:j||null};
+}
+function validateAuditEvidence(){
+  const x=phase8Save();
+  const oracleUrlOk=validHttpUrl(x.auditOracleUrl);
+  const adapterUrlOk=validHttpUrl(x.auditAdapterUrl);
+  const commitOk=/^[0-9a-fA-F]{7,64}$/.test(x.auditCommitHash)||/^sha256:[0-9a-fA-F]{64}$/i.test(x.auditCommitHash);
+  const remediationOk=x.auditRemediation.length>=20;
+  $('evidenceLog').textContent=JSON.stringify({
+    audit:{oracleUrlOk,adapterUrlOk,commitOk,remediationOk},
+    note:'URLs are evidence pointers; human review of auditor identity, scope, findings and remediation is still required.'
+  },null,2);
+  return {oracleUrlOk,adapterUrlOk,commitOk,remediationOk};
+}
+function buildEvidenceBundle(){
+  const replay=validateReplayEvidence();
+  const audit=validateAuditEvidence();
+  const x=phase8Save();
+  const bundle={
+    project:'Rustee Broker Phase 8 Evidence Bundle',
+    version:'2.8',
+    network:'Robinhood Chain Mainnet',
+    chainId:CHAIN,
+    generatedAt:new Date().toISOString(),
+    mode:'READ_ONLY_NO_MAINNET_WRITES',
+    binding:{
+      owner:OWNER,nft:NFT,registry:POLICY_REGISTRY,tradingTba:TRADING,
+      dataStreamsVerifier:DATA_STREAMS_VERIFIER
+    },
+    replayEvidence:{
+      url:x.replayEvidenceUrl,
+      feedId:x.replayFeedId,
+      verifier:x.replayVerifier,
+      parsedReport:replay.parsed,
+      gates:{feedIdFormat:replay.feedOk,verifierMatch:replay.verifierOk,jsonParsed:replay.jsonOk,replayVerified:replay.verifiedOk,urlPresent:replay.urlOk}
+    },
+    auditEvidence:{
+      oracleRegistryAuditUrl:x.auditOracleUrl,
+      adapterExecutionAuditUrl:x.auditAdapterUrl,
+      reviewedCommitOrArtifact:x.auditCommitHash,
+      remediationSummary:x.auditRemediation,
+      gates:audit
+    },
+    inheritedMilestones:{
+      deployedBindingVerified:true,
+      archiveEvidencePass:true,
+      registryV2ForkTestPass:true,
+      manualOwnerSignedTradingProven:true
+    }
+  };
+  const evidenceReady=[
+    replay.feedOk,replay.verifierOk,replay.jsonOk,replay.verifiedOk,replay.urlOk,
+    audit.oracleUrlOk,audit.adapterUrlOk,audit.commitOk,audit.remediationOk
+  ].every(Boolean);
+  bundle.evidenceReadyForHumanReview=evidenceReady;
+  bundle.autonomousMainnetWritesAuthorized=false;
+  bundle.verdict=evidenceReady
+    ?'EVIDENCE PACKAGE COMPLETE — FINAL HUMAN/AUDITOR REVIEW REQUIRED; AUTONOMOUS WRITES REMAIN LOCKED'
+    :'EVIDENCE INCOMPLETE — AUTONOMOUS WRITES LOCKED';
+  lastEvidenceBundle=bundle;
+
+  $('evidenceBadges').innerHTML=
+    `<span class="evidenceBadge ${replay.verifiedOk?'evidencePass':'evidenceWarn'}">Replay: ${replay.verifiedOk?'verified':'incomplete'}</span>`+
+    `<span class="evidenceBadge ${audit.oracleUrlOk?'evidencePass':'evidenceWarn'}">Oracle audit: ${audit.oracleUrlOk?'present':'incomplete'}</span>`+
+    `<span class="evidenceBadge ${audit.adapterUrlOk?'evidencePass':'evidenceWarn'}">Adapter audit: ${audit.adapterUrlOk?'present':'incomplete'}</span>`+
+    `<span class="evidenceBadge ${audit.commitOk?'evidencePass':'evidenceWarn'}">Reviewed commit: ${audit.commitOk?'present':'incomplete'}</span>`;
+  const vb=$('evidenceVerdict');
+  vb.className='verdictBox '+(evidenceReady?'verdictGo':'verdictNoGo');
+  vb.querySelector('strong').textContent=evidenceReady?'EVIDENCE READY':'LOCKED';
+  $('evidenceVerdictDetail').textContent=bundle.verdict;
+  $('evidenceLog').textContent=JSON.stringify(bundle,null,2);
+  return bundle;
+}
+function exportEvidenceBundle(){
+  if(!lastEvidenceBundle)buildEvidenceBundle();
+  const blob=new Blob([JSON.stringify(lastEvidenceBundle,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='rustee-phase8-evidence-bundle.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+$('validateReplayEvidence').onclick=()=>validateReplayEvidence();
+$('saveReplayEvidence').onclick=()=>{$('evidenceLog').textContent='Replay evidence saved locally. No chain write occurred.';phase8Save()};
+$('validateAuditEvidence').onclick=()=>validateAuditEvidence();
+$('saveAuditEvidence').onclick=()=>{$('evidenceLog').textContent='Audit evidence saved locally. No chain write occurred.';phase8Save()};
+$('buildEvidenceBundle').onclick=()=>buildEvidenceBundle();
+$('exportEvidenceBundle').onclick=()=>exportEvidenceBundle();
+phase8Load();
 
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
 bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);

@@ -1,3 +1,7 @@
+# Rustee Portfolio Terminal v2.8 — Phase 8 Evidence + Replay
+
+# Rustee Portfolio Terminal v2.7.1 — Spend/Custody Remediation
+
 # Rustee Portfolio Terminal v2.7 — Phase 7 Production Readiness Gate
 
 Adds a hard GO/NO-GO evidence layer for the autonomous production architecture.
@@ -17,3 +21,6 @@ It changes the verdict only to `EVIDENCE READY`, meaning final human/auditor rev
 
 No Registry setter, deployment, funding, approval, unpause, or autonomous-trade control is
 included in Phase 7.
+
+
+See `REMEDIATION_2_7_1.md` for the high-priority spend ceiling and custody/allowance fixes.

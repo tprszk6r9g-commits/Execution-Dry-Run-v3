@@ -22,3 +22,8 @@ This document is intentionally non-broadcast.
 9. Only after all evidence is green may a separate mainnet migration package be prepared.
 
 This Phase 7 package does not contain a mainnet deployment or unpause button.
+
+## Additional Registry V2 requirement from v2.7.1 remediation
+
+- Add contract-level deadline enforcement to the execution path before autonomous or larger-notional trading.
+- Review whether Trading-TBA recovery should support a reviewed recipient/atomic Trading→Vault path without weakening custody controls.
