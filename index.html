@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Portfolio Terminal v2.4 · Phase 4</title>
+<title>Rustee Broker Portfolio Terminal v2.4.1 · Phase 4.1</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -129,7 +129,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 </div>
 <div id="overviewPane" class="tabpane active">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.4 · Phase 4 · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.4.1 · Phase 4.1 · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -351,7 +351,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
       <pre id="tradeExecLog">No live transaction has been prepared. Every step requires a fresh simulation and separate owner-wallet confirmation.</pre>
     </div>
 
-    <div class="warnline">Phase 4 is an execution interface, not a recommendation engine. It never chooses which stock you should buy or sell. The operator selects the asset, direction, amount, and slippage.</div>
+    <div class="warnline">Phase 4.1 is an execution interface, not a recommendation engine. It never chooses which stock you should buy or sell. The operator selects the asset, direction, amount, and slippage.</div>
   </div>
 </div>
 
@@ -575,6 +575,8 @@ const ROUTER='0xCaf681a66D020601342297493863E78C959E5cb2';
 const QUOTER='0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7';
 const SEL_OWNER='8da5cb5b', SEL_BALANCE='70a08231', SEL_EXECUTE='51945447';
 const SEL_QUOTE='c6a5026a', SEL_EXACT_INPUT='04e45aaf';
+const USDG='0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
+const SEL_QUOTE_PATH='cdca1753', SEL_EXACT_INPUT_PATH='b858183f';
 const SEL_TRANSFER='a9059cbb', SEL_DECIMALS='313ce567', SEL_SYMBOL='95d89b41', SEL_APPROVE='095ea7b3';
 const SEL_WITHDRAW_TOKEN='9e281a98', SEL_WITHDRAW_ETH='f14210a6';
 
@@ -1688,6 +1690,28 @@ function quoteSingleCalldata(tokenIn,tokenOut,amountIn,fee){
 function exactInputSingleCalldata(tokenIn,tokenOut,fee,recipient,amountIn,minOut){
   return '0x'+SEL_EXACT_INPUT+addrWord(tokenIn)+addrWord(tokenOut)+word(fee)+addrWord(recipient)+word(amountIn)+word(minOut)+word(0);
 }
+function feeHex(fee){return BigInt(fee).toString(16).padStart(6,'0')}
+function v3Path(tokens,fees){
+  if(tokens.length!==fees.length+1) throw Error('Invalid V3 path');
+  let h=tokens[0].toLowerCase().replace(/^0x/,'');
+  for(let i=0;i<fees.length;i++) h+=feeHex(fees[i])+tokens[i+1].toLowerCase().replace(/^0x/,'');
+  return h;
+}
+function bytesTail(hexNo0x){
+  const n=hexNo0x.length/2;
+  const padded=hexNo0x.padEnd(Math.ceil(hexNo0x.length/64)*64,'0');
+  return word(n)+padded;
+}
+function quotePathCalldata(pathHex,amountIn){
+  // QuoterV2 quoteExactInput(bytes,uint256), selector 0xcdca1753.
+  return '0x'+SEL_QUOTE_PATH+word(64)+word(amountIn)+bytesTail(pathHex);
+}
+function exactInputPathCalldata(pathHex,recipient,amountIn,minOut){
+  // SwapRouter02 exactInput((bytes,address,uint256,uint256)), selector 0xb858183f.
+  // Top-level tuple is dynamic because it contains bytes.
+  return '0x'+SEL_EXACT_INPUT_PATH+
+    word(32)+word(128)+addrWord(recipient)+word(amountIn)+word(minOut)+bytesTail(pathHex);
+}
 function approveCalldata(spender,amount){return '0x'+SEL_APPROVE+addrWord(spender)+word(amount)}
 
 async function quoteTrade(){
@@ -1695,6 +1719,7 @@ async function quoteTrade(){
   await ensureTradeCatalog();
   const picked=selectedTradeAsset();
   const side=$('tradeSide').value;
+  $('tradeSelected').textContent=`${side} ${picked.symbol}`;
   const decimals=await tokenDecimals(picked.token);
   const tiers=[500n,3000n,10000n];
   let amountIn,tokenIn,tokenOut,inputSymbol,outputSymbol;
@@ -1714,35 +1739,62 @@ async function quoteTrade(){
   }
 
   const results=[];
+
+  // 1) Prefer the simplest direct V3 pool.
   for(const fee of tiers){
     const data=quoteSingleCalldata(tokenIn,tokenOut,amountIn,fee);
     try{
       const raw=await rpc('eth_call',[{to:QUOTER,data},'latest']);
       const out=BigInt('0x'+raw.slice(2,66));
-      if(out>0n) results.push({fee,amountOut:out});
-      else results.push({fee,error:'zero output'});
-    }catch(e){results.push({fee,error:e.message})}
+      if(out>0n) results.push({kind:'DIRECT',fees:[fee],fee,amountOut:out,label:`Direct ${(Number(fee)/10000).toFixed(2)}%`});
+      else results.push({kind:'DIRECT',fees:[fee],fee,error:'zero output',label:`Direct ${(Number(fee)/10000).toFixed(2)}%`});
+    }catch(e){results.push({kind:'DIRECT',fees:[fee],fee,error:e.message,label:`Direct ${(Number(fee)/10000).toFixed(2)}%`})}
   }
+
+  // 2) Fallback through USDG. Many Robinhood Stock Tokens do not have a
+  // direct WETH pool, so probe WETH -> USDG -> Stock (and reverse for sells).
+  // This remains one atomic SwapRouter02 exactInput transaction.
+  const middle=USDG;
+  if(tokenIn.toLowerCase()!==middle.toLowerCase() && tokenOut.toLowerCase()!==middle.toLowerCase()){
+    for(const fee1 of tiers){
+      for(const fee2 of tiers){
+        const path=v3Path([tokenIn,middle,tokenOut],[fee1,fee2]);
+        const data=quotePathCalldata(path,amountIn);
+        const label=`via USDG ${(Number(fee1)/10000).toFixed(2)}% + ${(Number(fee2)/10000).toFixed(2)}%`;
+        try{
+          const raw=await rpc('eth_call',[{to:QUOTER,data},'latest']);
+          const out=BigInt('0x'+raw.slice(2,66));
+          if(out>0n) results.push({kind:'PATH',fees:[fee1,fee2],path,amountOut:out,label});
+          else results.push({kind:'PATH',fees:[fee1,fee2],path,error:'zero output',label});
+        }catch(e){results.push({kind:'PATH',fees:[fee1,fee2],path,error:e.message,label})}
+      }
+    }
+  }
+
   const ok=results.filter(x=>x.amountOut).sort((a,b)=>a.amountOut>b.amountOut?-1:1);
-  if(!ok.length) throw Error(`No quoted ${inputSymbol}→${outputSymbol} route found`);
+  if(!ok.length){
+    $('tradeRoutes').innerHTML=results.map(r=>`<div class="routeOption"><div>${escapeHtml(r.label)}</div><div>Unavailable</div></div>`).join('');
+    throw Error(`No executable ${inputSymbol}→${outputSymbol} route found after direct + USDG multihop probes`);
+  }
   const best=ok[0],slip=Number($('tradeSlippage').value);
   const minOut=best.amountOut*BigInt(Math.floor((100-slip)*100))/10000n;
   const outputDecimals=side==='BUY'?decimals:18;
   tradeState={quote:{
     time:Date.now(),side,picked,decimals,amountIn,tokenIn,tokenOut,inputSymbol,outputSymbol,
-    outputDecimals,bestFee:best.fee,quotedOut:best.amountOut,minOut,results,slippage:slip
+    outputDecimals,bestFee:best.fee||null,bestRoute:best,quotedOut:best.amountOut,minOut,results,slippage:slip
   },steps:[],side,asset:picked};
 
-  $('tradeSelected').textContent=`${side} ${picked.symbol}`;
-  $('tradeBestFee').textContent=(Number(best.fee)/10000).toFixed(2)+'%';
+  $('tradeBestFee').textContent=best.kind==='DIRECT'
+    ?(Number(best.fee)/10000).toFixed(2)+'%'
+    :'USDG 2-hop';
   $('tradeExpected').textContent=unitsToDecimal(best.amountOut,outputDecimals,10)+' '+outputSymbol;
   $('tradeMinimum').textContent=unitsToDecimal(minOut,outputDecimals,10)+' '+outputSymbol;
-  $('tradeRoutes').innerHTML=results.map(r=>`<div class="routeOption"><div>${(Number(r.fee)/10000).toFixed(2)}% fee</div><div class="${r===best?'routeBest':''}">${r.amountOut?unitsToDecimal(r.amountOut,outputDecimals,10)+' '+outputSymbol:'Unavailable'}</div></div>`).join('');
+  $('tradeRoutes').innerHTML=results.map(r=>`<div class="routeOption"><div>${escapeHtml(r.label)}</div><div class="${r===best?'routeBest':''}">${r.amountOut?unitsToDecimal(r.amountOut,outputDecimals,10)+' '+outputSymbol:'Unavailable'}</div></div>`).join('');
   $('tradeQuoteLog').textContent=
-    `PASS — route comparison complete.\nSide: ${side}\nCanonical asset: ${picked.symbol}\nContract: ${picked.token}\n`+
-    `Input: ${unitsToDecimal(amountIn,side==='BUY'?18:decimals,12)} ${inputSymbol}\nBest fee: ${Number(best.fee)}\n`+
+    `PASS — route discovery complete.\nSide: ${side}\nCanonical asset: ${picked.symbol}\nContract: ${picked.token}\n`+
+    `Input: ${unitsToDecimal(amountIn,side==='BUY'?18:decimals,12)} ${inputSymbol}\nBest route: ${best.label}\n`+
     `Expected: ${unitsToDecimal(best.amountOut,outputDecimals,12)} ${outputSymbol}\nMinimum: ${unitsToDecimal(minOut,outputDecimals,12)} ${outputSymbol}\n`+
-    `Quote expires in 60 seconds.`;
+    `Probed ${results.length} route candidates. Quote expires in 60 seconds.`;
   $('tradeBuildPlan').disabled=false;
   return tradeState.quote;
 }
@@ -1755,7 +1807,9 @@ async function buildTradePlan(){
   if(q.side==='BUY'){
     const vaultBal=BigInt(await rpc('eth_getBalance',[VAULT,'latest']));
     if(vaultBal<q.amountIn) throw Error(`Vault needs ${fromWei(q.amountIn)} ETH for this buy. Fund Vault first.`);
-    const routerData=exactInputSingleCalldata(WETH,q.picked.token,q.bestFee,TRADING,q.amountIn,q.minOut);
+    const routerData=q.bestRoute.kind==='PATH'
+      ?exactInputPathCalldata(q.bestRoute.path,TRADING,q.amountIn,q.minOut)
+      :exactInputSingleCalldata(WETH,q.picked.token,q.bestRoute.fee,TRADING,q.amountIn,q.minOut);
     const data=genericExecuteCalldata(ROUTER,q.amountIn,routerData);
     steps.push({
       type:'BUY_SWAP',label:`Vault ETH → ${q.picked.symbol} → Trading TBA`,
@@ -1780,7 +1834,9 @@ async function buildTradePlan(){
       symbol:q.picked.symbol,amountUnits:q.amountIn,decimals:q.decimals,dependsOnPrevious:true,
       buildTx:()=>({from:OWNER,to:VAULT,data:genericExecuteCalldata(q.picked.token,0n,approveCalldata(ROUTER,q.amountIn))})
     });
-    const swapData=exactInputSingleCalldata(q.picked.token,WETH,q.bestFee,VAULT,q.amountIn,q.minOut);
+    const swapData=q.bestRoute.kind==='PATH'
+      ?exactInputPathCalldata(q.bestRoute.path,VAULT,q.amountIn,q.minOut)
+      :exactInputSingleCalldata(q.picked.token,WETH,q.bestRoute.fee,VAULT,q.amountIn,q.minOut);
     steps.push({
       type:'SELL_SWAP',label:`Vault ${q.picked.symbol} → WETH`,
       symbol:q.picked.symbol,amountUnits:q.amountIn,decimals:q.decimals,dependsOnPrevious:true,

@@ -1,3 +1,22 @@
+# Rustee Portfolio Terminal v2.4.1 — Phase 4.1 Route Fix
+
+This patch fixes the Phase 4 limitation where the Trade tab only probed direct WETH ↔ Stock Token Uniswap V3 pools.
+
+## Route discovery
+- Direct WETH ↔ Stock Token: 0.05%, 0.30%, 1.00%.
+- Automatic fallback through canonical USDG:
+  - BUY: WETH → USDG → Stock Token
+  - SELL: Stock Token → USDG → WETH
+- All 3×3 fee combinations are probed for the two-hop path.
+- The best successful quote is selected.
+- Two-hop execution remains atomic through SwapRouter02 `exactInput`.
+- Existing simulation and wallet-confirmation gates remain intact.
+
+Canonical USDG on Robinhood Chain:
+`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`
+
+This does not invent liquidity. If both direct and USDG routes fail, the terminal reports that no executable route was found rather than attempting a real transaction.
+
 # Rustee Portfolio Terminal v2.4 — Phase 4 Trading
 
 Phase 4 adds a manual, owner-signed **Multi-Asset Buy + Sell Terminal** while preserving Portfolio discovery, resilient price/history snapshots, P&L, Account Center, Universal Asset Mover, Operations Center, the proven NVDA buy path, and restricted Trading-TBA withdrawals.
