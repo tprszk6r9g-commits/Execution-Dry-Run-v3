@@ -1,20 +1,12 @@
-# Rustee Broker Production Infrastructure Decision v4.8.1
+# Rustee Broker Production Input Resolution v4.9
 
-This package is the next read-only phase after v4.8.
+v4.9 is the production-input resolution phase after v4.8.1.
 
-## What it does
+It remains strictly read-only and cannot broadcast any mainnet transaction.
 
-- Re-verifies the canonical STONKBROKER/WETH pool, deployed Registry, trading TBA, and Robinhood Chain Data Streams verifier proxy.
-- Accepts an optional archive-capable Robinhood Chain RPC through `ARCHIVE_RPC_URL`.
-- Supports two non-invented ETH/USD candidate paths:
-  1. an authoritative AggregatorV3 feed, if a real Robinhood Chain address + provenance are supplied;
-  2. Chainlink Data Streams, if an authoritative bytes32 feed ID + provenance are supplied.
-- Records Robinhood's documented sequencer websocket as a websocket/Nitro feed and explicitly refuses to treat it as an AggregatorV3 uptime oracle.
-- Keeps every mainnet write gate disabled.
+## Repository variables
 
-## GitHub repository variables
-
-You may set:
+Set only values you can document authoritatively:
 
 - `ARCHIVE_RPC_URL`
 - `ETH_USD_FEED_ADDRESS`
@@ -22,17 +14,25 @@ You may set:
 - `ETH_USD_HEARTBEAT_SECONDS`
 - `ETH_USD_DATA_STREAM_ID`
 - `ETH_USD_DATA_STREAM_PROVENANCE_URL`
+- `SEQUENCER_PRODUCTION_OPTION`
+- `ORACLE_AUDIT_URL`
+- `ADAPTER_AUDIT_URL`
 
-Do not invent values. Leave unavailable values blank.
+Allowed sequencer options:
 
-## GitHub workflow location
+- `REGISTRY_V2_CHAIN_SPECIFIC_GUARD`
+- `KEEP_CURRENT_REGISTRY_PAUSED`
 
-The workflow must be committed at:
+Do not invent feed addresses, Data Streams feed IDs, provenance, or audit evidence.
 
-`.github/workflows/main.yaml`
+## Completion condition
 
-A second `main.yaml` is included at the ZIP root only to make it easy to see/copy on iPhone.
+v4.9 reports `readyForFinalMainnetPreflight: true` only when:
 
-## Safety boundary
+1. archive evidence passes with at least 8 successful historical samples;
+2. liquidity continuity passes;
+3. an authoritative ETH/USD candidate path is configured;
+4. a production sequencer design is explicitly selected;
+5. independent oracle and adapter review evidence is present.
 
-v4.8.1 does not deploy contracts, modify the Registry, fund the TBA, approve a spender, unpause trading, or broadcast a trade.
+Even then, every mainnet write flag remains false. The next phase is a separate final preflight.
