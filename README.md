@@ -1,48 +1,38 @@
-# Rustee Broker Production Infrastructure Gate v4.8
+# Rustee Broker Production Infrastructure Decision v4.8.1
 
-This phase stays **read-only** and performs no mainnet writes.
+This package is the next read-only phase after v4.8.
 
-## Important new finding
+## What it does
 
-Chainlink **Data Feeds are live on Robinhood Chain mainnet**, and Chainlink's
-July 2026 Robinhood Chain rollout explicitly lists **ETH / USD** among the
-available feeds. This means the earlier assumption that only Data Streams were
-available is obsolete.
+- Re-verifies the canonical STONKBROKER/WETH pool, deployed Registry, trading TBA, and Robinhood Chain Data Streams verifier proxy.
+- Accepts an optional archive-capable Robinhood Chain RPC through `ARCHIVE_RPC_URL`.
+- Supports two non-invented ETH/USD candidate paths:
+  1. an authoritative AggregatorV3 feed, if a real Robinhood Chain address + provenance are supplied;
+  2. Chainlink Data Streams, if an authoritative bytes32 feed ID + provenance are supplied.
+- Records Robinhood's documented sequencer websocket as a websocket/Nitro feed and explicitly refuses to treat it as an AggregatorV3 uptime oracle.
+- Keeps every mainnet write gate disabled.
 
-The workflow still refuses to invent the ETH/USD contract address. Supply the
-exact address and provenance from Chainlink's official Price Feed Addresses
-surface, then v4.8 validates the contract on Robinhood Chain.
+## GitHub repository variables
 
-## Repository variables to set
+You may set:
 
 - `ARCHIVE_RPC_URL`
-  - Use a Robinhood Chain archive-capable endpoint.
-  - Robinhood currently recommends Alchemy for production RPC, and its docs say
-    historical reads should use an archive endpoint.
 - `ETH_USD_FEED_ADDRESS`
-  - Exact Chainlink ETH/USD Data Feed contract on Robinhood Chain mainnet.
 - `ETH_USD_PROVENANCE_URL`
-  - Official Chainlink URL showing that exact feed/address.
 - `ETH_USD_HEARTBEAT_SECONDS`
-  - Production staleness threshold chosen after reviewing the feed's trigger parameters.
-- `SEQUENCER_UPTIME_FEED_ADDRESS`
-  - Optional. Only set this if an AggregatorV3-compatible uptime feed for Robinhood
-    Chain is independently documented. Do not put the websocket sequencer feed here.
+- `ETH_USD_DATA_STREAM_ID`
+- `ETH_USD_DATA_STREAM_PROVENANCE_URL`
 
-## What v4.8 proves
+Do not invent values. Leave unavailable values blank.
 
-1. Canonical STONKBROKER/WETH pool, Registry and TBA are still present.
-2. Candidate ETH/USD feed has code and supports AggregatorV3 reads.
-3. Feed answer is positive and fresh under the configured heartbeat.
-4. Archive RPC supplies at least 8 historical 30-minute TWAP observations.
-5. Historical pool liquidity remains nonzero and at least 50% of latest in the sampled window.
-6. Current Registry sequencer compatibility is explicitly reported rather than guessed.
+## GitHub workflow location
 
-## What v4.8 does NOT authorize
+The workflow must be committed at:
 
-No oracle deployment, adapter deployment, Registry mutation, funding, approval,
-unpause, trade, or transaction broadcast is authorized.
+`.github/workflows/main.yaml`
 
-After v4.8 is green with production inputs, the next phase is a security-review
-and deployment-preflight package, followed by a separately authorized tiny
-mainnet transaction.
+A second `main.yaml` is included at the ZIP root only to make it easy to see/copy on iPhone.
+
+## Safety boundary
+
+v4.8.1 does not deploy contracts, modify the Registry, fund the TBA, approve a spender, unpause trading, or broadcast a trade.
