@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Portfolio Executor v1.4</title>
+<title>Rustee Broker Portfolio Executor v1.5</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -19,10 +19,33 @@ button.primary{background:var(--teal);color:#032019;border:0}button.danger{backg
 pre{white-space:pre-wrap;word-break:break-all;max-height:330px;overflow:auto;background:#02110e;border:1px solid #26594e;border-radius:14px;padding:14px;font-size:13px}
 .row{display:flex;gap:8px;flex-wrap:wrap}.footer{position:sticky;bottom:8px;background:#07120f;border:1px solid var(--teal);border-radius:15px;padding:12px;font-size:13px}
 @media(max-width:650px){.grid{grid-template-columns:1fr}}
+
+.tabs{position:sticky;top:0;z-index:30;display:flex;gap:8px;padding:10px;background:rgba(2,25,21,.94);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:18px;margin:16px 0}
+.tabbtn{flex:1;margin:0;padding:12px 8px;border-radius:12px;font-size:14px}
+.tabbtn.active{background:var(--teal);color:#04211b;border-color:var(--teal)}
+.tabpane{display:none}.tabpane.active{display:block}
+.account-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.acct{border:1px solid var(--line);border-radius:18px;padding:16px;background:#061d18}
+.acct h3{margin:0 0 6px;font-size:20px}.acct .addr{font:11px ui-monospace,monospace;color:var(--muted);word-break:break-all}
+.assetrow{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 0;border-top:1px solid #1e5147}
+.assetrow b{font-size:16px}.assetrow span{font:13px ui-monospace,monospace;color:var(--muted)}
+.controlgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px solid var(--line);border-radius:14px;font:inherit}
+.badge{display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:999px;font-size:11px;color:var(--teal);margin-bottom:8px}
+@media(max-width:650px){.account-grid,.controlgrid{grid-template-columns:1fr}.tabs{overflow:auto}.tabbtn{min-width:100px}}
+
 </style>
 </head>
 <body><main>
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Executor v1.4 · Manual Signature Only</span>
+
+<div class="tabs">
+  <button class="tabbtn active" data-tab="overviewPane">Overview</button>
+  <button class="tabbtn" data-tab="accountsPane">Accounts</button>
+  <button class="tabbtn" data-tab="transferPane">Move Assets</button>
+</div>
+<div id="overviewPane" class="tabpane active">
+
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Executor v1.5 · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -135,6 +158,73 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 <pre class="mono" id="addresses"></pre>
 </div>
 
+
+</div>
+
+<div id="accountsPane" class="tabpane">
+  <div class="card">
+    <span class="badge">LIVE READ-ONLY PORTFOLIO</span>
+    <h2>Rustee Account Center</h2>
+    <p>One screen for the owner wallet and all four ERC-6551 accounts. ETH plus known stock/token balances are read directly from Robinhood Chain.</p>
+    <div class="actions"><button class="primary" id="refreshAllAccounts">Refresh all balances</button></div>
+    <div id="accountGrid" class="account-grid" style="margin-top:16px"></div>
+    <pre id="accountCenterLog">Ready. Refresh to read all five accounts.</pre>
+  </div>
+</div>
+
+<div id="transferPane" class="tabpane">
+  <div class="card">
+    <span class="badge">SIMULATE → WALLET CONFIRM → RECEIPT</span>
+    <h2>Universal Asset Mover</h2>
+    <p>Move ETH or ERC-20 assets between the main owner wallet and any Rustee TBA, or recover assets from any TBA back to the owner. Trading uses its restricted withdrawal ABI; Vault, Rewards and Identity use the generic owner-only BrokerAccount execution path.</p>
+
+    <div class="controlgrid">
+      <div class="field"><label>Source account</label>
+        <select id="moveSource">
+          <option value="OWNER">Main owner wallet</option>
+          <option value="VAULT">Vault TBA</option>
+          <option value="TRADING">Trading TBA</option>
+          <option value="REWARDS">Rewards TBA</option>
+          <option value="IDENTITY">Identity TBA</option>
+        </select>
+      </div>
+      <div class="field"><label>Destination</label>
+        <select id="moveDestination">
+          <option value="OWNER">Main owner wallet</option>
+          <option value="VAULT">Vault TBA</option>
+          <option value="TRADING">Trading TBA</option>
+          <option value="REWARDS">Rewards TBA</option>
+          <option value="IDENTITY">Identity TBA</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="controlgrid" style="margin-top:12px">
+      <div class="field"><label>Asset</label>
+        <select id="moveAssetType">
+          <option value="ETH">ETH</option>
+          <option value="NVDA">NVDA</option>
+          <option value="WETH">WETH</option>
+          <option value="CUSTOM">Custom ERC-20</option>
+        </select>
+      </div>
+      <div class="field"><label>Amount</label><input id="universalAmount" value="0.001" inputmode="decimal"></div>
+    </div>
+    <div class="field" id="customTokenWrap" style="display:none;margin-top:12px"><label>Custom ERC-20 contract</label><input id="universalToken" placeholder="0x…"></div>
+
+    <div class="actions" style="margin-top:14px">
+      <button class="primary" id="simulateUniversalMove">Simulate exact move</button>
+      <button id="executeUniversalMove" disabled>Execute real move</button>
+    </div>
+    <pre id="universalMoveLog">No move prepared.</pre>
+  </div>
+
+  <div class="card">
+    <h2>Safety model</h2>
+    <p>Every real move requires the connected Broker NFT owner, chain 4663, a fresh successful <code>eth_estimateGas</code> and <code>eth_call</code> simulation, then a separate wallet confirmation. The app never requests a seed phrase or private key.</p>
+  </div>
+</div>
+
 <div class="footer">No seed phrase or private key is ever requested. Wallet signatures are performed only by the injected wallet provider.</div>
 </main>
 
@@ -144,6 +234,8 @@ const RPC='https://rpc.mainnet.chain.robinhood.com';
 const OWNER='0x8fC320c8582f812695b6f62b2b5d13B14475B955';
 const VAULT='0x8ad8bd35d33dd7b4d0de81f809f5b7f92623956d';
 const TRADING='0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654';
+const REWARDS='0xfd0d881d73ec1476f5da0ab78283149ea21c3b32';
+const IDENTITY='0x496d7d47ae69d65d714413f0dc78c712ed92158d';
 const WETH='0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
 const NVDA='0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC';
 const ROUTER='0xCaf681a66D020601342297493863E78C959E5cb2';
@@ -462,6 +554,140 @@ async function execute(){
     '\nTrading TBA NVDA balance: '+formatToken18(after,12);
   await refreshBalances();
 }
+
+const ACCOUNT_MAP={OWNER,VAULT,TRADING,REWARDS,IDENTITY};
+const ACCOUNT_LABELS={OWNER:'Main Wallet',VAULT:'Vault TBA',TRADING:'Trading TBA',REWARDS:'Rewards TBA',IDENTITY:'Identity TBA'};
+const KNOWN_ASSETS=[
+  {symbol:'NVDA',address:NVDA},
+  {symbol:'WETH',address:WETH}
+];
+let universalMoveState=null;
+
+function genericExecuteCalldata(target,value,data){
+  const bytes=String(data||'0x').replace(/^0x/,'');
+  return '0x'+SEL_EXECUTE+addrWord(target)+word(value)+word(128)+word(0)+word(bytes.length/2)+padBytes(bytes);
+}
+function transferCalldata(to,amount){return '0x'+SEL_TRANSFER+addrWord(to)+word(amount)}
+
+async function readAccountSnapshot(key){
+  const address=ACCOUNT_MAP[key];
+  const eth=BigInt(await rpc('eth_getBalance',[address,'latest']));
+  const assets=[];
+  for(const a of KNOWN_ASSETS){
+    try{
+      const [dec,bal]=await Promise.all([tokenDecimals(a.address),erc20Balance(a.address,address)]);
+      assets.push({symbol:a.symbol,address:a.address,decimals:dec,balance:bal});
+    }catch{}
+  }
+  return {key,address,eth,assets};
+}
+async function refreshAllAccounts(){
+  const keys=['OWNER','VAULT','TRADING','REWARDS','IDENTITY'];
+  $('accountCenterLog').textContent='Reading Robinhood Chain…';
+  const snaps=await Promise.all(keys.map(readAccountSnapshot));
+  $('accountGrid').innerHTML=snaps.map(s=>`
+    <div class="acct">
+      <span class="badge">${s.key==='OWNER'?'OWNER':'ERC-6551'}</span>
+      <h3>${ACCOUNT_LABELS[s.key]}</h3>
+      <div class="addr">${s.address}</div>
+      <div class="assetrow"><div><b>ETH</b><br><span>native gas asset</span></div><b>${fromWei(s.eth)}</b></div>
+      ${s.assets.map(a=>`<div class="assetrow"><div><b>${a.symbol}</b><br><span>${a.address.slice(0,8)}…${a.address.slice(-6)}</span></div><b>${unitsToDecimal(a.balance,a.decimals,10)}</b></div>`).join('')}
+    </div>`).join('');
+  $('accountCenterLog').textContent='PASS — balances refreshed at '+new Date().toLocaleTimeString()+'.\nKnown assets shown: ETH, NVDA, WETH. Use Custom ERC-20 in Move Assets for any additional token contract.';
+  return snaps;
+}
+
+function selectedMoveToken(){
+  const t=$('moveAssetType').value;
+  if(t==='ETH') return null;
+  if(t==='NVDA') return NVDA;
+  if(t==='WETH') return WETH;
+  const a=$('universalToken').value.trim();
+  if(!/^0x[0-9a-fA-F]{40}$/.test(a)) throw Error('Enter a valid custom ERC-20 address');
+  return a;
+}
+
+async function simulateUniversalMove(){
+  if(!account) await connect();
+  if(account.toLowerCase()!==OWNER.toLowerCase()) throw Error('Wrong owner wallet connected');
+  const cid=Number(BigInt(await rpc('eth_chainId'))); if(cid!==CHAIN) throw Error('Wrong network');
+  const sourceKey=$('moveSource').value,destKey=$('moveDestination').value;
+  if(sourceKey===destKey) throw Error('Source and destination must be different');
+  const source=ACCOUNT_MAP[sourceKey],dest=ACCOUNT_MAP[destKey],token=selectedMoveToken();
+  let tx, amountUnits, symbol='ETH', decimals=18;
+
+  if(!token){
+    amountUnits=decimalToUnits($('universalAmount').value,18);
+    if(amountUnits<=0n) throw Error('Amount must be greater than zero');
+    const bal=BigInt(await rpc('eth_getBalance',[source,'latest']));
+    if(amountUnits>bal) throw Error('Amount exceeds source ETH balance');
+    if(sourceKey==='OWNER'){
+      tx={from:OWNER,to:dest,value:hexQty(amountUnits),data:'0x'};
+    }else if(sourceKey==='TRADING'){
+      const data='0x'+SEL_WITHDRAW_ETH+word(amountUnits);
+      // Trading withdrawETH always returns to current NFT owner, so only OWNER is valid.
+      if(destKey!=='OWNER') throw Error('Trading TBA withdrawETH can only recover ETH to the current Broker NFT owner');
+      tx={from:OWNER,to:TRADING,data};
+    }else{
+      tx={from:OWNER,to:source,data:genericExecuteCalldata(dest,amountUnits,'0x')};
+    }
+  }else{
+    decimals=await tokenDecimals(token); symbol=await tokenSymbol(token);
+    amountUnits=decimalToUnits($('universalAmount').value,decimals);
+    if(amountUnits<=0n) throw Error('Amount must be greater than zero');
+    const bal=await erc20Balance(token,source);
+    if(amountUnits>bal) throw Error(`Amount exceeds ${ACCOUNT_LABELS[sourceKey]} ${symbol} balance`);
+    if(sourceKey==='OWNER'){
+      tx={from:OWNER,to:token,data:transferCalldata(dest,amountUnits)};
+    }else if(sourceKey==='TRADING'){
+      if(destKey!=='OWNER') throw Error('Trading TBA withdrawToken() sends assets only to the current Broker NFT owner');
+      tx={from:OWNER,to:TRADING,data:withdrawTokenCalldata(token,amountUnits)};
+    }else{
+      tx={from:OWNER,to:source,data:genericExecuteCalldata(token,0n,transferCalldata(dest,amountUnits))};
+    }
+  }
+
+  const gas=BigInt(await rpc('eth_estimateGas',[tx]));
+  const result=await rpc('eth_call',[tx,'latest']);
+  universalMoveState={time:Date.now(),sourceKey,destKey,source,dest,token,amountUnits,symbol,decimals,tx,gas};
+  $('executeUniversalMove').disabled=false;
+  $('universalMoveLog').textContent=
+    `PASS — exact move simulated.\n`+
+    `${ACCOUNT_LABELS[sourceKey]} → ${ACCOUNT_LABELS[destKey]}\n`+
+    `Asset: ${symbol}\nAmount: ${unitsToDecimal(amountUnits,decimals,12)}\n`+
+    `Estimated gas: ${gas}\neth_call: ${result}`;
+}
+async function executeUniversalMove(){
+  const s=universalMoveState;
+  if(!s) throw Error('Simulate the move first');
+  if(Date.now()-s.time>60000) throw Error('Simulation expired. Simulate again.');
+  if(!account) await connect();
+  if(!confirm(`REAL MAINNET MOVE\n\n${ACCOUNT_LABELS[s.sourceKey]} → ${ACCOUNT_LABELS[s.destKey]}\n${unitsToDecimal(s.amountUnits,s.decimals,12)} ${s.symbol}\n\nReview the wallet confirmation carefully.`)) return;
+  const sendTx={...s.tx,gas:hexQty(s.gas*120n/100n)};
+  const hash=await ethereum.request({method:'eth_sendTransaction',params:[sendTx]});
+  $('executeUniversalMove').disabled=true;
+  $('universalMoveLog').textContent='Submitted:\n'+hash+'\nWaiting for confirmation…';
+  const receipt=await waitReceipt(hash);
+  $('universalMoveLog').textContent=`CONFIRMED ✓\nTransaction: ${hash}\nBlock: ${Number(BigInt(receipt.blockNumber))}\n${ACCOUNT_LABELS[s.sourceKey]} → ${ACCOUNT_LABELS[s.destKey]}\n${unitsToDecimal(s.amountUnits,s.decimals,12)} ${s.symbol}`;
+  universalMoveState=null;
+  await refreshAllAccounts();
+  await refreshBalances();
+}
+
+document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabbtn').forEach(x=>x.classList.toggle('active',x===b));
+  document.querySelectorAll('.tabpane').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));
+  if(b.dataset.tab==='accountsPane') refreshAllAccounts().catch(e=>$('accountCenterLog').textContent='ERROR: '+e.message);
+}));
+$('moveAssetType').addEventListener('change',()=>{$('customTokenWrap').style.display=$('moveAssetType').value==='CUSTOM'?'block':'none';universalMoveState=null;$('executeUniversalMove').disabled=true});
+$('moveSource').addEventListener('change',()=>{universalMoveState=null;$('executeUniversalMove').disabled=true});
+$('moveDestination').addEventListener('change',()=>{universalMoveState=null;$('executeUniversalMove').disabled=true});
+$('universalAmount').addEventListener('input',()=>{universalMoveState=null;$('executeUniversalMove').disabled=true});
+$('refreshAllAccounts').onclick=()=>refreshAllAccounts().catch(e=>$('accountCenterLog').textContent='ERROR: '+e.message);
+$('simulateUniversalMove').onclick=()=>simulateUniversalMove().catch(e=>{$('universalMoveLog').textContent='ERROR: '+e.message;alert(e.message)});
+$('executeUniversalMove').onclick=()=>executeUniversalMove().catch(e=>{$('universalMoveLog').textContent='ERROR: '+e.message;alert(e.message)});
+
+
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
 bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);
 bind('official',checkOfficial);bind('fund',fundVault);

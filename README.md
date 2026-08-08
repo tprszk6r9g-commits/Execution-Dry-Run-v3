@@ -1,44 +1,15 @@
-# Rustee Broker Portfolio Executor v1.4 — Trading TBA Withdrawal Fix
+# Rustee Broker Portfolio Executor v1.5
 
-## What was wrong in v1.2/v1.3
+Adds an Account Center and Universal Asset Mover to the working v1.4 standalone.
 
-The standalone attempted to move ERC-20 assets out of the Trading TBA by calling the generic ERC-6551 `execute(address,uint256,bytes,uint8)` function.
+## New
+- Separate Accounts tab for Main Wallet, Vault, Trading, Rewards, Identity.
+- Live ETH, NVDA and WETH balances across all five accounts.
+- Custom ERC-20 support by contract address.
+- Main wallet -> any TBA deposits.
+- Vault / Rewards / Identity -> any account transfers through generic BrokerAccount execute.
+- Trading TBA -> owner recovery through restricted withdrawToken / withdrawETH.
+- Exact eth_estimateGas + eth_call simulation before every real move.
+- 60-second simulation expiry and separate wallet confirmation.
 
-That works on Rustee's generic Vault / Rewards / Identity accounts, but **the Trading TBA uses StockTradingAccount**, whose design deliberately does not expose generic `execute()`.
-
-Therefore the simulation correctly reverted.
-
-## Correct deployed method
-
-The verified StockTradingAccount includes:
-
-```solidity
-function withdrawToken(address tokenAddress, uint256 amount)
-    external
-    nonReentrant
-```
-
-It verifies the caller is the current Broker NFT owner, then transfers the ERC-20 token to `owner()`.
-
-Verified selectors from the compiled v0.6.1 ABI:
-
-- `withdrawToken(address,uint256)` → `0x9e281a98`
-- `withdrawETH(uint256)` → `0xf14210a6`
-
-v1.4 now uses `withdrawToken()` directly.
-
-## Safety
-
-The real withdrawal remains locked until:
-
-1. correct owner wallet is connected;
-2. chain 4663 is active;
-3. requested amount is <= Trading TBA balance;
-4. `eth_estimateGas` succeeds;
-5. the exact call succeeds under `eth_call`.
-
-Only then is the real wallet-signature button enabled.
-
-## GitHub Pages
-
-Replace root `index.html` and `.github/workflows/main.yaml` with the files in this package.
+Trading TBA intentionally cannot send arbitrary assets directly to another TBA: its recovery methods return assets to the current Broker NFT owner. To move Trading -> another TBA, withdraw to Owner first, then send Owner -> destination.
