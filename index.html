@@ -1,8 +1,340 @@
-<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rustee Broker v4.9.4</title>
-<style>body{margin:auto;max-width:850px;padding:28px;background:#021b16;color:#eafff8;font:18px system-ui;line-height:1.6}h1{font-size:clamp(48px,10vw,82px)}.card{border:1px solid #2d675b;border-radius:26px;padding:26px;margin:22px 0;background:#073126}code,pre{color:#53e7d0;white-space:pre-wrap;word-break:break-all}.warn{border-left:8px solid #ff9a36}</style>
-<h1>Rustee Broker v4.9.4</h1>
-<div class="card"><h2>Verifier + policy fork gate</h2><p>ETH/USD Data Streams feed candidate:</p><pre>0x000362205e10b3a147d02792eccee483dca6c7b44ecce7012cb8c6e0b68b3ae9</pre><p>Robinhood Chain verifier proxy:</p><pre>0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7</pre></div>
-<div class="card"><h2>Policy harness</h2><p>Fork tests prove the local policy layer accepts a fresh verified report at or below the $5 ceiling and rejects over-limit, unverified, stale, and wrong-feed inputs.</p></div>
-<div class="card warn"><h2>Important boundary</h2><p>This does <b>not</b> claim an authenticated Chainlink signed report has been retrieved or replayed yet. That requires Data Streams credentials/report evidence. No mainnet deployment, funding, approval, unpause, registry write, trade, or broadcast is included.</p></div>
-<div class="card"><h2>Next evidence gate</h2><p>Authenticated signed-report retrieval + verifier replay, followed by independent security review of the production oracle/adapter/Registry V2 integration.</p></div>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rustee NVDA Manual Trade Executor</title>
+<style>
+:root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:850px;margin:auto;padding:26px 16px 100px}h1{font-size:clamp(40px,9vw,70px);line-height:1.02;margin:14px 0 18px}h2{font-size:28px;margin:0 0 14px}
+p{font-size:17px;line-height:1.55;color:var(--muted)}.pill{display:inline-block;padding:10px 14px;border:1px solid var(--line);border-radius:999px;color:var(--teal)}
+.card{background:linear-gradient(145deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:24px;padding:22px;margin:18px 0}
+.warn{border-left:8px solid var(--orange)}.good{color:var(--green)}.bad{color:var(--red)}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.metric{border:1px solid #285e52;border-radius:15px;padding:13px;background:#041914;min-height:90px}
+.metric small{color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.metric strong{display:block;margin-top:8px;font-size:18px;word-break:break-all}
+label{display:block;color:var(--muted);margin:12px 0 7px}input{width:100%;padding:14px;border-radius:13px;border:1px solid var(--line);background:#031712;color:var(--txt);font:inherit}
+button{font:inherit;font-weight:800;padding:15px 18px;border-radius:14px;border:1px solid #39796c;background:#0a342b;color:var(--txt);margin:5px 6px 5px 0}
+button.primary{background:var(--teal);color:#032019;border:0}button.danger{background:#512822;border-color:#8e493e}button:disabled{opacity:.35}
+pre{white-space:pre-wrap;word-break:break-all;max-height:330px;overflow:auto;background:#02110e;border:1px solid #26594e;border-radius:14px;padding:14px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap}.footer{position:sticky;bottom:8px;background:#07120f;border:1px solid var(--teal);border-radius:15px;padding:12px;font-size:13px}
+@media(max-width:650px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Manual Signature Only</span>
+<h1>Rustee NVDA Trade Executor</h1>
+<p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
+
+<div class="card warn">
+<h2>Execution model</h2>
+<p><b>Owner wallet → Vault TBA → Uniswap SwapRouter02 → NVDA → Trading TBA.</b> Each state-changing action requires your wallet confirmation. The final trade button stays disabled until an <code>eth_call</code> simulation of the exact transaction succeeds.</p>
+<p>This deliberately bypasses the currently paused restricted Trading-TBA execution policy for this one manual test. It does not unpause or configure that policy.</p>
+</div>
+
+<div class="card">
+<h2>1. Connect + verify</h2>
+<div class="row">
+<button class="primary" id="connect">Connect wallet</button>
+<button id="switch">Switch/add Robinhood Chain</button>
+<button id="preflight">Run preflight</button>
+</div>
+<div class="grid">
+<div class="metric"><small>Connected wallet</small><strong id="wallet">—</strong></div>
+<div class="metric"><small>Chain</small><strong id="chain">—</strong></div>
+<div class="metric"><small>Owner ETH</small><strong id="ownerBal">—</strong></div>
+<div class="metric"><small>Vault ETH</small><strong id="vaultBal">—</strong></div>
+<div class="metric"><small>Trading ETH</small><strong id="tradingBal">—</strong></div>
+<div class="metric"><small>Trading NVDA</small><strong id="nvdaBal">—</strong></div>
+</div>
+<pre id="preflightLog">Not checked.</pre>
+</div>
+
+<div class="card">
+<h2>2. Trade size</h2>
+<label>Target USD (approximate)</label>
+<input id="usdTarget" inputmode="decimal" value="1.00">
+<label>ETH/USD reference used only to convert your target to ETH</label>
+<input id="ethUsd" inputmode="decimal" value="1916.62">
+<label>Slippage protection (%)</label>
+<input id="slippage" inputmode="decimal" value="2.0">
+<div class="grid">
+<div class="metric"><small>ETH input</small><strong id="ethInput">—</strong></div>
+<div class="metric"><small>Best fee tier</small><strong id="feeTier">—</strong></div>
+<div class="metric"><small>Quoted NVDA</small><strong id="quotedOut">—</strong></div>
+<div class="metric"><small>Minimum NVDA</small><strong id="minOut">—</strong></div>
+</div>
+<div class="row">
+<button id="quote" class="primary">Get live on-chain quote</button>
+<button id="official">Check official NVDA metadata</button>
+</div>
+<pre id="quoteLog">No quote yet.</pre>
+</div>
+
+<div class="card">
+<h2>3. Fund Vault executor</h2>
+<p>The Vault TBA must hold at least the ETH input because it is the contract that calls the router. Gas for the outer transaction is still paid by your connected owner wallet.</p>
+<div class="row">
+<button id="fund">Fund Vault with exact trade ETH + tiny cushion</button>
+<button id="refreshBalances">Refresh balances</button>
+</div>
+<pre id="fundLog">No funding transaction sent.</pre>
+</div>
+
+<div class="card">
+<h2>4. Simulate exact trade</h2>
+<p>The simulator builds the exact Vault-TBA → Router call and executes it with <code>eth_call</code>. A successful simulation is required before live execution.</p>
+<div class="row"><button id="simulate" class="primary">Simulate exact transaction</button></div>
+<pre id="simLog">Not simulated.</pre>
+</div>
+
+<div class="card warn">
+<h2>5. Execute real ~$1 NVDA trade</h2>
+<p>Clicking this sends a real transaction request to your wallet. Review the network, destination, and gas in the wallet confirmation screen. NVDA is configured to be delivered directly to the Trading TBA.</p>
+<div class="row"><button id="execute" class="danger" disabled>EXECUTE REAL NVDA TRADE</button></div>
+<pre id="execLog">Locked until simulation succeeds.</pre>
+</div>
+
+<div class="card">
+<h2>Hard-bound addresses</h2>
+<pre class="mono" id="addresses"></pre>
+</div>
+
+<div class="footer">No seed phrase or private key is ever requested. Wallet signatures are performed only by the injected wallet provider.</div>
+</main>
+
+<script>
+const CHAIN=4663, CHAIN_HEX='0x1237';
+const RPC='https://rpc.mainnet.chain.robinhood.com';
+const OWNER='0x8fC320c8582f812695b6f62b2b5d13B14475B955';
+const VAULT='0x8ad8bd35d33dd7b4d0de81f809f5b7f92623956d';
+const TRADING='0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654';
+const WETH='0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
+const NVDA='0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC';
+const ROUTER='0xCaf681a66D020601342297493863E78C959E5cb2';
+const QUOTER='0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7';
+const SEL_OWNER='8da5cb5b', SEL_BALANCE='70a08231', SEL_EXECUTE='51945447';
+const SEL_QUOTE='c6a5026a', SEL_EXACT_INPUT='04e45aaf';
+
+let account=null, quoteState=null, simulationState=null;
+
+const $=id=>document.getElementById(id);
+const word=x=>BigInt(x).toString(16).padStart(64,'0');
+const addrWord=a=>a.toLowerCase().replace(/^0x/,'').padStart(64,'0');
+const hexQty=x=>'0x'+BigInt(x).toString(16);
+const short=a=>a?`${a.slice(0,8)}…${a.slice(-6)}`:'—';
+const fromWei=x=>(Number(BigInt(x))/1e18).toFixed(8);
+function padBytes(hex){hex=hex.replace(/^0x/,''); return hex.padEnd(Math.ceil(hex.length/64)*64,'0')}
+function encodeBytes(hex){hex=hex.replace(/^0x/,''); return word(hex.length/2)+padBytes(hex)}
+function decimalToWei(s){
+  s=String(s).trim(); if(!/^\d+(\.\d+)?$/.test(s)) throw Error('Invalid decimal');
+  let [a,b='']=s.split('.'); b=(b+'0'.repeat(18)).slice(0,18); return BigInt(a)*10n**18n+BigInt(b);
+}
+function formatToken18(v,dec=8){let x=BigInt(v),a=x/10n**18n,b=(x%10n**18n).toString().padStart(18,'0').slice(0,dec);return `${a}.${b}`}
+function calcInputWei(){
+  const usd=Number($('usdTarget').value), ethUsd=Number($('ethUsd').value);
+  if(!(usd>0&&ethUsd>0)) throw Error('USD target and ETH/USD must be positive');
+  const eth=usd/ethUsd;
+  $('ethInput').textContent=eth.toFixed(8)+' ETH';
+  return decimalToWei(eth.toFixed(18));
+}
+function routerCalldata(amountIn,minOut,fee){
+  return '0x'+SEL_EXACT_INPUT+
+    addrWord(WETH)+addrWord(NVDA)+word(fee)+addrWord(TRADING)+word(amountIn)+word(minOut)+word(0);
+}
+function vaultExecuteCalldata(routerData,amountIn){
+  const bytes=routerData.replace(/^0x/,'');
+  // execute(address to,uint256 value,bytes data,uint8 operation)
+  return '0x'+SEL_EXECUTE+
+    addrWord(ROUTER)+word(amountIn)+word(128)+word(0)+
+    word(bytes.length/2)+padBytes(bytes);
+}
+async function fallbackRpc(method,params=[]){
+  const r=await fetch(RPC,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});
+  const j=await r.json(); if(j.error) throw Error(j.error.message||JSON.stringify(j.error)); return j.result;
+}
+async function rpc(method,params=[]){
+  if(window.ethereum) return ethereum.request({method,params});
+  return fallbackRpc(method,params);
+}
+async function ownerOfTBA(addr){
+  const raw=await rpc('eth_call',[{to:addr,data:'0x'+SEL_OWNER},'latest']);
+  return '0x'+raw.slice(-40);
+}
+async function erc20Balance(token,who){
+  const raw=await rpc('eth_call',[{to:token,data:'0x'+SEL_BALANCE+addrWord(who)},'latest']);
+  return BigInt(raw);
+}
+async function refreshBalances(){
+  const [ob,vb,tb,nb]=await Promise.all([
+    rpc('eth_getBalance',[OWNER,'latest']), rpc('eth_getBalance',[VAULT,'latest']),
+    rpc('eth_getBalance',[TRADING,'latest']), erc20Balance(NVDA,TRADING)
+  ]);
+  $('ownerBal').textContent=fromWei(ob)+' ETH';
+  $('vaultBal').textContent=fromWei(vb)+' ETH';
+  $('tradingBal').textContent=fromWei(tb)+' ETH';
+  $('nvdaBal').textContent=formatToken18(nb,8)+' NVDA token units';
+  return {owner:BigInt(ob),vault:BigInt(vb),trading:BigInt(tb),nvda:nb};
+}
+async function connect(){
+  if(!window.ethereum) throw Error('Open this page inside MetaMask or another injected EVM wallet browser.');
+  const a=await ethereum.request({method:'eth_requestAccounts'}); account=a?.[0]||null;
+  if(!account) throw Error('Wallet connection not approved');
+  $('wallet').textContent=short(account);
+  if(account.toLowerCase()!==OWNER.toLowerCase()) throw Error('Wrong owner wallet connected');
+  await refreshBalances();
+}
+async function switchChain(){
+  if(!window.ethereum) throw Error('Injected wallet required');
+  try{await ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:CHAIN_HEX}]})}
+  catch(e){
+    await ethereum.request({method:'wallet_addEthereumChain',params:[{
+      chainId:CHAIN_HEX,chainName:'Robinhood Chain',nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},
+      rpcUrls:[RPC],blockExplorerUrls:['https://robinhoodchain.blockscout.com']
+    }]});
+  }
+}
+async function preflight(){
+  if(!account) await connect();
+  const cid=Number(BigInt(await rpc('eth_chainId')));
+  const [vo,to,vc,tc,rc,qc,nc,bal]=await Promise.all([
+    ownerOfTBA(VAULT),ownerOfTBA(TRADING),
+    rpc('eth_getCode',[VAULT,'latest']),rpc('eth_getCode',[TRADING,'latest']),
+    rpc('eth_getCode',[ROUTER,'latest']),rpc('eth_getCode',[QUOTER,'latest']),rpc('eth_getCode',[NVDA,'latest']),
+    refreshBalances()
+  ]);
+  const checks={
+    chainId:cid,chainOk:cid===CHAIN,connected:account,
+    connectedOwnerOk:account.toLowerCase()===OWNER.toLowerCase(),
+    vaultOwner:vo,vaultOwnerOk:vo.toLowerCase()===OWNER.toLowerCase(),
+    tradingOwner:to,tradingOwnerOk:to.toLowerCase()===OWNER.toLowerCase(),
+    vaultCodeBytes:(vc.length-2)/2,tradingCodeBytes:(tc.length-2)/2,
+    routerCodeBytes:(rc.length-2)/2,quoterCodeBytes:(qc.length-2)/2,nvdaCodeBytes:(nc.length-2)/2
+  };
+  $('chain').textContent=cid+(cid===CHAIN?' ✓':' ✕');
+  const pass=checks.chainOk&&checks.connectedOwnerOk&&checks.vaultOwnerOk&&checks.tradingOwnerOk&&checks.vaultCodeBytes>0&&checks.tradingCodeBytes>0&&checks.routerCodeBytes>0&&checks.quoterCodeBytes>0&&checks.nvdaCodeBytes>0;
+  $('preflightLog').textContent=(pass?'PASS\n':'FAIL\n')+JSON.stringify(checks,null,2);
+  if(!pass) throw Error('Preflight failed');
+  return true;
+}
+async function checkOfficial(){
+  $('quoteLog').textContent='Checking Robinhood public Stock Token APIs…';
+  const [assetsR,priceR]=await Promise.all([
+    fetch('https://api.robinhood.com/rhj/assets',{headers:{accept:'application/json'}}),
+    fetch('https://api.robinhood.com/rhj/prices/NVDA',{headers:{accept:'application/json'}})
+  ]);
+  if(!assetsR.ok||!priceR.ok) throw Error('Robinhood API request failed');
+  const assets=await assetsR.json(), prices=await priceR.json();
+  const list=assets.assets||assets;
+  const a=(Array.isArray(list)?list:[]).find(x=>x.tokenSymbol==='NVDA');
+  const quotes=prices.quotes||prices.prices||prices;
+  const q=(Array.isArray(quotes)?quotes:[]).find(x=>x.tokenSymbol==='NVDA') || (prices.tokenSymbol==='NVDA'?prices:null);
+  if(!a) throw Error('NVDA not found in Robinhood assets response');
+  const d=(a.deployments||[]).find(x=>Number(x.chainId)===CHAIN);
+  if(!d||d.contractAddress.toLowerCase()!==NVDA.toLowerCase()) throw Error('Canonical NVDA address mismatch');
+  if(a.status && a.status!=='ASSET_STATUS_ACTIVE') throw Error('NVDA is not active');
+  if(q?.isTradingHalt===true) throw Error('NVDA is trading-halted');
+  $('quoteLog').textContent='Official NVDA metadata PASS\n'+JSON.stringify({
+    contract:d.contractAddress,status:a.status,currentMultiplier:a.currentMultiplier,
+    bid:q?.bid,ask:q?.ask,isTradingHalt:q?.isTradingHalt,generatedAt:q?.generatedAt
+  },null,2);
+}
+async function getQuote(){
+  await preflight();
+  const amountIn=calcInputWei(), tiers=[500n,3000n,10000n], results=[];
+  for(const fee of tiers){
+    const data='0x'+SEL_QUOTE+addrWord(WETH)+addrWord(NVDA)+word(amountIn)+word(fee)+word(0);
+    try{
+      const raw=await rpc('eth_call',[{to:QUOTER,data},'latest']);
+      const out=BigInt('0x'+raw.slice(2,66));
+      if(out>0n) results.push({fee,amountOut:out});
+    }catch(e){results.push({fee,error:e.message})}
+  }
+  const ok=results.filter(x=>x.amountOut).sort((a,b)=>a.amountOut>b.amountOut?-1:1);
+  if(!ok.length) throw Error('No quoted WETH→NVDA route found');
+  const best=ok[0];
+  const slip=Math.max(0,Math.min(10,Number($('slippage').value)));
+  const minOut=best.amountOut*BigInt(Math.floor((100-slip)*100))/10000n;
+  quoteState={time:Date.now(),amountIn,fee:best.fee,quoted:best.amountOut,minOut,results};
+  simulationState=null;$('execute').disabled=true;
+  $('feeTier').textContent=(Number(best.fee)/10000).toFixed(2)+'%';
+  $('quotedOut').textContent=formatToken18(best.amountOut,10);
+  $('minOut').textContent=formatToken18(minOut,10);
+  $('quoteLog').textContent=JSON.stringify({
+    ethInput:fromWei(amountIn)+' ETH',bestFee:Number(best.fee),quotedNvdaTokenUnits:formatToken18(best.amountOut,12),
+    minNvdaTokenUnits:formatToken18(minOut,12),allRoutes:results.map(r=>({fee:Number(r.fee),amountOut:r.amountOut?formatToken18(r.amountOut,12):null,error:r.error}))
+  },null,2);
+}
+async function fundVault(){
+  if(!account) await connect();
+  const amount=calcInputWei(), cushion=10n**13n; // 0.00001 ETH
+  const need=amount+cushion;
+  const vb=BigInt(await rpc('eth_getBalance',[VAULT,'latest']));
+  if(vb>=need){$('fundLog').textContent='Vault already has enough ETH: '+fromWei(vb)+' ETH';return;}
+  const topup=need-vb;
+  if(!confirm(`Send ${fromWei(topup)} ETH from owner wallet to Vault TBA?`)) return;
+  const tx=await ethereum.request({method:'eth_sendTransaction',params:[{from:account,to:VAULT,value:hexQty(topup)}]});
+  $('fundLog').textContent='Funding transaction sent:\n'+tx+'\nWaiting for confirmation…';
+  await waitReceipt(tx);
+  $('fundLog').textContent+=' \nCONFIRMED';
+  await refreshBalances();
+}
+async function waitReceipt(hash){
+  for(let i=0;i<180;i++){const r=await rpc('eth_getTransactionReceipt',[hash]);if(r){if(r.status!=='0x1')throw Error('Transaction reverted: '+hash);return r}await new Promise(res=>setTimeout(res,2000))}
+  throw Error('Receipt timeout');
+}
+async function simulate(){
+  if(!quoteState) await getQuote();
+  if(Date.now()-quoteState.time>60000) throw Error('Quote is older than 60 seconds. Refresh quote.');
+  const bal=await refreshBalances();
+  if(bal.vault<quoteState.amountIn) throw Error('Vault does not have enough ETH. Fund Vault first.');
+  const rdata=routerCalldata(quoteState.amountIn,quoteState.minOut,quoteState.fee);
+  const data=vaultExecuteCalldata(rdata,quoteState.amountIn);
+  const tx={from:OWNER,to:VAULT,data};
+  const gas=BigInt(await rpc('eth_estimateGas',[tx]));
+  const result=await rpc('eth_call',[tx,'latest']);
+  simulationState={time:Date.now(),data,gas,quoteTime:quoteState.time,beforeNvda:bal.nvda};
+  $('simLog').textContent='PASS — exact mainnet call simulated successfully.\nEstimated gas: '+gas.toString()+
+    '\nVault: '+VAULT+'\nRouter: '+ROUTER+'\nNVDA recipient: '+TRADING+
+    '\nETH input: '+fromWei(quoteState.amountIn)+' ETH\nMin NVDA: '+formatToken18(quoteState.minOut,12)+
+    '\neth_call return: '+result;
+  $('execute').disabled=false;
+}
+async function execute(){
+  if(!simulationState||!quoteState) throw Error('Run simulation first');
+  if(Date.now()-simulationState.time>60000||simulationState.quoteTime!==quoteState.time) throw Error('Simulation expired. Quote and simulate again.');
+  if(!account) await connect();
+  if(!confirm(`REAL MAINNET TRADE\n\nSpend ${fromWei(quoteState.amountIn)} ETH from Rustee Vault TBA to buy NVDA and deliver it to Trading TBA?\n\nYou will get a wallet confirmation next.`)) return;
+  const gas=simulationState.gas*120n/100n;
+  const hash=await ethereum.request({method:'eth_sendTransaction',params:[{
+    from:account,to:VAULT,data:simulationState.data,gas:hexQty(gas)
+  }]});
+  $('execute').disabled=true;
+  $('execLog').textContent='REAL transaction submitted:\n'+hash+'\nWaiting for receipt…';
+  const receipt=await waitReceipt(hash);
+  const after=await erc20Balance(NVDA,TRADING);
+  const delta=after-simulationState.beforeNvda;
+  $('execLog').textContent='CONFIRMED ✓\nTransaction: '+hash+
+    '\nBlock: '+Number(BigInt(receipt.blockNumber))+
+    '\nNVDA received by Trading TBA: '+formatToken18(delta,12)+
+    '\nTrading TBA NVDA balance: '+formatToken18(after,12);
+  await refreshBalances();
+}
+function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
+bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);
+bind('official',checkOfficial);bind('fund',fundVault);bind('refreshBalances',refreshBalances);bind('simulate',simulate);bind('execute',execute);
+for(const id of ['usdTarget','ethUsd','slippage']) $(id).oninput=()=>{try{calcInputWei()}catch{} quoteState=null;simulationState=null;$('execute').disabled=true};
+$('addresses').textContent=`Owner wallet: ${OWNER}
+Vault TBA (executor): ${VAULT}
+Trading TBA (NVDA recipient): ${TRADING}
+WETH: ${WETH}
+NVDA: ${NVDA}
+SwapRouter02: ${ROUTER}
+QuoterV2: ${QUOTER}`;
+calcInputWei();
+if(window.ethereum){
+  ethereum.on?.('accountsChanged',a=>{account=a?.[0]||null;$('wallet').textContent=account?short(account):'Not connected';quoteState=null;simulationState=null;$('execute').disabled=true});
+  ethereum.on?.('chainChanged',()=>{quoteState=null;simulationState=null;$('execute').disabled=true;});
+}
+</script>
+</body></html>
