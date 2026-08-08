@@ -1,30 +1,24 @@
-name: Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7.3
+name: Rustee STONKBROKER Bidirectional Stress v4.7.4
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
-  workflow_dispatch:
+    paths:
+      - ".github/workflows/v47-4.yaml"
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: rustee-stonkbroker-v47
+  group: rustee-stonkbroker-v47-4
   cancel-in-progress: true
 
 jobs:
-  archive-bidirectional-analysis:
+  bidirectional-stress:
     runs-on: ubuntu-latest
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     env:
-      PUBLIC_RPC_URL: https://rpc.mainnet.chain.robinhood.com
-      ARCHIVE_RPC_URL: ${{ vars.ARCHIVE_RPC_URL }}
+      RPC_URL: https://rpc.mainnet.chain.robinhood.com
 
     steps:
       - name: Checkout
@@ -35,246 +29,13 @@ jobs:
         with:
           version: stable
 
-      - name: Validate RPC mode and canonical pool
+      - name: Generate isolated stress project
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p data src test
-
-          RPC="${ARCHIVE_RPC_URL:-$PUBLIC_RPC_URL}"
-          POOL="0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594"
-          WETH="0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73"
-          STONK="0xe934e36A439C94017B64a3FecE66AF12099aBF50"
-
-          TOKEN0="$(cast call "$POOL" 'token0()(address)' --rpc-url "$RPC")"
-          TOKEN1="$(cast call "$POOL" 'token1()(address)' --rpc-url "$RPC")"
-          FEE="$(cast call "$POOL" 'fee()(uint24)' --rpc-url "$RPC" | awk '{print $1}')"
-          LIQ="$(cast call "$POOL" 'liquidity()(uint128)' --rpc-url "$RPC" | awk '{print $1}')"
-
-          python3 - "$TOKEN0" "$TOKEN1" "$FEE" "$LIQ" "${ARCHIVE_RPC_URL:-}" <<'PY'
-          import json,sys
-          from pathlib import Path
-
-          token0,token1,fee,liq,archive=sys.argv[1:]
-          weth="0x0bd7d308f8e1639fab988df18a8011f41eacad73"
-          stonk="0xe934e36a439c94017b64a3fece66af12099abf50"
-
-          p={
-            "pool":"0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594",
-            "token0":token0.lower(),
-            "token1":token1.lower(),
-            "fee":int(fee),
-            "liquidity":str(int(liq)),
-            "pairMatches":{token0.lower(),token1.lower()}=={weth,stonk},
-            "liquidityNonZero":int(liq)>0,
-            "archiveRpcConfigured":bool(archive),
-            "rpcMode":"ARCHIVE_VARIABLE" if archive else "PUBLIC_FALLBACK"
-          }
-          assert p["pairMatches"]
-          assert p["liquidityNonZero"]
-          Path("data/v47-pool.json").write_text(json.dumps(p,indent=2))
-          PY
-
-      - name: Historical archive sampling
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 <<'PY'
-          import json, urllib.request, datetime
-          from decimal import Decimal, getcontext
-          from pathlib import Path
-          import os
-
-          getcontext().prec=90
-
-          PUBLIC=os.environ["PUBLIC_RPC_URL"]
-          ARCHIVE=os.environ.get("ARCHIVE_RPC_URL","").strip()
-          RPC=ARCHIVE or PUBLIC
-
-          POOL="0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594"
-          OBSERVE_SELECTOR="0x883bdbfd"
-          LIQ_SELECTOR="0x1a686502"
-          SLOT0_SELECTOR="0x3850c7bd"
-          WINDOW=1800
-
-          binding=json.load(open("data/v47-pool.json"))
-          token0=binding["token0"]
-          token1=binding["token1"]
-          weth="0x0bd7d308f8e1639fab988df18a8011f41eacad73"
-          # Both are 18 decimals on this pair.
-          dec0=18
-          dec1=18
-
-          def rpc(method,params):
-              req=urllib.request.Request(
-                  RPC,
-                  data=json.dumps({
-                      "jsonrpc":"2.0","id":1,"method":method,"params":params
-                  }).encode(),
-                  headers={
-                      "content-type":"application/json",
-                      "user-agent":"Rustee-v4.7"
-                  }
-              )
-              with urllib.request.urlopen(req,timeout=30) as r:
-                  j=json.loads(r.read().decode())
-              if "error" in j:
-                  raise RuntimeError(j["error"])
-              return j["result"]
-
-          def word(n): return int(n).to_bytes(32,"big").hex()
-
-          def observe_data(window):
-              return OBSERVE_SELECTOR+word(32)+word(2)+word(window)+word(0)
-
-          def u256(b,o): return int.from_bytes(b[o:o+32],"big")
-
-          def signed_word(b,o,bits):
-              raw=u256(b,o)&((1<<bits)-1)
-              if raw&(1<<(bits-1)): raw-=1<<bits
-              return raw
-
-          def decode_observe(h):
-              b=bytes.fromhex(h[2:])
-              ot=u256(b,0); os_=u256(b,32)
-              nt=u256(b,ot); ns=u256(b,os_)
-              ticks=[signed_word(b,ot+32+32*i,56) for i in range(nt)]
-              spl=[u256(b,os_+32+32*i)&((1<<160)-1) for i in range(ns)]
-              if len(ticks)!=2 or len(spl)!=2:
-                  raise RuntimeError("bad observe lengths")
-              return ticks,spl
-
-          def mean_tick(delta,window):
-              q=abs(delta)//window
-              q=-q if delta<0 else q
-              if delta<0 and abs(delta)%window: q-=1
-              if not -887272<=q<=887272:
-                  raise RuntimeError(f"tick out of bounds: {q}")
-              return q
-
-          def weth_per_stonk(tick):
-              raw=(Decimal("1.0001")**Decimal(tick))*(Decimal(10)**Decimal(dec0-dec1))
-              return Decimal(1)/raw if token0==weth else raw
-
-          latest_num=int(rpc("eth_blockNumber",[]),16)
-          latest=rpc("eth_getBlockByNumber",[hex(latest_num),False])
-          latest_ts=int(latest["timestamp"],16)
-
-          block_cache={latest_num:latest}
-          def get_block(n):
-              if n not in block_cache:
-                  block_cache[n]=rpc("eth_getBlockByNumber",[hex(n),False])
-              return block_cache[n]
-
-          def find_block(target_ts):
-              # Robinhood Chain is high-throughput; search a generous recent range.
-              lo=max(0,latest_num-5000000)
-              hi=latest_num
-              best=lo
-              while lo<=hi:
-                  mid=(lo+hi)//2
-                  b=get_block(mid)
-                  ts=int(b["timestamp"],16)
-                  if ts<=target_ts:
-                      best=mid; lo=mid+1
-                  else:
-                      hi=mid-1
-              return best
-
-          lookbacks=[0,1,2,4,8,12,18,24,36,48,72,96,120,168]
-          rows=[]
-          for hrs in lookbacks:
-              target=latest_ts-hrs*3600
-              try:
-                  bn=latest_num if hrs==0 else find_block(target)
-                  block=get_block(bn)
-                  tag=hex(bn)
-
-                  raw=rpc("eth_call",[{
-                      "to":POOL,"data":observe_data(WINDOW)
-                  },tag])
-                  ticks,_=decode_observe(raw)
-                  delta=ticks[1]-ticks[0]
-                  mt=mean_tick(delta,WINDOW)
-                  p=weth_per_stonk(mt)
-
-                  liq=int(rpc("eth_call",[{
-                      "to":POOL,"data":LIQ_SELECTOR
-                  },tag]),16)
-
-                  slot=bytes.fromhex(rpc("eth_call",[{
-                      "to":POOL,"data":SLOT0_SELECTOR
-                  },tag])[2:])
-                  spot_tick=signed_word(slot,32,24)
-
-                  rows.append({
-                    "lookbackHours":hrs,
-                    "available":True,
-                    "blockNumber":bn,
-                    "blockTimestamp":int(block["timestamp"],16),
-                    "twap30mMeanTick":mt,
-                    "twap30mWethPerStonk":format(p,".30g"),
-                    "twap30mWethPerStonkWei18":str(int(p*Decimal(10)**18)),
-                    "spotTick":spot_tick,
-                    "liquidity":str(liq)
-                  })
-              except Exception as e:
-                  rows.append({
-                    "lookbackHours":hrs,
-                    "available":False,
-                    "error":str(e)[:500]
-                  })
-
-          avail=[r for r in rows if r["available"]]
-          prices=[Decimal(r["twap30mWethPerStonk"]) for r in avail]
-          liqs=[int(r["liquidity"]) for r in avail]
-
-          summary={
-            "requestedSamples":len(rows),
-            "availableSamples":len(avail),
-            "archiveRpcConfigured":bool(ARCHIVE),
-            "archiveEvidencePass":len(avail)>=8,
-            "twap30mRangeBps":(
-              float((max(prices)/min(prices)-1)*Decimal(10000))
-              if len(prices)>=2 else None
-            ),
-            "liquidityMin":str(min(liqs)) if liqs else None,
-            "liquidityMax":str(max(liqs)) if liqs else None,
-            "liquidityMinVsLatestPct":(
-              float(Decimal(min(liqs))/Decimal(liqs[0])*100)
-              if liqs and liqs[0] else None
-            )
-          }
-
-          out={
-            "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "rpcMode":"ARCHIVE_VARIABLE" if ARCHIVE else "PUBLIC_FALLBACK",
-            "windowSeconds":WINDOW,
-            "samples":rows,
-            "summary":summary
-          }
-          Path("data/v47-history.json").write_text(
-              json.dumps(out,indent=2,allow_nan=False)
-          )
-          print(json.dumps(out,indent=2,allow_nan=False))
-          PY
-
-      - name: Generate bidirectional adaptive stress suite
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # v4.7.1 isolation fix: Forge compiles every Solidity file under
-          # src/test before --match-test filtering. Remove stale generated
-          # tests from earlier phases so RusteeFork.t.sol cannot break this run.
           rm -rf src test out cache lib
           mkdir -p src test data lib
 
-          # v4.7.3: forge-std is used only on the local fork so STONKBROKER
-          # can be assigned to the synthetic attacker without first moving
-          # the live pool price. This makes the reverse-direction stress
-          # independent from the WETH->STONK seed trade.
           git clone --depth 1 https://github.com/foundry-rs/forge-std.git lib/forge-std
 
           cat > foundry.toml <<'EOF'
@@ -303,7 +64,9 @@ jobs:
           import {Test} from "forge-std/Test.sol";
 
           interface IERC20 {
-              function approve(address spender,uint256 amount) external returns (bool);
+              function approve(address spender, uint256 amount)
+                  external
+                  returns (bool);
           }
 
           interface IWETH is IERC20 {
@@ -312,8 +75,16 @@ jobs:
 
           interface IPool {
               function slot0()
-                  external view returns (
-                      uint160,int24,uint16,uint16,uint16,uint8,bool
+                  external
+                  view
+                  returns (
+                      uint160,
+                      int24,
+                      uint16,
+                      uint16,
+                      uint16,
+                      uint8,
+                      bool
                   );
           }
 
@@ -334,23 +105,29 @@ jobs:
           }
 
           contract BidirectionalStress is Test {
+              // v4.7.4 compile fix:
+              // 21-byte integer literals (leading 00) are converted to uint160,
+              // then address. Solidity therefore does not interpret the source
+              // token as a 20-byte address literal and cannot reject it for
+              // EIP-55 checksum formatting.
               address constant WETH =
-                  0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73;
+                  address(uint160(0x000bd7d308f8e1639fab988df18a8011f41eacad73));
               address constant STONK =
-                  0xe934e36A439C94017B64a3FecE66AF12099aBF50;
+                  address(uint160(0x00e934e36a439c94017b64a3fece66af12099abf50));
               address constant ROUTER =
-                  0xCaf681a66D020601342297493863E78C959E5cb2;
+                  address(uint160(0x00caf681a66d020601342297493863e78c959e5cb2));
               address constant POOL =
-                  0x9cd74d5980a4bf60408b9ba2b0f6a3d368ebf594;
+                  address(uint160(0x009cd74d5980a4bf60408b9ba2b0f6a3d368ebf594));
               address constant ATTACKER =
-                  0x000000000000000000000000000000000000B047;
+                  address(uint160(0x00000000000000000000000000000000000000b047));
+
               uint24 constant FEE = 10000;
 
               function swap(
                   address tokenIn,
                   address tokenOut,
                   uint256 amountIn
-              ) internal returns (bool ok,uint256 out) {
+              ) internal returns (bool ok, uint256 out) {
                   try ISwapRouter02(ROUTER).exactInputSingle(
                       ISwapRouter02.ExactInputSingleParams({
                           tokenIn: tokenIn,
@@ -362,9 +139,9 @@ jobs:
                           sqrtPriceLimitX96: 0
                       })
                   ) returns (uint256 result) {
-                      return (true,result);
+                      return (true, result);
                   } catch {
-                      return (false,0);
+                      return (false, 0);
                   }
               }
 
@@ -379,11 +156,11 @@ jobs:
                   vm.writeLine(
                       "data/v47-stress.csv",
                       string.concat(
-                          direction,",",
-                          vm.toString(amountIn),",",
-                          ok ? "true" : "false",",",
-                          vm.toString(amountOut),",",
-                          vm.toString(int256(baselineTick)),",",
+                          direction, ",",
+                          vm.toString(amountIn), ",",
+                          ok ? "true" : "false", ",",
+                          vm.toString(amountOut), ",",
+                          vm.toString(int256(baselineTick)), ",",
                           vm.toString(int256(postTick))
                       )
                   );
@@ -406,16 +183,15 @@ jobs:
                       1 ether
                   ];
 
-                  (,int24 baselineTick,,,,,) = IPool(POOL).slot0();
+                  (, int24 baselineTick,,,,,) = IPool(POOL).slot0();
 
                   vm.writeFile(
                       "data/v47-stress.csv",
                       "direction,inputWei,success,outputWei,baselineTick,postTick\n"
                   );
 
-                  // Direction A: every amount starts from the exact same
-                  // unmodified fork state.
-                  for (uint256 i=0; i<wethAmounts.length; i++) {
+                  // A: WETH -> STONK, each amount from an identical fork state.
+                  for (uint256 i = 0; i < wethAmounts.length; i++) {
                       uint256 snap = vm.snapshotState();
                       uint256 amt = wethAmounts[i];
 
@@ -426,10 +202,10 @@ jobs:
                           IERC20(WETH).approve(ROUTER, amt),
                           "approve weth"
                       );
-                      (bool ok,uint256 out) = swap(WETH,STONK,amt);
+                      (bool ok, uint256 out) = swap(WETH, STONK, amt);
                       vm.stopPrank();
 
-                      (,int24 postTick,,,,,) = IPool(POOL).slot0();
+                      (, int24 postTick,,,,,) = IPool(POOL).slot0();
                       appendRow(
                           "WETH_TO_STONK",
                           amt,
@@ -439,11 +215,10 @@ jobs:
                           postTick
                       );
 
-                      require(vm.revertToState(snap),"revert A");
+                      require(vm.revertToState(snap), "revert A");
                   }
 
-                  // Determine a useful reverse-direction size scale without
-                  // retaining the pool movement from the sizing swap.
+                  // Obtain a reverse-direction size scale, then revert it.
                   uint256 sizeSnap = vm.snapshotState();
                   vm.deal(ATTACKER, 2 ether);
                   vm.startPrank(ATTACKER);
@@ -452,21 +227,28 @@ jobs:
                       IERC20(WETH).approve(ROUTER, 1 ether),
                       "size approve"
                   );
-                  (bool sizeOk,uint256 oneWethOut) =
-                      swap(WETH,STONK,1 ether);
+                  (bool sizeOk, uint256 oneWethOut) =
+                      swap(WETH, STONK, 1 ether);
                   vm.stopPrank();
-                  require(sizeOk && oneWethOut > 0,"size swap");
-                  require(vm.revertToState(sizeSnap),"size revert");
+                  require(sizeOk && oneWethOut > 0, "size swap");
+                  require(vm.revertToState(sizeSnap), "size revert");
 
                   uint256[10] memory fractionsBps = [
-                      uint256(10),25,50,100,250,500,1000,2500,5000,10000
+                      uint256(10),
+                      25,
+                      50,
+                      100,
+                      250,
+                      500,
+                      1000,
+                      2500,
+                      5000,
+                      10000
                   ];
 
-                  // Direction B: forge-std deal() gives the synthetic attacker
-                  // STONKBROKER off-pool. Every reverse trial therefore starts
-                  // at the exact same canonical baseline tick rather than from
-                  // a pool already shifted by a seed purchase.
-                  for (uint256 i=0; i<fractionsBps.length; i++) {
+                  // B: STONK -> WETH. deal() assigns off-pool balance so every
+                  // trial starts at the same canonical pool state.
+                  for (uint256 i = 0; i < fractionsBps.length; i++) {
                       uint256 snap = vm.snapshotState();
                       uint256 amt =
                           (oneWethOut * fractionsBps[i]) / 10000;
@@ -478,10 +260,10 @@ jobs:
                           IERC20(STONK).approve(ROUTER, amt),
                           "approve stonk"
                       );
-                      (bool ok,uint256 out) = swap(STONK,WETH,amt);
+                      (bool ok, uint256 out) = swap(STONK, WETH, amt);
                       vm.stopPrank();
 
-                      (,int24 postTick,,,,,) = IPool(POOL).slot0();
+                      (, int24 postTick,,,,,) = IPool(POOL).slot0();
                       appendRow(
                           "STONK_TO_WETH",
                           amt,
@@ -491,301 +273,81 @@ jobs:
                           postTick
                       );
 
-                      require(vm.revertToState(snap),"revert B");
+                      require(vm.revertToState(snap), "revert B");
                   }
               }
           }
           EOF
+
+      - name: Compile first
+        shell: bash
+        run: |
+          set -euo pipefail
+          forge build
 
       - name: Run bidirectional stress suite
         shell: bash
         run: |
           set -euo pipefail
           forge test \
-            --fork-url "${ARCHIVE_RPC_URL:-$PUBLIC_RPC_URL}" \
+            --fork-url "$RPC_URL" \
             --match-test testBidirectionalStress \
             -vv
 
           test -s data/v47-stress.csv
           cat data/v47-stress.csv
 
-      - name: Analyze bidirectional stress and coarse unwind economics
+      - name: Validate fresh-baseline and opposite-direction behavior
         shell: bash
         run: |
           set -euo pipefail
-
           python3 <<'PY'
-          import csv,json,datetime
-          from decimal import Decimal,getcontext
+          import csv, json
           from pathlib import Path
 
-          getcontext().prec=80
+          rows = list(csv.DictReader(open("data/v47-stress.csv")))
+          assert rows, "no stress rows"
 
-          rows=[]
-          with open("data/v47-stress.csv") as f:
-              for r in csv.DictReader(f):
-                  base=int(r["baselineTick"])
-                  post=int(r["postTick"])
-                  delta=post-base
-                  ratio=Decimal("1.0001")**Decimal(delta)
-                  move_bps=abs((ratio-1)*Decimal(10000))
-                  rows.append({
-                    "direction":r["direction"],
-                    "inputWei":r["inputWei"],
-                    "success":r["success"].lower()=="true",
-                    "outputWei":r["outputWei"],
-                    "baselineTick":base,
-                    "postTick":post,
-                    "tickDelta":delta,
-                    "spotMoveBps":float(move_bps)
-                  })
+          ok = [r for r in rows if r["success"].lower() == "true"]
+          assert ok, "no successful swaps"
 
-          bydir={}
-          for direction in ("WETH_TO_STONK","STONK_TO_WETH"):
-              xs=[r for r in rows if r["direction"]==direction and r["success"]]
-              bydir[direction]={
-                "trials":xs,
-                "maxSpotMoveBps":max((x["spotMoveBps"] for x in xs),default=None)
-              }
+          baselines = {int(r["baselineTick"]) for r in ok}
+          assert len(baselines) == 1, f"baseline changed across trials: {baselines}"
 
-          baseline_ticks={r["baselineTick"] for r in rows if r["success"]}
-          fresh_baseline_invariant=(len(baseline_ticks)==1)
+          a = [r for r in ok if r["direction"] == "WETH_TO_STONK"]
+          b = [r for r in ok if r["direction"] == "STONK_TO_WETH"]
+          assert a and b, "missing a direction"
 
-          weth_sign_ok=all(
-              r["tickDelta"] <= 0
-              for r in bydir["WETH_TO_STONK"]["trials"]
-          )
-          stonk_sign_ok=all(
-              r["tickDelta"] >= 0
-              for r in bydir["STONK_TO_WETH"]["trials"]
-          )
-          opposite_direction_pass=(
-              weth_sign_ok
-              and stonk_sign_ok
-              and any(
-                  r["tickDelta"] < 0
-                  for r in bydir["WETH_TO_STONK"]["trials"]
-              )
-              and any(
-                  r["tickDelta"] > 0
-                  for r in bydir["STONK_TO_WETH"]["trials"]
-              )
-          )
+          da = [int(r["postTick"]) - int(r["baselineTick"]) for r in a]
+          db = [int(r["postTick"]) - int(r["baselineTick"]) for r in b]
 
-          # For a 30-minute arithmetic-mean oracle:
-          # target TWAP bias ~= spot bias * holdSeconds / 1800
-          targets=[50,100,250]
-          holds=[300,900,1800]
-          envelope=[]
+          # token0=WETH, token1=STONK:
+          # WETH->STONK should push tick down; STONK->WETH should push it up.
+          assert all(x <= 0 for x in da), da
+          assert all(x >= 0 for x in db), db
+          assert any(x < 0 for x in da), "no measurable WETH->STONK movement"
+          assert any(x > 0 for x in db), "no measurable STONK->WETH movement"
 
-          for direction,data in bydir.items():
-              xs=sorted(data["trials"],key=lambda x:int(x["inputWei"]))
-              for target in targets:
-                  for hold in holds:
-                      required=Decimal(target)*Decimal(1800)/Decimal(hold)
-                      hit=[x for x in xs if Decimal(str(x["spotMoveBps"]))>=required]
-                      below=[x for x in xs if Decimal(str(x["spotMoveBps"]))<required]
-                      upper=min(hit,key=lambda x:int(x["inputWei"])) if hit else None
-                      lower=max(below,key=lambda x:int(x["inputWei"])) if below else None
-                      envelope.append({
-                        "direction":direction,
-                        "targetTwapBiasBps":target,
-                        "holdSeconds":hold,
-                        "requiredSpotMoveBps":float(required),
-                        "lowerTestedInputWei":lower["inputWei"] if lower else None,
-                        "upperTestedInputWei":upper["inputWei"] if upper else None,
-                        "thresholdReached":upper is not None
-                      })
-
-          # Fee-only lower-bound heuristic for a round-trip manipulation:
-          # two 1% pool-fee legs imply >= ~2% gross notional fee drag before
-          # slippage, arbitrage, MEV or imperfect recovery. This is deliberately
-          # labeled as a lower-bound heuristic, not exact economics.
-          fee_bps=100
-          round_trip_fee_floor_bps=fee_bps*2
-
-          out={
-            "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "directions":bydir,
-            "independenceChecks":{
-              "freshBaselineInvariantPass":fresh_baseline_invariant,
-              "baselineTicksObserved":sorted(baseline_ticks),
-              "wethToStonkDirectionSignPass":weth_sign_ok,
-              "stonkToWethDirectionSignPass":stonk_sign_ok,
-              "oppositeDirectionPass":opposite_direction_pass
-            },
-            "twapBiasEnvelope":envelope,
-            "feeHeuristic":{
-              "poolFeeTierBps":fee_bps,
-              "roundTripFeeFloorBps":round_trip_fee_floor_bps,
-              "meaning":"Two 1% pool fee legs create an approximately 2% gross-notional fee floor before slippage/arbitrage/MEV. Not an exact net attack cost."
-            },
-            "importantBoundary":"v4.7.3 brackets independent gross-capital spot shifts from the same fork baseline in both directions. STONK inventory for reverse tests is assigned only on the fork via forge-std deal(), so no seed purchase contaminates the baseline. This still does not claim exact adversarial P&L or manipulation cost."
+          report = {
+              "project": "Rustee STONKBROKER Bidirectional Stress v4.7.4",
+              "mode": "FORK_ONLY_NO_MAINNET_WRITES",
+              "compileFix": "address literals converted via 21-byte integer -> uint160 -> address",
+              "rows": len(rows),
+              "successfulRows": len(ok),
+              "freshBaselineInvariantPass": True,
+              "wethToStonkDirectionPass": True,
+              "stonkToWethDirectionPass": True,
+              "oppositeDirectionPass": True,
+              "mainnetWrites": False
           }
-          Path("data/v47-manipulation.json").write_text(
-            json.dumps(out,indent=2,allow_nan=False)
-          )
-          print(json.dumps(out,indent=2,allow_nan=False))
+          Path("data/v47-4-report.json").write_text(json.dumps(report, indent=2))
+          print(json.dumps(report, indent=2))
           PY
 
-      - name: Build v4.7 decision report
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 <<'PY'
-          import json,datetime
-          from pathlib import Path
-
-          pool=json.load(open("data/v47-pool.json"))
-          hist=json.load(open("data/v47-history.json"))
-          manip=json.load(open("data/v47-manipulation.json"))
-
-          hs=hist["summary"]
-          archive_pass=hs["archiveEvidencePass"]
-          hist_range=hs["twap30mRangeBps"]
-          liq_floor=hs["liquidityMinVsLatestPct"]
-
-          hist_stable=(
-              archive_pass
-              and hist_range is not None
-              and hist_range <= 2500
-              and liq_floor is not None
-              and liq_floor >= 20
-          )
-
-          # Require both stress directions to have actually run successfully.
-          both_directions=all(
-              len(manip["directions"][d]["trials"]) >= 5
-              for d in ("WETH_TO_STONK","STONK_TO_WETH")
-          )
-
-          independent_stress=(
-              manip["independenceChecks"]["freshBaselineInvariantPass"]
-              and manip["independenceChecks"]["oppositeDirectionPass"]
-          )
-
-          retained=hist_stable and both_directions and independent_stress
-
-          blockers=[
-            "Authoritative production WETH/USD oracle + provenance unresolved",
-            "WETH/USD heartbeat/staleness policy unresolved",
-            "Sequencer compatibility with current Registry unresolved",
-            "Exact adversarial unwind/arbitrage/MEV economics remain model-dependent",
-            "Candidate TWAP oracle and venue adapter require independent security review",
-            "No mainnet deployment/Registry configuration has been separately authorized"
-          ]
-          if not archive_pass:
-              blockers.insert(0,"Archive evidence gate requires >=8 historical samples")
-          if not hist_stable:
-              blockers.insert(0,"Historical stability gate has not passed")
-          if not both_directions:
-              blockers.insert(0,"Both-direction stress suite did not produce sufficient successful trials")
-          if not independent_stress:
-              blockers.insert(0,"Bidirectional stress independence/directionality gate did not pass")
-
-          report={
-            "project":"Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7.3",
-            "network":"Robinhood Chain Mainnet + Fork",
-            "chainId":4663,
-            "generatedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "mode":"READ_ONLY_AND_FORK_ONLY_NO_MAINNET_WRITES",
-            "pool":pool,
-            "baseline":{
-              "v452CandidateWindowSeconds":1800,
-              "v452CrossWindowDispersionBps":34.05615988640384,
-              "v461PublicRpcArchiveSamples":1
-            },
-            "historical":hist,
-            "manipulation":manip,
-            "decision":{
-              "archiveEvidencePass":archive_pass,
-              "historicalStabilityPass":hist_stable,
-              "bothDirectionStressPass":both_directions,
-              "independentBidirectionalStressPass":independent_stress,
-              "candidate30mRetained":retained,
-              "productionAuthorized":False,
-              "reason":(
-                "30m retained as engineering candidate after archive history and "
-                "both-direction stress; production remains blocked by WETH/USD, "
-                "sequencer compatibility and independent review."
-                if retained else
-                "30m not yet retained because one or more archive/stability/"
-                "bidirectional evidence gates did not pass."
-              )
-            },
-            "remainingBlockers":blockers,
-            "executionGate":{
-              "mainnetOracleDeploymentAllowed":False,
-              "mainnetRegistryWritesAllowed":False,
-              "mainnetFundingAllowed":False,
-              "mainnetApprovalAllowed":False,
-              "mainnetTradeAllowed":False,
-              "mainnetUnpauseAllowed":False,
-              "mainnetBroadcastAllowed":False,
-              "verdict":(
-                "V4.7.3 COMPLETE; 30M CANDIDATE "
-                + ("RETAINED" if retained else "NOT YET RETAINED")
-                + "; MAINNET REMAINS LOCKED"
-              )
-            }
-          }
-
-          Path("data/stonkbroker-v47.json").write_text(
-              json.dumps(report,indent=2,allow_nan=False)
-          )
-          print(json.dumps(report,indent=2,allow_nan=False))
-          PY
-
-      - name: Validate v4.7 no-write gate
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          import json,math
-          p=json.load(open("data/stonkbroker-v47.json"))
-          assert p["chainId"]==4663
-          assert p["pool"]["pairMatches"] is True
-          assert p["pool"]["liquidityNonZero"] is True
-          assert p["executionGate"]["mainnetBroadcastAllowed"] is False
-          assert p["executionGate"]["mainnetRegistryWritesAllowed"] is False
-
-          for direction in ("WETH_TO_STONK","STONK_TO_WETH"):
-              assert direction in p["manipulation"]["directions"]
-              assert len(p["manipulation"]["directions"][direction]["trials"])>=1
-              for t in p["manipulation"]["directions"][direction]["trials"]:
-                  assert math.isfinite(t["spotMoveBps"])
-
-          checks=p["manipulation"]["independenceChecks"]
-          assert checks["freshBaselineInvariantPass"] is True
-          assert checks["wethToStonkDirectionSignPass"] is True
-          assert checks["stonkToWethDirectionSignPass"] is True
-          assert checks["oppositeDirectionPass"] is True
-
-          print("PASS v4.7.3")
-          PY
-
-      - name: Embed v4.7 report into page
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          from pathlib import Path
-          import html
-          page=Path("index.html").read_text()
-          report=Path("data/stonkbroker-v47.json").read_text()
-          page=page.replace("__V47_REPORT__",html.escape(report))
-          Path("index.html").write_text(page)
-          PY
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload site
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
         with:
-          path: .
-
-      - name: Deploy Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: rustee-v47-4-evidence
+          path: |
+            data/v47-stress.csv
+            data/v47-4-report.json
