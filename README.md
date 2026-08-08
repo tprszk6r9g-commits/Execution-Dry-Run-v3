@@ -1,41 +1,44 @@
-# Rustee Broker Portfolio Executor — GitHub Pages Fix v1.3
+# Rustee Broker Portfolio Executor v1.4 — Trading TBA Withdrawal Fix
 
-This package fixes the stale GitHub Pages deployment for:
+## What was wrong in v1.2/v1.3
 
-`https://tprszk6r9g-commits.github.io/Execution-Dry-Run-v3/`
+The standalone attempted to move ERC-20 assets out of the Trading TBA by calling the generic ERC-6551 `execute(address,uint256,bytes,uint8)` function.
 
-## Upload these files to the repository
+That works on Rustee's generic Vault / Rewards / Identity accounts, but **the Trading TBA uses StockTradingAccount**, whose design deliberately does not expose generic `execute()`.
 
-The required files are:
+Therefore the simulation correctly reverted.
 
-- `index.html` — current Portfolio Executor v1.2
-- `.github/workflows/main.yaml` — active GitHub Pages deployment workflow
-- `.nojekyll` — disables Jekyll processing
+## Correct deployed method
 
-A duplicate `main.yaml` is included at the root only for easy copying. GitHub Actions does **not** use the root copy. The workflow must exist at:
+The verified StockTradingAccount includes:
 
-`.github/workflows/main.yaml`
+```solidity
+function withdrawToken(address tokenAddress, uint256 amount)
+    external
+    nonReentrant
+```
 
-## What the workflow verifies before deploying
+It verifies the caller is the current Broker NFT owner, then transfers the ERC-20 token to `owner()`.
 
-It refuses to deploy unless root `index.html` contains:
+Verified selectors from the compiled v0.6.1 ABI:
 
-- `Portfolio Executor v1.2`
-- `Trading TBA portfolio + move assets to owner`
+- `withdrawToken(address,uint256)` → `0x9e281a98`
+- `withdrawETH(uint256)` → `0xf14210a6`
 
-This prevents an old Rustee homepage from silently being republished.
+v1.4 now uses `withdrawToken()` directly.
 
-## GitHub mobile folder trick
+## Safety
 
-If you cannot create folders directly:
+The real withdrawal remains locked until:
 
-1. Choose **Add file → Create new file**.
-2. In the filename box type exactly:
-   `.github/workflows/main.yaml`
-3. GitHub automatically creates the folders.
-4. Paste the contents of the included `main.yaml`.
-5. Commit to `main`.
+1. correct owner wallet is connected;
+2. chain 4663 is active;
+3. requested amount is <= Trading TBA balance;
+4. `eth_estimateGas` succeeds;
+5. the exact call succeeds under `eth_call`.
 
-Then make sure the supplied `index.html` replaces the existing root `index.html`.
+Only then is the real wallet-signature button enabled.
 
-After commit, open **Actions** and wait for **Deploy Rustee Broker Portfolio Executor** to turn green.
+## GitHub Pages
+
+Replace root `index.html` and `.github/workflows/main.yaml` with the files in this package.
