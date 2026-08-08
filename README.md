@@ -1,42 +1,22 @@
-# Rustee Broker Data Streams + Sequencer Resolution v4.9.2
+# Rustee Broker v4.9.3
 
-This phase locks in two production architecture decisions:
+Read/fork-only Data Streams + Registry V2 engineering gate.
 
-1. **ETH/USD:** Chainlink Data Streams through Robinhood Chain's verified
-   verifier proxy.
-2. **Sequencer protection:** `REGISTRY_V2_CHAIN_SPECIFIC_GUARD`.
+## Public configuration
+- Robinhood Chain: 4663
+- ETH/USD candidate feed ID: `0x000362205e10b3a147d02792eccee483dca6c7b44ecce7012cb8c6e0b68b3ae9`
+- Data Streams Verifier Proxy: `0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7`
 
-The current deployed Registry remains paused.
+## Required GitHub secret
+`ARCHIVE_RPC_URL` — your Alchemy Robinhood Chain archive-capable endpoint.
 
-## Required GitHub inputs
+Do not commit API keys or Data Streams credentials.
 
-`ARCHIVE_RPC_URL` remains a GitHub Actions **secret** and is already expected to
-be configured.
+## What this phase does
+1. Confirms chain ID and verifier bytecode.
+2. Validates the feed ID is bytes32-shaped.
+3. Compiles and fork-tests a Robinhood-specific Registry V2 guard prototype.
+4. Statistically rejects broadcast primitives.
+5. Keeps all production writes disabled.
 
-Add these repository variables only when you have authoritative values:
-
-- `ETH_USD_DATA_STREAM_ID`
-- `ETH_USD_DATA_STREAM_PROVENANCE_URL`
-- `ETH_USD_SIGNED_REPORT_EVIDENCE_URL`
-- `ORACLE_AUDIT_URL`
-- `ADAPTER_AUDIT_URL`
-
-Do not invent or abbreviate the feed ID.
-
-## What v4.9.2 does
-
-- rechecks deployed Rustee/Robinhood bindings;
-- reconfirms archive historical-state access;
-- validates a full bytes32 Data Streams feed ID if supplied;
-- pins Robinhood's Data Streams verifier proxy;
-- selects the Registry V2 chain-specific guard architecture;
-- generates `REGISTRY_V2_GUARD_SPEC.md`;
-- records audit evidence inputs;
-- keeps every mainnet write permission false.
-
-## Next phase
-
-`v4.9.3` should replay a real signed ETH/USD Data Streams report through the
-Robinhood verifier path and implement/test the Registry V2 guard on a fork.
-
-No live transaction is authorized here.
+Signed Data Streams report retrieval/replay is intentionally not falsely marked PASS: it requires authenticated Chainlink Data Streams access and the exact report verification integration.
