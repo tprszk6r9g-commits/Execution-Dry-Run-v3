@@ -27,7 +27,7 @@ jobs:
       PUBLIC_RPC_URL: https://rpc.mainnet.chain.robinhood.com
 
       # Required to pass the historical evidence gate.
-      ARCHIVE_RPC_URL: ${{ vars.ARCHIVE_RPC_URL }}
+      ARCHIVE_RPC_URL: ${{ secrets.ARCHIVE_RPC_URL }}
 
       # OPTION A — authoritative AggregatorV3 ETH/USD path.
       ETH_USD_FEED_ADDRESS: ${{ vars.ETH_USD_FEED_ADDRESS }}
