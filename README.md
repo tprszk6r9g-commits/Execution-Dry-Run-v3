@@ -1,22 +1,22 @@
-# Rustee Broker v4.9.3
+# Rustee Broker v4.9.4
 
-Read/fork-only Data Streams + Registry V2 engineering gate.
+Verifier + policy fork gate. This package builds on the green v4.9.3.3 baseline.
 
-## Public configuration
-- Robinhood Chain: 4663
-- ETH/USD candidate feed ID: `0x000362205e10b3a147d02792eccee483dca6c7b44ecce7012cb8c6e0b68b3ae9`
-- Data Streams Verifier Proxy: `0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7`
+## Public inputs
+- Chain: Robinhood Chain mainnet, chain ID 4663
+- ETH/USD Data Streams feed candidate: `0x000362205e10b3a147d02792eccee483dca6c7b44ecce7012cb8c6e0b68b3ae9`
+- Verifier Proxy: `0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7`
 
 ## Required GitHub secret
-`ARCHIVE_RPC_URL` — your Alchemy Robinhood Chain archive-capable endpoint.
+- `ARCHIVE_RPC_URL`
 
-Do not commit API keys or Data Streams credentials.
+## Tests
+- Registry V2 starts paused and only owner can unpause.
+- Fresh, verified, correct-feed report at <= $5 passes policy.
+- > $5 rejects.
+- Unverified report rejects.
+- Stale report rejects.
+- Wrong feed rejects.
 
-## What this phase does
-1. Confirms chain ID and verifier bytecode.
-2. Validates the feed ID is bytes32-shaped.
-3. Compiles and fork-tests a Robinhood-specific Registry V2 guard prototype.
-4. Statistically rejects broadcast primitives.
-5. Keeps all production writes disabled.
-
-Signed Data Streams report retrieval/replay is intentionally not falsely marked PASS: it requires authenticated Chainlink Data Streams access and the exact report verification integration.
+## Security boundary
+No live signed Data Streams report is fabricated. Authenticated report retrieval/replay remains a separate gate. There are no mainnet broadcast primitives in src/ or test/.

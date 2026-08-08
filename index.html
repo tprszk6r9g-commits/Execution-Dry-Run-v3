@@ -1,7 +1,8 @@
 <!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rustee Broker v4.9.3</title><style>body{margin:auto;max-width:850px;padding:28px;background:#021b16;color:#eafff8;font:17px system-ui;line-height:1.55}h1{font-size:46px}.card{border:1px solid #2d675b;border-radius:22px;padding:22px;margin:20px 0;background:#072a22}code,pre{word-break:break-all;white-space:pre-wrap;color:#58ead0}.warn{border-left:7px solid #ff9a36}</style>
-<h1>Rustee Broker v4.9.3</h1>
-<div class="card"><b>Data Streams feed candidate</b><pre>0x000362205e10b3a147d02792eccee483dca6c7b44ecce7012cb8c6e0b68b3ae9</pre><p>Robinhood Chain verifier proxy:</p><pre>0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7</pre></div>
-<div class="card"><h2>Registry V2 fork gate</h2><p>The workflow compiles and fork-tests a Robinhood-specific execution guard. It does not pretend the Nitro websocket sequencer feed is an AggregatorV3 oracle.</p></div>
-<div class="card warn"><h2>Execution locked</h2><p>This phase contains no mainnet funding, approvals, registry writes, unpause, trade, or broadcast path. Signed Data Streams report verification remains a separate authenticated evidence gate.</p></div>
-<div class="card"><h2>Generated report</h2><p>After Actions completes, inspect <code>data/v4.9.3-report.json</code> in the workflow artifact/repository context.</p></div>
+<title>Rustee Broker v4.9.4</title>
+<style>body{margin:auto;max-width:850px;padding:28px;background:#021b16;color:#eafff8;font:18px system-ui;line-height:1.6}h1{font-size:clamp(48px,10vw,82px)}.card{border:1px solid #2d675b;border-radius:26px;padding:26px;margin:22px 0;background:#073126}code,pre{color:#53e7d0;white-space:pre-wrap;word-break:break-all}.warn{border-left:8px solid #ff9a36}</style>
+<h1>Rustee Broker v4.9.4</h1>
+<div class="card"><h2>Verifier + policy fork gate</h2><p>ETH/USD Data Streams feed candidate:</p><pre>0x000362205e10b3a147d02792eccee483dca6c7b44ecce7012cb8c6e0b68b3ae9</pre><p>Robinhood Chain verifier proxy:</p><pre>0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7</pre></div>
+<div class="card"><h2>Policy harness</h2><p>Fork tests prove the local policy layer accepts a fresh verified report at or below the $5 ceiling and rejects over-limit, unverified, stale, and wrong-feed inputs.</p></div>
+<div class="card warn"><h2>Important boundary</h2><p>This does <b>not</b> claim an authenticated Chainlink signed report has been retrieved or replayed yet. That requires Data Streams credentials/report evidence. No mainnet deployment, funding, approval, unpause, registry write, trade, or broadcast is included.</p></div>
+<div class="card"><h2>Next evidence gate</h2><p>Authenticated signed-report retrieval + verifier replay, followed by independent security review of the production oracle/adapter/Registry V2 integration.</p></div>
