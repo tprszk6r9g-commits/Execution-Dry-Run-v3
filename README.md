@@ -1,25 +1,39 @@
-# Rustee STONKBROKER Historical + Manipulation Analysis v4.6
+# Rustee STONKBROKER Archive + Bidirectional Manipulation v4.7.1
 
-This phase follows the corrected v4.5.2 TWAP math.
+v4.7.1 follows the green/corrected v4.5.2 math and the v4.6.1 finding that
+Robinhood's public RPC did not expose enough historical state.
 
-## What it does
+## New requirement
 
-- confirms the canonical WETH/STONKBROKER Uniswap V3 pool;
-- samples 30-minute TWAP, spot tick and active liquidity across recent historical blocks when the public RPC exposes the required historical state;
-- never substitutes current state when an archive sample is unavailable;
-- runs a discrete WETH→STONKBROKER swap stress grid on a fresh Foundry fork;
-- measures the post-swap spot tick movement;
-- converts the stress grid into coarse gross-WETH brackets for several hypothetical 30-minute TWAP biases and manipulation hold durations;
-- keeps every live-mainnet execution gate disabled.
+Set a repository variable:
 
-## Important interpretation
+`ARCHIVE_RPC_URL`
 
-The stress grid is **not** an exact manipulation-cost proof. Gross input is not the same as net economic cost. A complete adversarial study must model both swap directions, unwind/recovery, pool tick liquidity, fees, arbitrage, MEV, competing liquidity, and the time profile required to influence a 30-minute TWAP.
+to an archive-capable Robinhood Chain RPC endpoint you trust.
 
-## GitHub upload
+The workflow does not hardcode or guess a paid provider endpoint.
 
-Put `main.yaml` at:
+## Historical gate
 
-`.github/workflows/main.yaml`
+v4.7.1 attempts 14 recent samples spanning 0 to 168 hours. The archive evidence
+gate requires at least 8 successful historical samples.
 
-and put `index.html` at repository root. The full ZIP already includes that structure.
+## Bidirectional stress
+
+The fresh-fork test expands WETH -> STONKBROKER gross inputs up to 1 WETH, then
+seeds STONKBROKER and tests the reverse STONKBROKER -> WETH direction across
+progressive fractions.
+
+The report measures spot-tick movement and builds coarse capital brackets for
+hypothetical 30-minute TWAP biases.
+
+## Important limitation
+
+Gross trade input is not exact net manipulation cost. Exact adversarial P&L
+depends on unwind/recovery, active tick liquidity, arbitrage, MEV, fees and
+capital recovery.
+
+## Safety
+
+All mainnet deployment, Registry-write, funding, approval, unpause, trade and
+broadcast flags remain false.
