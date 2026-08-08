@@ -453,7 +453,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
   <div class="card">
     <span class="badge">PHASE 4 · MANUAL OWNER-SIGNED TRADING</span>
     <h2>Rustee Multi-Asset Trading Terminal</h2>
-    <p>Select a canonical Robinhood Stock Token discovered by the Portfolio Terminal. Buy routes spend ETH from the Vault and deliver the stock token to Trading. Sell routes recover the stock token from Trading, stage it through the owner into Vault, approve the router, and swap it to WETH.</p>
+    <p>Select a canonical Robinhood Stock Token discovered by the Portfolio Terminal. Buy routes spend ETH from the Vault and deliver the stock token to Trading. Sell routes recover the stock token from Trading, stage it through the owner into Vault, approve the router, and swap it to WETH. For sells, you can leave proceeds as WETH in the Vault or add a final unwrap step so the proceeds become native ETH in the Vault.</p>
 
     <div class="tradeHero">
       <div class="tradePanel">
@@ -481,6 +481,12 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
           <label>Stock-token amount to sell</label>
           <input id="tradeTokenAmount" inputmode="decimal" placeholder="0.001">
           <div class="quickAmounts"><button id="tradeUse25">25%</button><button id="tradeUse50">50%</button><button id="tradeUseMax">MAX</button></div>
+          <label>Sell proceeds</label>
+          <select id="tradeSellProceeds">
+            <option value="WETH" selected>WETH in Vault</option>
+            <option value="ETH">Native ETH in Vault (unwrap after swap)</option>
+          </select>
+          <div class="holdingMeta">The router returns WETH. Choosing native ETH adds a separate owner-signed Vault → WETH unwrap step after the swap confirms.</div>
         </div>
 
         <label>Maximum slippage</label>
@@ -506,6 +512,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
           <div class="quoteCell"><small>Best fee</small><strong id="tradeBestFee">—</strong></div>
           <div class="quoteCell"><small>Expected output</small><strong id="tradeExpected">—</strong></div>
           <div class="quoteCell"><small>Minimum output</small><strong id="tradeMinimum">—</strong></div>
+          <div class="quoteCell"><small>Sell proceeds land in</small><strong id="tradeProceedsDest">—</strong></div>
         </div>
         <div id="tradeRoutes"><div class="emptyState">No route quote yet.</div></div>
         <pre id="tradeQuoteLog">Trade terminal is idle.</pre>
@@ -990,7 +997,7 @@ window.addEventListener('unhandledrejection',e=>{
   const r=e.reason?.message||String(e.reason||'');
   // Rabby Mobile's injected shim rejects with "not found rainbowkit" on any
   // page that does not use RainbowKit. Harmless; do not treat as a failure.
-  if(/rainbowkit/i.test(r)){console.warn('ignored wallet shim rejection:',r);return}
+  if(/rainbowkit/i.test(r)){e.preventDefault();console.warn('ignored wallet shim rejection:',r);return}
   __bootSay('Promise error at '+window.__rusteeBoot+': '+r);
 });
 
@@ -1879,13 +1886,15 @@ async function loadOnchainHistory(){
   $('loadHistory').disabled=true;
   try{
     const keys=['OWNER','VAULT','TRADING','REWARDS','IDENTITY'],all=[];
+    let sourceOk=0;
     for(let i=0;i<keys.length;i++){
       const key=keys[i];
       $('historyLog').textContent=`Loading indexed ERC-20 history… ${i+1}/${keys.length} ${ACCOUNT_LABELS[key]}`;
       let items=[];
-      try{items=await blockscoutTokenTransfers(ACCOUNT_MAP[key])}catch(e){console.warn('Blockscout history',key,e)}
+      try{items=await blockscoutTokenTransfers(ACCOUNT_MAP[key]);sourceOk++}catch(e){console.warn('Blockscout history',key,e)}
       for(const it of items){const n=normalizeTransfer(it,key);if(n)all.push(n)}
     }
+    if(sourceOk===0)throw Error('History source unavailable: no static snapshot or Blockscout response');
     const uniq=new Map();
     for(const e of all){
       const k=[e.txHash,e.token,e.from,e.to,e.amount].join(':');
@@ -1894,7 +1903,11 @@ async function loadOnchainHistory(){
     historyState.events=[...uniq.values()].sort((a,b)=>(b.block||0)-(a.block||0));
     historyState.loadedAt=new Date().toISOString();
     renderHistoryTable();renderCostBasisEditor();renderHistoryMetrics();
-    $('historyLog').textContent=`PASS — loaded ${historyState.events.length} canonical Stock Token transfer events across five Rustee addresses.\nIndexed source: Robinhood Chain Blockscout.\nCost basis remains local/manual unless explicitly entered.`;
+    $('healthHistory').textContent='LIVE ✓';
+    $('healthHistory').className='healthGood';
+    $('historyLog').textContent=`PASS — loaded ${historyState.events.length} canonical Stock Token transfer events across five Rustee addresses.
+History source reachable for ${sourceOk}/${keys.length} Rustee addresses.
+Cost basis remains local/manual unless explicitly entered.`;
   }finally{$('loadHistory').disabled=false}
 }
 function renderHistoryTable(){
@@ -2324,11 +2337,13 @@ async function quoteTrade(){
     :'USDG 2-hop';
   $('tradeExpected').textContent=unitsToDecimal(best.amountOut,outputDecimals,10)+' '+outputSymbol;
   $('tradeMinimum').textContent=unitsToDecimal(minOut,outputDecimals,10)+' '+outputSymbol;
+  $('tradeProceedsDest').textContent=side==='SELL'?($('tradeSellProceeds').value==='ETH'?'Vault · native ETH after unwrap':'Vault · WETH'):'Trading TBA';
   $('tradeRoutes').innerHTML=results.map(r=>`<div class="routeOption"><div>${escapeHtml(r.label)}</div><div class="${r===best?'routeBest':''}">${r.amountOut?unitsToDecimal(r.amountOut,outputDecimals,10)+' '+outputSymbol:'Unavailable'}</div></div>`).join('');
   $('tradeQuoteLog').textContent=
     `PASS — route discovery complete.\nSide: ${side}\nCanonical asset: ${picked.symbol}\nContract: ${picked.token}\n`+
     `Input: ${unitsToDecimal(amountIn,side==='BUY'?18:decimals,12)} ${inputSymbol}\nBest route: ${best.label}\n`+
-    `Expected: ${unitsToDecimal(best.amountOut,outputDecimals,12)} ${outputSymbol}\nMinimum: ${unitsToDecimal(minOut,outputDecimals,12)} ${outputSymbol}\n`+
+    `Expected router output: ${unitsToDecimal(best.amountOut,outputDecimals,12)} ${outputSymbol}\nMinimum router output: ${unitsToDecimal(minOut,outputDecimals,12)} ${outputSymbol}\n`+
+    (side==='SELL'?`Final proceeds: ${$('tradeSellProceeds').value==='ETH'?'native ETH in Vault after an additional unwrap transaction':'WETH in Vault'}\n`:'')+
     `Probed ${results.length} route candidates. Quote expires in 60 seconds.`;
   $('tradeBuildPlan').disabled=false;
   return tradeState.quote;
@@ -2352,6 +2367,9 @@ async function buildTradePlan(){
       buildTx:()=>({from:OWNER,to:VAULT,data})
     });
   }else{
+    q.sellProceeds=$('tradeSellProceeds').value;
+    q.vaultWethBefore=await erc20Balance(WETH,VAULT);
+    q.actualWethReceived=null;
     // Restricted Trading account cannot call arbitrary router methods.
     // Stage through Owner and generic Vault, then approve and swap token -> WETH into Vault.
     steps.push({
@@ -2377,6 +2395,17 @@ async function buildTradePlan(){
       symbol:q.picked.symbol,amountUnits:q.amountIn,decimals:q.decimals,dependsOnPrevious:true,
       buildTx:()=>({from:OWNER,to:VAULT,data:genericExecuteCalldata(ROUTER,0n,swapData)})
     });
+    if(q.sellProceeds==='ETH'){
+      steps.push({
+        type:'SELL_UNWRAP',label:'Vault WETH → native ETH',
+        symbol:'WETH',amountUnits:0n,decimals:18,dependsOnPrevious:true,
+        buildTx:()=>{
+          const amt=q.actualWethReceived;
+          if(!amt||amt<=0n) throw Error('Actual WETH proceeds are not available yet. Confirm the swap first.');
+          return {from:OWNER,to:VAULT,data:genericExecuteCalldata(WETH,0n,'0x2e1a7d4d'+word(amt))};
+        }
+      });
+    }
     steps.push({
       type:'SELL_REVOKE',label:`Revoke Vault → Router allowance for ${q.picked.symbol}`,
       symbol:q.picked.symbol,amountUnits:0n,decimals:q.decimals,dependsOnPrevious:true,optional:true,
@@ -2445,11 +2474,24 @@ async function executeNextTradeStep(){
   try{
     const receipt=await waitReceipt(hash);
     step.status='DONE';step.block=Number(BigInt(receipt.blockNumber));
+    let proceedsLine='';
     if(step.type==='SELL_SWAP'){
+      const afterWeth=await erc20Balance(WETH,VAULT);
+      const beforeWeth=tradeState.quote?.vaultWethBefore??afterWeth;
+      const received=afterWeth>beforeWeth?afterWeth-beforeWeth:0n;
+      if(tradeState.quote) tradeState.quote.actualWethReceived=received;
+      const unwrap=tradeState.steps.find(x=>x.type==='SELL_UNWRAP');
+      if(unwrap){unwrap.amountUnits=received;}
       const revoke=tradeState.steps.find(x=>x.type==='SELL_REVOKE');
       if(revoke)revoke.status='SKIPPED';
+      proceedsLine=`Actual sell proceeds: ${unitsToDecimal(received,18,12)} WETH received by Vault.\n`+
+        (unwrap?'Next step converts exactly those WETH proceeds to native ETH in the Vault.\n':'Proceeds remain as WETH in the Vault.\n');
+    }
+    if(step.type==='SELL_UNWRAP'){
+      proceedsLine=`Unwrap confirmed. Sell proceeds are now native ETH in the Vault.\n`;
     }
     $('tradeExecLog').textContent=`CONFIRMED ✓\nStep ${idx+1}: ${step.label}\nTx: ${hash}\nBlock: ${step.block}\n`+
+      proceedsLine+
       (step.type==='SELL_SWAP'?'Exact-input swap confirmed; exact router allowance should be consumed. Recovery revoke skipped.\n':'')+
       (tradeState.steps.some(x=>['PENDING','READY'].includes(x.status))?'Simulate the next step.':'Trade plan complete. Refreshing portfolio…');
     renderTradePlan();
@@ -2486,6 +2528,7 @@ $('tradeSide').onchange=()=>{
 };
 $('tradeAsset').onchange=tradeReset;
 $('tradeSlippage').onchange=tradeReset;
+$('tradeSellProceeds').onchange=tradeReset;
 $('tradeUsd').oninput=tradeReset;
 $('tradeEthUsd').oninput=tradeReset;
 $('tradeTokenAmount').oninput=tradeReset;
@@ -3213,6 +3256,9 @@ async function verifyPublishedIntegrity(force=false){
 
 window.addEventListener('unhandledrejection',e=>{
   const msg=e.reason?.message||String(e.reason||'Unknown promise error');
+  // Rabby Mobile can emit this harmless shim rejection when RainbowKit is absent.
+  // The app uses EIP-6963 / injected providers directly, so do not surface it.
+  if(/rainbowkit/i.test(msg)){e.preventDefault();console.warn('ignored wallet shim rejection:',msg);return}
   setSticky('Error: '+msg);
   console.error('Unhandled promise rejection:',e.reason);
 });
