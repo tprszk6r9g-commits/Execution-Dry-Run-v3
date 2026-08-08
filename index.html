@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Portfolio Terminal v2.1 · Phase 2</title>
+<title>Rustee Broker Portfolio Terminal v2.2 · Phase 2</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -89,7 +89,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 </div>
 <div id="overviewPane" class="tabpane active">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.1 · Phase 2 · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.2 · Phase 2 · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -228,6 +228,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
       <span class="statusChip" id="catalogStatus">Catalog: not loaded</span>
       <span class="statusChip" id="priceStatus">Prices: not loaded</span>
       <span class="statusChip" id="terminalRefreshStatus">Refresh: —</span>
+      <span class="statusChip" id="snapshotStatus">Snapshot: checking…</span>
     </div>
 
     <div id="portfolioAccountCards" class="portfolioAccounts" style="margin-top:14px">
@@ -828,25 +829,65 @@ function pct(v){return Number.isFinite(Number(v))?Number(v).toFixed(1)+'%':'—'
 function tokenDeployment(asset){
   return (asset.deployments||[]).find(d=>Number(d.chainId)===CHAIN)||null;
 }
-async function fetchJson(url){
-  const r=await fetch(url,{headers:{'accept':'application/json'}});
-  if(!r.ok) throw Error(`HTTP ${r.status} from ${url}`);
-  return r.json();
+async function fetchJson(url,timeoutMs=12000){
+  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),timeoutMs);
+  try{
+    const r=await fetch(url,{headers:{'accept':'application/json'},signal:ctl.signal,cache:'no-store'});
+    if(!r.ok) throw Error(`HTTP ${r.status} from ${url}`);
+    return r.json();
+  }finally{clearTimeout(timer)}
+}
+async function loadLocalSnapshot(path){
+  try{return await fetchJson(path+'?v='+Date.now(),7000)}catch{return null}
+}
+let staticData={assets:null,prices:null,history:null};
+async function primeStaticData(){
+  const [assets,prices,history]=await Promise.all([
+    loadLocalSnapshot('data/robinhood-assets.json'),
+    loadLocalSnapshot('data/robinhood-prices.json'),
+    loadLocalSnapshot('data/rustee-history.json')
+  ]);
+  staticData={assets,prices,history};
+  const ts=prices?.generatedAt||assets?.generatedAt||history?.generatedAt;
+  if(ts){
+    const age=Math.max(0,(Date.now()-new Date(ts).getTime())/60000);
+    $('snapshotStatus').textContent=`Snapshot: ${age.toFixed(0)}m old`;
+    $('snapshotStatus').className='statusChip '+(age<=30?'good':'warn');
+  }else{
+    $('snapshotStatus').textContent='Snapshot: unavailable';
+    $('snapshotStatus').className='statusChip warn';
+  }
+  return staticData;
 }
 async function loadRobinhoodCatalog(force=false){
   const cacheKey='rustee-rh-assets-v2';
-  if(!force){
-    try{
-      const c=JSON.parse(localStorage.getItem(cacheKey)||'null');
-      if(c&&Date.now()-c.savedAt<15*60*1000&&Array.isArray(c.assets)){terminalState.catalog=c.assets;return c.assets}
-    }catch{}
+  if(!staticData.assets) await primeStaticData();
+
+  // Preferred on GitHub Pages: same-origin snapshot created by Actions.
+  if(staticData.assets?.assets?.length){
+    const assets=staticData.assets.assets.filter(a=>a.status==='ASSET_STATUS_ACTIVE'&&tokenDeployment(a));
+    terminalState.catalog=assets;
+    try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),assets}))}catch{}
+    return assets;
   }
-  const data=await fetchJson(RH_ASSETS_API);
-  const assets=(data.assets||[]).filter(a=>a.status==='ASSET_STATUS_ACTIVE'&&tokenDeployment(a));
-  if(!assets.length) throw Error('Robinhood returned no active chain-4663 Stock Tokens');
-  terminalState.catalog=assets;
-  try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),assets}))}catch{}
-  return assets;
+
+  // Secondary path: direct Robinhood read-only API, if the browser allows it.
+  try{
+    const data=await fetchJson(RH_ASSETS_API);
+    const assets=(data.assets||[]).filter(a=>a.status==='ASSET_STATUS_ACTIVE'&&tokenDeployment(a));
+    if(assets.length){
+      terminalState.catalog=assets;
+      try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),assets}))}catch{}
+      return assets;
+    }
+  }catch(e){console.warn('Direct Robinhood catalog unavailable; using cache if present',e)}
+
+  // Offline/stale fallback.
+  try{
+    const c=JSON.parse(localStorage.getItem(cacheKey)||'null');
+    if(c&&Array.isArray(c.assets)&&c.assets.length){terminalState.catalog=c.assets;return c.assets}
+  }catch{}
+  throw Error('Portfolio catalog unavailable. The GitHub Pages data snapshot has not deployed yet.');
 }
 async function batchPublicRpc(calls){
   // Read-only batching avoids hundreds of wallet-provider popups/calls.
@@ -910,10 +951,20 @@ async function enrichStockPositions(scanned){
 }
 async function fetchQuoteForAsset(asset){
   const sym=asset.tokenSymbol;
-  const data=await fetchJson(RH_PRICES_API+encodeURIComponent(sym));
-  const q=(data.quotes||[]).find(x=>x.tokenSymbol===sym) || (data.quotes||[])[0];
-  if(!q) throw Error(`No quote for ${sym}`);
-  return q;
+
+  // Try truly live Robinhood quote first.
+  try{
+    const data=await fetchJson(RH_PRICES_API+encodeURIComponent(sym),6000);
+    const q=(data.quotes||[]).find(x=>x.tokenSymbol===sym)||(data.quotes||[])[0];
+    if(q)return q;
+  }catch(e){console.warn('Live quote blocked/unavailable for',sym,e)}
+
+  // Same-origin GitHub Actions snapshot avoids mobile-browser CORS failures.
+  if(!staticData.prices) await primeStaticData();
+  const q=staticData.prices?.quotesBySymbol?.[sym];
+  if(q)return q;
+
+  throw Error(`No quote snapshot for ${sym}`);
 }
 async function refreshTerminalPrices(render=true){
   if(!terminalState.positions.length) throw Error('Discover the portfolio first');
@@ -999,8 +1050,8 @@ async function discoverPortfolio(){
     renderTerminal();
   }finally{$('discoverPortfolio').disabled=false}
 }
-$('discoverPortfolio').onclick=()=>discoverPortfolio().catch(e=>{$('terminalLog').textContent='ERROR: '+e.message;$('catalogStatus').className='statusChip warn';alert(e.message)});
-$('refreshPortfolioPrices').onclick=()=>refreshTerminalPrices(true).catch(e=>{$('terminalLog').textContent='ERROR: '+e.message;alert(e.message)});
+$('discoverPortfolio').onclick=()=>discoverPortfolio().catch(e=>{$('terminalLog').textContent='ERROR: '+e.message;$('catalogStatus').textContent='Catalog: unavailable';$('catalogStatus').className='statusChip warn';});
+$('refreshPortfolioPrices').onclick=()=>refreshTerminalPrices(true).catch(e=>{$('terminalLog').textContent='ERROR: '+e.message;$('priceStatus').className='statusChip warn';});
 $('showZeroStocks').onchange=()=>{if(terminalState.positions.length)renderTerminal()};
 
 
@@ -1055,9 +1106,13 @@ function renderHistoryMetrics(){
   $('histEventCount').textContent=String(historyState.events.length);
 }
 async function blockscoutTokenTransfers(address){
-  // Blockscout v2 API: read-only indexed transfer history.
+  if(!staticData.history) await primeStaticData();
+  const local=staticData.history?.byAddress?.[address.toLowerCase()];
+  if(Array.isArray(local)) return local;
+
+  // Direct indexed API is only a fallback; some mobile embedded browsers block it.
   const url=`${BLOCKSCOUT}/api/v2/addresses/${address}/token-transfers?type=ERC-20`;
-  const data=await fetchJson(url);
+  const data=await fetchJson(url,7000);
   return data.items||[];
 }
 function knownAccountKey(addr){
@@ -1135,7 +1190,7 @@ function exportLedgerJson(){
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');
   a.href=URL.createObjectURL(blob);a.download='rustee-portfolio-ledger.json';a.click();URL.revokeObjectURL(a.href);
 }
-$('loadHistory').onclick=()=>loadOnchainHistory().catch(e=>{$('historyLog').textContent='ERROR: '+e.message;alert(e.message)});
+$('loadHistory').onclick=()=>loadOnchainHistory().catch(e=>{$('historyLog').textContent='ERROR: '+e.message;});
 $('recalcPnl').onclick=()=>{renderCostBasisEditor();renderHistoryMetrics()};
 $('exportLedger').onclick=exportLedgerJson;
 $('clearLedger').onclick=()=>{if(confirm('Clear locally stored cost-basis values? On-chain history is unaffected.')){localStorage.removeItem(COST_BASIS_KEY);renderCostBasisEditor();renderHistoryMetrics()}};

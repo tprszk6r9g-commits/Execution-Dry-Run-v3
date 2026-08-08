@@ -1,19 +1,19 @@
-# Rustee Portfolio Terminal v2.1 — Phase 2
+# Rustee Portfolio Terminal v2.2 — Resilient Data Fix
 
-Phase 2 builds on Phase 1 automatic Robinhood Stock Token discovery and valuation.
+This release fixes the iPhone/GitHub Pages **Load failed** errors shown in Phase 1/2.
 
-## Added in Phase 2
-- Dedicated **History + P&L** tab.
-- Read-only ERC-20 transfer-history retrieval for Main Wallet, Vault, Trading, Rewards, and Identity via Robinhood Chain Blockscout.
-- Filters history to canonical Stock Tokens discovered from Robinhood metadata.
-- De-duplicates transfers seen from multiple Rustee addresses.
-- Account filter and direct transaction explorer links.
-- Local per-position USD cost-basis ledger.
-- Current value, tracked cost basis, and unrealized P&L.
-- Exportable JSON ledger containing account map, local cost-basis entries, and indexed transfer history.
+## Cause
+The static GitHub Pages frontend was attempting cross-origin browser requests to Robinhood's read-only REST APIs and Blockscout. Embedded/mobile browsers can reject those requests even when the endpoints themselves are healthy.
 
-## Important accounting boundary
-On-chain ERC-20 transfers prove movement, not purchase price. Transfers among Rustee accounts are not treated as buys or sells. Phase 2 therefore does **not invent historical cost basis**. Cost basis is entered locally by the operator until a later phase adds deterministic trade-receipt reconstruction.
+## Fix
+The GitHub Actions workflow now retrieves the public read-only data server-side and publishes it beside the app:
 
-## Preserved
-The existing manual trade executor, exact simulation gate, Account Center, Trading-TBA withdrawal ABI, Universal Asset Mover, automatic Stock Token discovery, and portfolio valuation remain intact.
+- `data/robinhood-assets.json`
+- `data/robinhood-prices.json`
+- `data/rustee-history.json`
+
+The browser loads these files from the **same GitHub Pages origin**, eliminating the cross-origin dependency for normal operation.
+
+The workflow also runs every 15 minutes to refresh the public snapshots. The UI displays snapshot age. Direct live API requests remain a best-effort path for quote refresh, with same-origin snapshot fallback.
+
+No credentials, wallet keys, or private data are stored in the generated snapshots.
