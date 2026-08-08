@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-rNMFM1e4IWjyxCvaTwkuOfXC3N+LFH8bAWRNEbv5fNg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
-<title>Rustee Broker Portfolio Terminal v2.8.3 · Stability + Wallet Handoff</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-uSEGmyZrGzhTzZ/vTuIfL0SzJPmLtyGxbcl9wPZw2+M='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
+<title>Rustee Broker Portfolio Terminal v2.8.4 · Wallet Recovery</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -219,6 +219,22 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
     <span class="badge">PHASE 5 · COMMAND CENTER</span>
     <h2>Rustee Command Center</h2>
     <p>Unified status for portfolio, TBAs, recent activity, snapshots, RPC health, and terminal receipts.</p>
+    <div class="commandCard" style="margin-bottom:12px">
+      <h3>Wallet</h3>
+      <div class="commandMetrics">
+        <div class="commandMetric"><small>Provider</small><strong id="cmdProvider">Checking…</strong></div>
+        <div class="commandMetric"><small>Connected wallet</small><strong id="cmdWalletAddress">—</strong></div>
+        <div class="commandMetric"><small>Chain</small><strong id="cmdWalletChain">—</strong></div>
+        <div class="commandMetric"><small>Status</small><strong id="cmdWalletStatus">Disconnected</strong></div>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="primary" id="commandConnect">Connect wallet</button>
+        <button id="commandSwitch">Switch/add Robinhood Chain</button>
+        <button id="commandWalletRefresh">Refresh wallet</button>
+      </div>
+      <pre id="commandWalletLog">Waiting for injected wallet provider.</pre>
+    </div>
+
     <div class="commandHero">
       <div class="commandCard">
         <h3>Portfolio at a glance</h3>
@@ -279,7 +295,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 
 <div id="overviewPane" class="tabpane">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.3 · Stability + Wallet Handoff · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.4 · Wallet Recovery · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -1018,7 +1034,8 @@ async function fallbackRpc(method,params=[]){
   const j=await r.json(); if(j.error) throw Error(j.error.message||JSON.stringify(j.error)); return j.result;
 }
 async function rpc(method,params=[]){
-  if(window.ethereum) return ethereum.request({method,params});
+  const p=injectedWalletProvider();
+  if(p) return p.request({method,params});
   return fallbackRpc(method,params);
 }
 async function ownerOfTBA(addr){
@@ -1146,22 +1163,50 @@ async function moveAsset(){
   assetMoveSimulation=null;
 }
 async function connect(){
-  if(!window.ethereum) throw Error('Open this page inside MetaMask or another injected EVM wallet browser.');
-  const a=await ethereum.request({method:'eth_requestAccounts'}); account=a?.[0]||null;
-  if(!account) throw Error('Wallet connection not approved');
+  const p=await waitForInjectedWallet(4000);
+  if(!p) throw Error('Injected wallet not detected. Open this page inside MetaMask or another EVM wallet browser.');
+  if($('commandWalletLog'))$('commandWalletLog').textContent='Requesting wallet connection…';
+  let a;
+  try{
+    a=await p.request({method:'eth_requestAccounts'});
+  }catch(e){
+    renderWalletConnectionState();
+    throw Error('Wallet connection request failed: '+(e?.message||e));
+  }
+  account=a?.[0]||null;
+  if(!account) throw Error('Wallet connection was not approved');
+  if(account.toLowerCase()!==OWNER.toLowerCase()){
+    renderWalletConnectionState();
+    throw Error(`Wrong wallet connected: ${account}. Expected Rustee owner ${OWNER}.`);
+  }
   $('wallet').textContent=short(account);
-  if(account.toLowerCase()!==OWNER.toLowerCase()) throw Error('Wrong owner wallet connected');
-  await refreshBalances();
+  let cid=null;
+  try{cid=Number(BigInt(await p.request({method:'eth_chainId'})))}catch{}
+  if($('cmdWalletChain'))$('cmdWalletChain').textContent=cid??'—';
+  renderWalletConnectionState();
+  try{await withTimeout(refreshBalances(),6000,'post-connect balance refresh')}catch(e){
+    console.warn('Post-connect balance refresh did not complete',e);
+  }
+  if($('commandWalletLog'))$('commandWalletLog').textContent=
+    `CONNECTED ✓\n${account}\nChain: ${cid??'unknown'}`;
+  return account;
 }
 async function switchChain(){
-  if(!window.ethereum) throw Error('Injected wallet required');
-  try{await ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:CHAIN_HEX}]})}
-  catch(e){
-    await ethereum.request({method:'wallet_addEthereumChain',params:[{
-      chainId:CHAIN_HEX,chainName:'Robinhood Chain',nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},
-      rpcUrls:[RPC],blockExplorerUrls:['https://robinhoodchain.blockscout.com']
-    }]});
+  const p=await waitForInjectedWallet(4000);
+  if(!p) throw Error('Injected wallet not detected');
+  try{
+    await p.request({method:'wallet_switchEthereumChain',params:[{chainId:CHAIN_HEX}]});
+  }catch(e){
+    if(e?.code===4902||/unknown chain|unrecognized chain|not added/i.test(String(e?.message||''))){
+      await p.request({method:'wallet_addEthereumChain',params:[{
+        chainId:CHAIN_HEX,chainName:'Robinhood Chain',nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},
+        rpcUrls:[RPC],blockExplorerUrls:['https://robinhoodchain.blockscout.com']
+      }]});
+    }else{
+      throw e;
+    }
   }
+  await restoreWalletConnection();
 }
 async function preflight(){
   if(!account) await connect();
@@ -3008,7 +3053,7 @@ async function hardenedTxPreflight(tx,label='Transaction'){
   if(cid!==CHAIN)throw Error(`SECURITY: wrong chain ${cid}; expected ${CHAIN}`);
 
   const accounts=await withTimeout(
-    ethereum.request({method:'eth_accounts'}),3000,'wallet account check'
+    wallet.request({method:'eth_accounts'}),3000,'wallet account check'
   );
   const current=(accounts?.[0]||'').toLowerCase();
   if(current!==OWNER.toLowerCase())throw Error('SECURITY: connected account is not the Broker NFT owner');
@@ -3047,7 +3092,7 @@ async function secureSendTransaction(tx,label='Transaction'){
     await hardenedTxPreflight(tx,label);
     setSticky('Opening wallet…');
     const hash=await withTimeout(
-      ethereum.request({method:'eth_sendTransaction',params:[tx]}),
+      wallet.request({method:'eth_sendTransaction',params:[tx]}),
       120000,
       'wallet signature request'
     );
@@ -3122,8 +3167,78 @@ $('receiptList')?.addEventListener('click',e=>{
   if(/^0x[0-9a-fA-F]{64}$/.test(h))window.open(BLOCKSCOUT+'/tx/'+h,'_blank','noopener');
 });
 
+
+// --- v2.8.4 iOS / injected-wallet recovery ---
+function injectedWalletProvider(){
+  const p=window.ethereum||globalThis.ethereum||null;
+  if(!p)return null;
+  if(Array.isArray(p.providers)&&p.providers.length){
+    return p.providers.find(x=>x?.isMetaMask)||p.providers.find(x=>typeof x?.request==='function')||p;
+  }
+  return typeof p.request==='function'?p:null;
+}
+async function waitForInjectedWallet(timeoutMs=4000){
+  const started=Date.now();
+  while(Date.now()-started<timeoutMs){
+    const p=injectedWalletProvider();
+    if(p)return p;
+    await new Promise(r=>setTimeout(r,100));
+  }
+  return null;
+}
+function renderWalletConnectionState(){
+  const p=injectedWalletProvider();
+  if($('cmdProvider')){
+    $('cmdProvider').textContent=p?'Injected ✓':'Not detected';
+    $('cmdProvider').className=p?'healthGood':'healthWarn';
+  }
+  if($('cmdWalletAddress'))$('cmdWalletAddress').textContent=account?short(account):'—';
+  if($('cmdWalletStatus')){
+    const ok=account&&account.toLowerCase()===OWNER.toLowerCase();
+    $('cmdWalletStatus').textContent=ok?'OWNER CONNECTED ✓':account?'WRONG WALLET':'Disconnected';
+    $('cmdWalletStatus').className=ok?'healthGood':account?'healthBad':'healthWarn';
+  }
+  if($('commandConnect'))$('commandConnect').textContent=account?'Wallet connected ✓':'Connect wallet';
+}
+async function restoreWalletConnection(){
+  const p=await waitForInjectedWallet(2500);
+  renderWalletConnectionState();
+  if(!p){
+    if($('commandWalletLog'))$('commandWalletLog').textContent=
+      'No injected EVM wallet detected. Open this GitHub Pages site inside the wallet browser.';
+    return null;
+  }
+  try{
+    const a=await p.request({method:'eth_accounts'});
+    account=a?.[0]||null;
+    if(account&&account.toLowerCase()!==OWNER.toLowerCase()){
+      if($('commandWalletLog'))$('commandWalletLog').textContent='A different wallet is connected.';
+      renderWalletConnectionState();
+      return account;
+    }
+    let cid=null;
+    try{cid=Number(BigInt(await p.request({method:'eth_chainId'})))}catch{}
+    if($('cmdWalletChain'))$('cmdWalletChain').textContent=cid??'—';
+    if($('wallet'))$('wallet').textContent=account?short(account):'—';
+    renderWalletConnectionState();
+    if(account){
+      try{await withTimeout(refreshBalances(),5000,'wallet balance refresh')}catch{}
+      if($('commandWalletLog'))$('commandWalletLog').textContent=
+        `Restored wallet session: ${account}\nChain: ${cid??'unknown'}`;
+    }else if($('commandWalletLog')){
+      $('commandWalletLog').textContent='Wallet provider detected. Tap Connect wallet.';
+    }
+    return account;
+  }catch(e){
+    if($('commandWalletLog'))$('commandWalletLog').textContent='Wallet restore error: '+(e?.message||e);
+    return null;
+  }
+}
+
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
-bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);
+bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);
+bind('commandConnect',connect);bind('commandSwitch',switchChain);
+bind('commandWalletRefresh',async()=>{await restoreWalletConnection();if(account)await refreshBalances()});bind('quote',getQuote);
 bind('official',checkOfficial);bind('fund',fundVault);
 $('refreshBalances').onclick=()=>{(async()=>{await refreshBalances();if(assetState)await loadAsset();})().catch(e=>alert(e.message))};
 bind('simulate',simulate);bind('execute',execute);
@@ -3152,10 +3267,24 @@ function startBalanceAutoRefresh(){
     }catch(e){ console.warn('Auto refresh failed',e); }
   },15000);
 }
-if(window.ethereum){
+async function installWalletListeners(){
+  const p=await waitForInjectedWallet(4000);
+  renderWalletConnectionState();
+  if(!p)return;
   startBalanceAutoRefresh();
-  ethereum.on?.('accountsChanged',a=>{account=a?.[0]||null;$('wallet').textContent=account?short(account):'Not connected';quoteState=null;simulationState=null;$('execute').disabled=true});
-  ethereum.on?.('chainChanged',()=>{quoteState=null;simulationState=null;$('execute').disabled=true;});
+  p.on?.('accountsChanged',a=>{
+    account=a?.[0]||null;
+    if($('wallet'))$('wallet').textContent=account?short(account):'—';
+    quoteState=null;simulationState=null;$('execute').disabled=true;
+    renderWalletConnectionState();
+    restoreWalletConnection().catch(()=>{});
+  });
+  p.on?.('chainChanged',()=>{
+    quoteState=null;simulationState=null;$('execute').disabled=true;
+    restoreWalletConnection().catch(()=>{});
+  });
 }
+installWalletListeners().catch(()=>{});
+setTimeout(()=>restoreWalletConnection().catch(()=>{}),250);
 </script>
 </body></html>
