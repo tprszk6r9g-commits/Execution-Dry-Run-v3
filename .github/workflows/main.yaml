@@ -1,4 +1,4 @@
-name: Deploy Rustee Portfolio Terminal v2.4 Phase 4 Trading
+name: Deploy Rustee Portfolio Terminal v2.5 Phase 5
 
 on:
   push:
@@ -22,120 +22,75 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify v2.4 trading terminal
+      - name: Verify Phase 5 terminal
         shell: bash
         run: |
           set -euo pipefail
           test -s index.html
-          grep -q "Portfolio Terminal v2.4" index.html
-          grep -q "primeStaticData" index.html
-          grep -q "data/robinhood-assets.json" index.html
-          grep -q "History + P&amp;L" index.html
-          grep -q "Universal Asset Mover" index.html
-          grep -q "Rustee Operations Center" index.html
-          grep -q "buildSweepPlan" index.html
-          grep -q "buildRoutePlan" index.html
+          grep -q "Portfolio Terminal v2.5" index.html
+          grep -q "Rustee Command Center" index.html
+          grep -q "refreshCommandCenter" index.html
+          grep -q "RECEIPT_KEY" index.html
           grep -q "Rustee Multi-Asset Trading Terminal" index.html
-          grep -q "quoteTrade" index.html
-          grep -q "SELL_APPROVE" index.html
-          grep -q "exactInputSingleCalldata" index.html
-          echo "PASS: v2.4 trading terminal detected"
+          grep -q "Rustee Operations Center" index.html
+          grep -q "USDG" index.html
+          echo "PASS: Rustee Portfolio Terminal v2.5 Phase 5"
 
-      - name: Build same-origin Robinhood and Blockscout snapshots
+      - name: Build same-origin public snapshots
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p data
-
           python3 <<'PY'
-          import json, urllib.request, urllib.error, pathlib, datetime, concurrent.futures, time
-
+          import json, urllib.request, urllib.parse, pathlib, datetime, concurrent.futures, time
           ASSETS_URL="https://api.robinhood.com/rhj/assets"
           PRICE_BASE="https://api.robinhood.com/rhj/prices/"
-          BLOCKSCOUT="https://robinhoodchain.blockscout.com/api/v2/addresses/{}/token-transfers?type=ERC-20"
-          ADDRESSES=[
+          BS="https://robinhoodchain.blockscout.com/api/v2/addresses/{}/token-transfers?type=ERC-20"
+          ADDRS=[
             "0x8fC320c8582f812695b6f62b2b5d13B14475B955",
             "0x8ad8bd35d33dd7b4d0de81f809f5b7f92623956d",
             "0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654",
             "0xfd0d881d73ec1476f5da0ab78283149ea21c3b32",
-            "0x496d7d47ae69d65d714413f0dc78c712ed92158d",
-          ]
+            "0x496d7d47ae69d65d714413f0dc78c712ed92158d"]
           now=datetime.datetime.now(datetime.timezone.utc).isoformat()
-
           def get(url,timeout=20):
-              req=urllib.request.Request(url,headers={
-                  "Accept":"application/json",
-                  "User-Agent":"Rustee-Portfolio-Terminal-v2.4"
-              })
+              req=urllib.request.Request(url,headers={"Accept":"application/json","User-Agent":"Rustee-Portfolio-Terminal-v2.5"})
               last=None
               for i in range(3):
                   try:
-                      with urllib.request.urlopen(req,timeout=timeout) as r:
-                          return json.loads(r.read().decode())
+                      with urllib.request.urlopen(req,timeout=timeout) as r:return json.loads(r.read().decode())
                   except Exception as e:
                       last=e
-                      if i<2: time.sleep(1+i)
+                      if i<2: time.sleep(i+1)
               raise last
-
           assets=get(ASSETS_URL)
-          pathlib.Path("data/robinhood-assets.json").write_text(json.dumps({
-              "generatedAt":now,
-              "source":ASSETS_URL,
-              "assets":assets.get("assets",[])
-          },indent=2))
-
-          active=[]
+          pathlib.Path("data/robinhood-assets.json").write_text(json.dumps({"generatedAt":now,"assets":assets.get("assets",[])},indent=2))
+          syms=[]
           for a in assets.get("assets",[]):
-              if a.get("status")!="ASSET_STATUS_ACTIVE": continue
-              if not any(int(d.get("chainId",0))==4663 for d in a.get("deployments",[])): continue
-              s=a.get("tokenSymbol")
-              if s: active.append(s)
-
+              if a.get("status")!="ASSET_STATUS_ACTIVE":continue
+              if any(int(d.get("chainId",0))==4663 for d in a.get("deployments",[])) and a.get("tokenSymbol"):syms.append(a["tokenSymbol"])
           def price(sym):
               try:
-                  data=get(PRICE_BASE+urllib.parse.quote(sym),12)
-                  q=next((x for x in data.get("quotes",[]) if x.get("tokenSymbol")==sym),None)
-                  return sym,q
-              except Exception:
-                  return sym,None
-
+                  d=get(PRICE_BASE+urllib.parse.quote(sym),12)
+                  return sym,next((x for x in d.get("quotes",[]) if x.get("tokenSymbol")==sym),None)
+              except:return sym,None
           quotes={}
-          # Keep concurrency well below Robinhood's documented 60 req/s ceiling.
           with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
-              for sym,q in ex.map(price,active):
-                  if q: quotes[sym]=q
-
-          pathlib.Path("data/robinhood-prices.json").write_text(json.dumps({
-              "generatedAt":now,
-              "source":"Robinhood /rhj/prices/{symbol}",
-              "quoteCount":len(quotes),
-              "quotesBySymbol":quotes
-          },indent=2))
-
+              for sym,q in ex.map(price,syms):
+                  if q:quotes[sym]=q
+          pathlib.Path("data/robinhood-prices.json").write_text(json.dumps({"generatedAt":now,"quotesBySymbol":quotes},indent=2))
           by={}
-          for addr in ADDRESSES:
-              try:
-                  by[addr.lower()]=get(BLOCKSCOUT.format(addr),15).get("items",[])
-              except Exception:
-                  by[addr.lower()]=[]
-
-          pathlib.Path("data/rustee-history.json").write_text(json.dumps({
-              "generatedAt":now,
-              "source":"Robinhood Chain Blockscout v2 token-transfers",
-              "byAddress":by
-          },indent=2))
-
-          print("Assets:",len(assets.get("assets",[])))
-          print("Active chain-4663 symbols:",len(active))
-          print("Price snapshots:",len(quotes))
-          print("History addresses:",len(by))
+          for a in ADDRS:
+              try:by[a.lower()]=get(BS.format(a),15).get("items",[])
+              except:by[a.lower()]=[]
+          pathlib.Path("data/rustee-history.json").write_text(json.dumps({"generatedAt":now,"byAddress":by},indent=2))
+          print("assets",len(assets.get("assets",[])),"quotes",len(quotes),"addresses",len(by))
           PY
 
-      - name: Validate generated snapshots
+      - name: Validate snapshots
         shell: bash
         run: |
           set -euo pipefail
@@ -144,10 +99,10 @@ jobs:
           a=json.load(open("data/robinhood-assets.json"))
           p=json.load(open("data/robinhood-prices.json"))
           h=json.load(open("data/rustee-history.json"))
-          assert len(a["assets"]) > 0
-          assert len(p["quotesBySymbol"]) > 0
-          assert len(h["byAddress"]) == 5
-          print("PASS: same-origin snapshots generated")
+          assert len(a["assets"])>0
+          assert len(p["quotesBySymbol"])>0
+          assert len(h["byAddress"])==5
+          print("PASS snapshots")
           PY
 
       - uses: actions/configure-pages@v5
