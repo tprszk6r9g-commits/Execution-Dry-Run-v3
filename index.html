@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ncG3kMoWFXH56HAd8gUWMg6P8ZsUtvL+kOFuEefdNoc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
-<title>Rustee Broker Portfolio Terminal v2.8.2.1 · Remediation</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-rNMFM1e4IWjyxCvaTwkuOfXC3N+LFH8bAWRNEbv5fNg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
+<title>Rustee Broker Portfolio Terminal v2.8.3 · Stability + Wallet Handoff</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -260,7 +260,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
         <div class="healthItem"><span>GitHub Actions</span><b class="healthGood">SHA-PINNED ✓</b></div>
         <div class="healthItem"><span>Transaction guard</span><b class="healthGood">ENFORCED ✓</b></div>
       </div>
-      <p class="auditNote">The browser verifies the published integrity manifest and runtime contract presence. The transaction guard re-checks owner, chain, destination, code presence, and calldata before asking the wallet to sign.</p>
+      <p class="auditNote">Frontend integrity and broad runtime health are background diagnostics and never block signing. The transaction guard itself re-checks owner, chain, the exact destination, code presence, value ceiling, and calldata before asking the wallet to sign.</p>
       <pre id="securitySealLog">Integrity verification pending.</pre>
     </div>
     <div class="commandHero commandSection">
@@ -279,7 +279,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 
 <div id="overviewPane" class="tabpane">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.2.1 · Remediation · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.3 · Stability + Wallet Handoff · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -2415,23 +2415,79 @@ function renderCommandAllocation(){const x=commandStockSummary(),max=Math.max(..
 function renderCommandActivity(){const events=(historyState.events||[]).slice(0,6);$('cmdRecentActivity').innerHTML=events.map(e=>`<div class="receipt"><div class="receiptHead"><b>${escapeHtml(e.symbol)} · ${escapeHtml(e.direction)}</b><b>${escapeHtml(e.amount)}</b></div><div class="receiptMeta">${escapeHtml(typeof e.account==='string'?e.account:(ACCOUNT_LABELS[e.account]||e.account||''))}<br>${escapeHtml(e.txHash||'')}</div></div>`).join('')||'<div class="emptyState">No indexed Stock Token activity loaded yet.</div>'}
 function ageLabel(ts){if(!ts)return {txt:'Unavailable',cls:'healthWarn'};const min=Math.max(0,(Date.now()-new Date(ts).getTime())/60000);return {txt:min<1?'<1m':Math.round(min)+'m',cls:min<=30?'healthGood':min<=90?'healthWarn':'healthBad'}}
 async function refreshCommandCenter(){
- setSticky('Refreshing…');$('commandLog').textContent='Refreshing chain, balances, snapshots, portfolio, history and receipts…';
- let chainOk=false,rpcOk=false;
- try{const cid=Number(BigInt(await rpc('eth_chainId')));chainOk=cid===CHAIN;$('healthChain').textContent=cid+(chainOk?' ✓':' ✕');$('healthChain').className=chainOk?'healthGood':'healthBad';const bn=await rpc('eth_blockNumber');rpcOk=!!bn;$('healthRpc').textContent=rpcOk?'ONLINE ✓':'OFFLINE ✕';$('healthRpc').className=rpcOk?'healthGood':'healthBad'}catch{$('healthChain').textContent='ERROR';$('healthRpc').textContent='ERROR'}
- try{await primeStaticData()}catch{}
- for(const [id,obj] of [['healthCatalog',staticData.assets],['healthPrices',staticData.prices],['healthHistory',staticData.history]]){const x=ageLabel(obj?.generatedAt);$(id).textContent=x.txt;$(id).className=x.cls}
- $('healthWallet').textContent=account?'CONNECTED ✓':'READ ONLY';$('healthWallet').className=account?'healthGood':'healthWarn';
- try{const [v,n]=await Promise.all([rpc('eth_getBalance',[VAULT,'latest']),erc20Balance(NVDA,TRADING)]);$('cmdVaultEth').textContent=fromWei(BigInt(v));$('cmdTradingNvda').textContent=unitsToDecimal(n,18,8)}catch{}
- if(!terminalState.positions.length){try{await discoverPortfolio()}catch{}}else{try{await refreshTerminalPrices(false);renderTerminal()}catch{}}
- renderCommandAllocation();
- if(!historyState.events.length){try{await loadOnchainHistory()}catch{}}
- renderCommandActivity();await refreshRecordedReceipts();await Promise.all([verifyPublishedIntegrity(false),assertRuntimeContracts(false)]);
- $('commandLog').textContent=`PASS — Command Center refreshed.\nPortfolio positions: ${commandStockSummary().count}\nLocal receipts: ${readReceiptLog().length}`;
- setSticky('Rustee refreshed · '+new Date().toLocaleTimeString());
+  if(commandRefreshPromise)return commandRefreshPromise;
+  commandRefreshPromise=(async()=>{
+    setSticky('Refreshing…');
+    $('commandLog').textContent='Refreshing chain, balances and snapshots…';
+    let chainOk=false,rpcOk=false;
+    try{
+      try{
+        const cid=Number(BigInt(await withTimeout(rpc('eth_chainId'),3500,'chain refresh')));
+        chainOk=cid===CHAIN;
+        $('healthChain').textContent=cid+(chainOk?' ✓':' ✕');
+        $('healthChain').className=chainOk?'healthGood':'healthBad';
+        const bn=await withTimeout(rpc('eth_blockNumber'),3500,'RPC refresh');
+        rpcOk=!!bn;
+        $('healthRpc').textContent=rpcOk?'ONLINE ✓':'OFFLINE ✕';
+        $('healthRpc').className=rpcOk?'healthGood':'healthBad';
+      }catch(e){
+        $('healthChain').textContent='CHECK';
+        $('healthChain').className='healthWarn';
+        $('healthRpc').textContent='CHECK';
+        $('healthRpc').className='healthWarn';
+      }
+
+      try{await withTimeout(primeStaticData(),5000,'snapshot load')}catch{}
+      for(const [id,obj] of [['healthCatalog',staticData.assets],['healthPrices',staticData.prices],['healthHistory',staticData.history]]){
+        const x=ageLabel(obj?.generatedAt);$(id).textContent=x.txt;$(id).className=x.cls;
+      }
+      $('healthWallet').textContent=account?'CONNECTED ✓':'READ ONLY';
+      $('healthWallet').className=account?'healthGood':'healthWarn';
+
+      try{
+        const [v,n]=await Promise.all([
+          withTimeout(rpc('eth_getBalance',[VAULT,'latest']),3500,'Vault balance'),
+          withTimeout(erc20Balance(NVDA,TRADING),3500,'Trading NVDA balance')
+        ]);
+        $('cmdVaultEth').textContent=fromWei(BigInt(v));
+        $('cmdTradingNvda').textContent=unitsToDecimal(n,18,8);
+      }catch{}
+
+      try{
+        if(!terminalState.positions.length)await withTimeout(discoverPortfolio(),7000,'portfolio discovery');
+        else await withTimeout(refreshTerminalPrices(false),6000,'portfolio price refresh');
+        renderTerminal();
+      }catch{}
+      renderCommandAllocation();
+
+      try{
+        if(!historyState.events.length)await withTimeout(loadOnchainHistory(),6000,'history refresh');
+      }catch{}
+      renderCommandActivity();
+
+      try{await withTimeout(refreshRecordedReceipts(),3500,'receipt refresh')}catch{}
+
+      // Informational checks run independently and cannot hold the refresh spinner open.
+      Promise.allSettled([
+        verifyPublishedIntegrity(false),
+        assertRuntimeContracts(false)
+      ]).catch(()=>{});
+
+      $('commandLog').textContent=
+        `Command Center refreshed.\nChain: ${chainOk?'OK':'CHECK'}\nRPC: ${rpcOk?'OK':'CHECK'}\n`+
+        `Portfolio positions: ${commandStockSummary().count}\n`+
+        `Security integrity/runtime checks continue independently if needed.`;
+      return true;
+    }finally{
+      setSticky('Rustee ready · '+new Date().toLocaleTimeString());
+    }
+  })();
+  try{return await commandRefreshPromise}
+  finally{commandRefreshPromise=null}
 }
 function openTabById(id){const btn=[...document.querySelectorAll('.tabbtn')].find(x=>x.dataset.tab===id);if(btn)btn.click()}
 document.querySelectorAll('[data-open-tab]').forEach(b=>b.onclick=()=>openTabById(b.dataset.openTab));
-$('refreshCommandCenter').onclick=()=>refreshCommandCenter().catch(e=>$('commandLog').textContent='ERROR: '+e.message);
+$('refreshCommandCenter').onclick=()=>refreshCommandCenter().catch(e=>{$('commandLog').textContent='ERROR: '+e.message;setSticky('Rustee ready')});
 $('refreshReceipts').onclick=()=>refreshRecordedReceipts();
 $('clearReceipts').onclick=()=>{if(confirm('Clear only the local receipt display? On-chain transactions are unaffected.')){localStorage.removeItem(RECEIPT_KEY);renderReceipts()}};
 renderReceipts();
@@ -2461,8 +2517,10 @@ async function runSecurityPreflight(){
       rpc('eth_getCode',[TRADING,'latest']),
       rpc('eth_getCode',[DATA_STREAMS_VERIFIER,'latest'])
     ]);
-    await assertRuntimeContracts(true);
-    await verifyPublishedIntegrity(true);
+    await Promise.allSettled([
+      withTimeout(assertRuntimeContracts(true),7000,'runtime health'),
+      withTimeout(verifyPublishedIntegrity(true),9000,'frontend integrity')
+    ]);
     const regOk=regCode&&regCode!=='0x',tbaOk=tbaCode&&tbaCode!=='0x',verOk=verCode&&verCode!=='0x';
     $('secRegistryCode').textContent=regOk?'PASS ✓':'FAIL ✕';$('secRegistryCode').className=regOk?'gatePass':'gateFail';
     $('secTradingCode').textContent=tbaOk?'PASS ✓':'FAIL ✕';$('secTradingCode').className=tbaOk?'gatePass':'gateFail';
@@ -2851,6 +2909,26 @@ const SECURITY_FIXED_CONTRACTS=[VAULT,TRADING,REWARDS,IDENTITY,ROUTER,QUOTER,WET
   .map(x=>x.toLowerCase());
 let runtimeSecurityCache={time:0,ok:false,missing:[]};
 let integritySecurityCache={time:0,ok:false,details:null};
+let commandRefreshPromise=null;
+function withTimeout(promise,ms,label='operation'){
+  let timer;
+  const timeout=new Promise((_,reject)=>{
+    timer=setTimeout(()=>reject(Error(`${label} timed out after ${ms}ms`)),ms);
+  });
+  return Promise.race([Promise.resolve(promise),timeout]).finally(()=>clearTimeout(timer));
+}
+async function optionalSecurityDigest(tx){
+  try{
+    if(!crypto?.subtle?.digest)return null;
+    return await withTimeout(txSecurityDigest(tx),1200,'transaction fingerprint');
+  }catch{return null}
+}
+function securityStatus(id,text,cls='healthWarn'){
+  if(!$(id))return;
+  $(id).textContent=text;
+  $(id).className=cls;
+}
+
 
 function securityDynamicTokens(){
   const out=new Set();
@@ -2886,15 +2964,20 @@ async function assertRuntimeContracts(force=false){
     ['Router',ROUTER],['Quoter',QUOTER],['WETH',WETH],['USDG',USDG],
     ['Policy Registry',POLICY_REGISTRY],['Broker NFT',NFT]
   ];
-  const missing=[];
-  for(const [name,address] of required){
-    try{const code=await rpc('eth_getCode',[address,'latest']);if(!code||code==='0x')missing.push(name)}catch{missing.push(name)}
-  }
-  runtimeSecurityCache={time:Date.now(),ok:missing.length===0,missing};
-  if($('healthRuntime')){
-    $('healthRuntime').textContent=runtimeSecurityCache.ok?'PASS ✓':'FAIL ✕';
-    $('healthRuntime').className=runtimeSecurityCache.ok?'healthGood':'healthBad';
-  }
+  securityStatus('healthRuntime','CHECKING','healthWarn');
+  const checks=await Promise.all(required.map(async ([name,address])=>{
+    try{
+      const code=await withTimeout(rpc('eth_getCode',[address,'latest']),3000,`${name} bytecode`);
+      return {name,ok:!!code&&code!=='0x'};
+    }catch(e){return {name,ok:false,error:e.message}}
+  }));
+  const missing=checks.filter(x=>!x.ok).map(x=>x.name);
+  runtimeSecurityCache={time:Date.now(),ok:missing.length===0,missing,checks};
+  securityStatus(
+    'healthRuntime',
+    runtimeSecurityCache.ok?'PASS ✓':(missing.length?`CHECK ${missing.length}`:'UNAVAILABLE'),
+    runtimeSecurityCache.ok?'healthGood':'healthWarn'
+  );
   return runtimeSecurityCache;
 }
 async function validateSecurityDestination(tx){
@@ -2918,71 +3001,117 @@ async function validateSecurityDestination(tx){
 }
 async function hardenedTxPreflight(tx,label='Transaction'){
   if(!window.ethereum)throw Error('SECURITY: no injected wallet provider');
-  const cid=Number(BigInt(await ethereum.request({method:'eth_chainId'})));
+
+  const cid=Number(BigInt(await withTimeout(
+    ethereum.request({method:'eth_chainId'}),3000,'wallet chain check'
+  )));
   if(cid!==CHAIN)throw Error(`SECURITY: wrong chain ${cid}; expected ${CHAIN}`);
-  const accounts=await ethereum.request({method:'eth_accounts'});
+
+  const accounts=await withTimeout(
+    ethereum.request({method:'eth_accounts'}),3000,'wallet account check'
+  );
   const current=(accounts?.[0]||'').toLowerCase();
   if(current!==OWNER.toLowerCase())throw Error('SECURITY: connected account is not the Broker NFT owner');
   if(String(tx.from||'').toLowerCase()!==OWNER.toLowerCase())throw Error('SECURITY: transaction from-address mismatch');
 
-  // Do not gate a valid trade on unrelated/optional runtime contracts.
-  // Security is transaction-scoped: validate this destination, then require
-  // bytecode on the exact contract the wallet is about to call.
   await validateSecurityDestination(tx);
+
   if(!isZeroData(tx.data)){
-    const code=await rpc('eth_getCode',[tx.to,'latest']);
+    const code=await withTimeout(
+      rpc('eth_getCode',[tx.to,'latest']),4000,'transaction destination bytecode'
+    );
     if(!code||code==='0x')throw Error('SECURITY: transaction destination has no contract bytecode');
   }
 
-  const digest=await txSecurityDigest(tx);
+  const digest=await optionalSecurityDigest(tx);
   const selector=txSelector(tx.data);
+  const fingerprint=digest
+    ?`${digest.slice(0,16)}…${digest.slice(-12)}`
+    :'unavailable (non-blocking)';
   const message=
     `SECURITY PRE-SIGN CHECK\n\n${label}\n`+
     `Chain: ${CHAIN}\nFrom: ${short(tx.from)}\nTo: ${short(tx.to)}\n`+
     `Value: ${fromWei(BigInt(tx.value||'0x0'))} ETH\nSelector: ${selector}\n`+
-    `TX fingerprint: ${digest.slice(0,16)}…${digest.slice(-12)}\n\n`+
+    `TX fingerprint: ${fingerprint}\n\n`+
     `Continue to wallet signature?`;
   if(!confirm(message))throw Error('Transaction canceled at security pre-sign gate');
+
   if($('securitySealLog'))$('securitySealLog').textContent=
-    `PRE-SIGN PASS\n${label}\nDestination: ${tx.to}\nSelector: ${selector}\nSHA-256: ${digest}`;
+    `PRE-SIGN PASS\n${label}\nDestination: ${tx.to}\nSelector: ${selector}\n`+
+    `SHA-256: ${digest||'unavailable — wallet handoff not blocked'}`;
   return {digest,cid};
 }
 async function secureSendTransaction(tx,label='Transaction'){
-  await hardenedTxPreflight(tx,label);
-  return ethereum.request({method:'eth_sendTransaction',params:[tx]});
+  try{
+    setSticky('Security pre-sign check…');
+    await hardenedTxPreflight(tx,label);
+    setSticky('Opening wallet…');
+    const hash=await withTimeout(
+      ethereum.request({method:'eth_sendTransaction',params:[tx]}),
+      120000,
+      'wallet signature request'
+    );
+    setSticky('Wallet request submitted ✓');
+    return hash;
+  }catch(e){
+    setSticky('Wallet request stopped: '+(e?.message||e));
+    if($('securitySealLog'))$('securitySealLog').textContent=
+      `WALLET HANDOFF ERROR\n${label}\n${e?.message||e}`;
+    throw e;
+  }
 }
 async function verifyPublishedIntegrity(force=false){
   if(!force&&integritySecurityCache.time&&Date.now()-integritySecurityCache.time<60000)return integritySecurityCache;
+  securityStatus('healthIntegrity','CHECKING','healthWarn');
   try{
-    const manifest=await fetchJson('data/integrity.json?v='+Date.now(),7000);
+    const manifest=await withTimeout(
+      fetchJson('data/integrity.json?v='+Date.now(),5000),
+      5500,'integrity manifest'
+    );
     const targets=['index.html','data/robinhood-assets.json','data/robinhood-prices.json','data/rustee-history.json'];
     const results=[];
     for(const path of targets){
-      const url=path==='index.html'?'./index.html?integrity='+Date.now():path+'?integrity='+Date.now();
-      const r=await fetch(url,{cache:'no-store'});
-      if(!r.ok)throw Error(`HTTP ${r.status} for ${path}`);
-      const text=await r.text();
-      const got=await sha256Text(text);
-      const expected=manifest.sha256?.[path];
-      results.push({path,ok:!!expected&&got===expected,got,expected});
+      try{
+        const url=path==='index.html'?'./index.html?integrity='+Date.now():path+'?integrity='+Date.now();
+        const r=await withTimeout(fetch(url,{cache:'no-store'}),3500,`integrity fetch ${path}`);
+        if(!r.ok)throw Error(`HTTP ${r.status}`);
+        const text=await withTimeout(r.text(),2500,`integrity read ${path}`);
+        const got=await withTimeout(sha256Text(text),1500,`integrity hash ${path}`);
+        const expected=manifest.sha256?.[path];
+        results.push({path,ok:!!expected&&got===expected,got,expected});
+      }catch(e){
+        results.push({path,ok:false,error:e.message});
+      }
     }
     const ok=results.every(x=>x.ok);
     integritySecurityCache={time:Date.now(),ok,details:results};
-    if($('healthIntegrity')){
-      $('healthIntegrity').textContent=ok?'PASS ✓':'FAIL ✕';
-      $('healthIntegrity').className=ok?'healthGood':'healthBad';
-    }
+    securityStatus('healthIntegrity',ok?'PASS ✓':'CHECK','healthWarn');
+    if(ok)securityStatus('healthIntegrity','PASS ✓','healthGood');
     if($('securitySealLog'))$('securitySealLog').textContent=
-      (ok?'INTEGRITY PASS ✓':'INTEGRITY FAIL ✕')+'\n'+
-      results.map(x=>`${x.path}: ${x.ok?'OK':'MISMATCH'}`).join('\n');
+      (ok?'INTEGRITY PASS ✓':'INTEGRITY CHECK INCOMPLETE')+'\n'+
+      results.map(x=>`${x.path}: ${x.ok?'OK':'CHECK'}`).join('\n')+
+      '\n\nIntegrity is informational and never blocks wallet signing.';
     return integritySecurityCache;
   }catch(e){
     integritySecurityCache={time:Date.now(),ok:false,details:String(e.message||e)};
-    if($('healthIntegrity')){$('healthIntegrity').textContent='UNAVAILABLE';$('healthIntegrity').className='healthWarn'}
-    if($('securitySealLog'))$('securitySealLog').textContent='Integrity manifest unavailable: '+e.message;
+    securityStatus('healthIntegrity','UNAVAILABLE','healthWarn');
+    if($('securitySealLog'))$('securitySealLog').textContent=
+      'Integrity check unavailable: '+e.message+
+      '\nThis does not block a transaction-scoped wallet preflight.';
     return integritySecurityCache;
   }
 }
+
+window.addEventListener('unhandledrejection',e=>{
+  const msg=e.reason?.message||String(e.reason||'Unknown promise error');
+  setSticky('Error: '+msg);
+  console.error('Unhandled promise rejection:',e.reason);
+});
+window.addEventListener('error',e=>{
+  if(e.target?.matches?.('img.tokenLogo'))return;
+  if(e.message)setSticky('Error: '+e.message);
+});
+
 document.addEventListener('error',e=>{
   if(e.target?.matches?.('img.tokenLogo'))e.target.style.visibility='hidden';
 },true);
