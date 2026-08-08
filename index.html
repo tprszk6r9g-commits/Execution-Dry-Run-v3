@@ -95,6 +95,34 @@ pre{white-space:pre-wrap;word-break:break-all;max-height:330px;overflow:auto;bac
 <pre id="execLog">Locked until simulation succeeds.</pre>
 </div>
 
+<div class="card warn">
+<h2>6. Trading TBA portfolio + move assets to owner</h2>
+<p>Read ERC-20 balances held by the Trading TBA and, with an explicit owner-wallet signature, move an asset back to the main owner wallet. The transfer is simulated before the real button unlocks.</p>
+<div class="grid">
+<div class="metric"><small>Trading TBA NVDA</small><strong id="portfolioNvda">—</strong></div>
+<div class="metric"><small>Main wallet NVDA</small><strong id="ownerNvda">—</strong></div>
+</div>
+<label>Token contract</label>
+<input id="assetToken" value="0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC" spellcheck="false">
+<div class="row">
+<button id="loadAsset" class="primary">Load token balance</button>
+<button id="useMaxAsset">Use full Trading TBA balance</button>
+</div>
+<div class="grid">
+<div class="metric"><small>Token</small><strong id="assetSymbol">—</strong></div>
+<div class="metric"><small>Trading TBA balance</small><strong id="assetTradingBal">—</strong></div>
+<div class="metric"><small>Main wallet balance</small><strong id="assetOwnerBal">—</strong></div>
+<div class="metric"><small>Decimals</small><strong id="assetDecimals">—</strong></div>
+</div>
+<label>Amount to move to main wallet</label>
+<input id="assetAmount" inputmode="decimal" placeholder="0.0">
+<div class="row">
+<button id="simulateAssetMove">Simulate asset move</button>
+<button id="moveAsset" class="danger" disabled>MOVE ASSET TO MAIN WALLET</button>
+</div>
+<pre id="assetLog">Load a token first. No asset transfer has been authorized.</pre>
+</div>
+
 <div class="card">
 <h2>Hard-bound addresses</h2>
 <pre class="mono" id="addresses"></pre>
@@ -115,8 +143,9 @@ const ROUTER='0xCaf681a66D020601342297493863E78C959E5cb2';
 const QUOTER='0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7';
 const SEL_OWNER='8da5cb5b', SEL_BALANCE='70a08231', SEL_EXECUTE='51945447';
 const SEL_QUOTE='c6a5026a', SEL_EXACT_INPUT='04e45aaf';
+const SEL_TRANSFER='a9059cbb', SEL_DECIMALS='313ce567', SEL_SYMBOL='95d89b41';
 
-let account=null, quoteState=null, simulationState=null;
+let account=null, quoteState=null, simulationState=null, assetState=null, assetMoveSimulation=null;
 
 const $=id=>document.getElementById(id);
 const word=x=>BigInt(x).toString(16).padStart(64,'0');
@@ -174,7 +203,77 @@ async function refreshBalances(){
   $('vaultBal').textContent=fromWei(vb)+' ETH';
   $('tradingBal').textContent=fromWei(tb)+' ETH';
   $('nvdaBal').textContent=formatToken18(nb,8)+' NVDA token units';
+  $('portfolioNvda').textContent=formatToken18(nb,12)+' NVDA';
+  try{const ownNvda=await erc20Balance(NVDA,OWNER);$('ownerNvda').textContent=formatToken18(ownNvda,12)+' NVDA'}catch{}
   return {owner:BigInt(ob),vault:BigInt(vb),trading:BigInt(tb),nvda:nb};
+}
+function unitsToDecimal(v,decimals,places=8){
+  v=BigInt(v); decimals=Number(decimals); const base=10n**BigInt(decimals), a=v/base;
+  if(decimals===0) return a.toString();
+  const shown=Math.min(decimals,places), b=(v%base).toString().padStart(decimals,'0').slice(0,shown).replace(/0+$/,'');
+  return b ? `${a}.${b}` : a.toString();
+}
+function decimalToUnits(s,decimals){
+  s=String(s).trim(); if(!/^\d+(\.\d+)?$/.test(s)) throw Error('Invalid token amount');
+  decimals=Number(decimals); let [a,b='']=s.split('.');
+  if(b.length>decimals) throw Error(`Too many decimal places; token uses ${decimals}`);
+  b=(b+'0'.repeat(decimals)).slice(0,decimals);
+  return BigInt(a)*(10n**BigInt(decimals)) + BigInt(b||'0');
+}
+async function tokenDecimals(token){
+  const raw=await rpc('eth_call',[{to:token,data:'0x'+SEL_DECIMALS},'latest']); return Number(BigInt(raw));
+}
+async function tokenSymbol(token){
+  try{
+    const raw=await rpc('eth_call',[{to:token,data:'0x'+SEL_SYMBOL},'latest']);
+    const h=raw.replace(/^0x/,''); if(h.length<128) return 'TOKEN';
+    const off=Number(BigInt('0x'+h.slice(0,64)))*2, len=Number(BigInt('0x'+h.slice(off,off+64)));
+    let out=''; for(let i=0;i<len;i++) out+=String.fromCharCode(parseInt(h.slice(off+64+i*2,off+66+i*2),16)); return out||'TOKEN';
+  }catch{return 'TOKEN'}
+}
+function transferCalldata(to,amount){ return '0x'+SEL_TRANSFER+addrWord(to)+word(amount); }
+function tbaExecuteCalldata(target,innerData){
+  const bytes=innerData.replace(/^0x/,'');
+  return '0x'+SEL_EXECUTE+addrWord(target)+word(0)+word(128)+word(0)+word(bytes.length/2)+padBytes(bytes);
+}
+async function loadAsset(){
+  const token=$('assetToken').value.trim(); if(!/^0x[0-9a-fA-F]{40}$/.test(token)) throw Error('Enter a valid ERC-20 contract address');
+  const code=await rpc('eth_getCode',[token,'latest']); if(!code||code==='0x') throw Error('Token address has no contract code');
+  const [dec,sym,tbaBal,ownerBal]=await Promise.all([tokenDecimals(token),tokenSymbol(token),erc20Balance(token,TRADING),erc20Balance(token,OWNER)]);
+  assetState={token,decimals:dec,symbol:sym,tbaBal,ownerBal}; assetMoveSimulation=null; $('moveAsset').disabled=true;
+  $('assetSymbol').textContent=sym; $('assetDecimals').textContent=dec;
+  $('assetTradingBal').textContent=unitsToDecimal(tbaBal,dec,12)+' '+sym; $('assetOwnerBal').textContent=unitsToDecimal(ownerBal,dec,12)+' '+sym;
+  $('assetLog').textContent=`Loaded ${sym}\nToken: ${token}\nTrading TBA: ${unitsToDecimal(tbaBal,dec,12)}\nMain wallet: ${unitsToDecimal(ownerBal,dec,12)}`;
+  return assetState;
+}
+async function refreshPortfolio(){
+  const [t,o]=await Promise.all([erc20Balance(NVDA,TRADING),erc20Balance(NVDA,OWNER)]);
+  $('portfolioNvda').textContent=formatToken18(t,12)+' NVDA'; $('ownerNvda').textContent=formatToken18(o,12)+' NVDA';
+  return {t,o};
+}
+async function simulateAssetMove(){
+  if(!assetState) await loadAsset(); if(!account) await connect();
+  if(account.toLowerCase()!==OWNER.toLowerCase()) throw Error('Wrong owner wallet connected');
+  const cid=Number(BigInt(await rpc('eth_chainId'))); if(cid!==CHAIN) throw Error('Wrong network');
+  const amount=decimalToUnits($('assetAmount').value,assetState.decimals); if(amount<=0n) throw Error('Amount must be greater than zero');
+  const fresh=await erc20Balance(assetState.token,TRADING); if(amount>fresh) throw Error('Amount exceeds Trading TBA balance');
+  const inner=transferCalldata(OWNER,amount), data=tbaExecuteCalldata(assetState.token,inner), tx={from:OWNER,to:TRADING,data};
+  const gas=BigInt(await rpc('eth_estimateGas',[tx])); await rpc('eth_call',[tx,'latest']);
+  assetMoveSimulation={time:Date.now(),token:assetState.token,amount,data,gas,decimals:assetState.decimals,symbol:assetState.symbol};
+  $('assetLog').textContent=`PASS — asset move simulated.\n${assetState.symbol}: ${unitsToDecimal(amount,assetState.decimals,12)}\nFrom Trading TBA: ${TRADING}\nTo main wallet: ${OWNER}\nEstimated gas: ${gas}`;
+  $('moveAsset').disabled=false;
+}
+async function moveAsset(){
+  if(!assetMoveSimulation) throw Error('Simulate the asset move first');
+  if(Date.now()-assetMoveSimulation.time>60000) throw Error('Simulation expired. Simulate again.');
+  if(!account) await connect();
+  const s=assetMoveSimulation;
+  if(!confirm(`REAL MAINNET ASSET TRANSFER\n\nMove ${unitsToDecimal(s.amount,s.decimals,12)} ${s.symbol} from Rustee Trading TBA to main owner wallet ${OWNER}?\n\nYou will get a wallet confirmation next.`)) return;
+  const hash=await ethereum.request({method:'eth_sendTransaction',params:[{from:account,to:TRADING,data:s.data,gas:hexQty(s.gas*120n/100n)}]});
+  $('moveAsset').disabled=true; $('assetLog').textContent='Asset transfer submitted:\n'+hash+'\nWaiting for confirmation…';
+  const receipt=await waitReceipt(hash); await loadAsset(); await refreshPortfolio();
+  $('assetLog').textContent=`CONFIRMED ✓\nTransaction: ${hash}\nBlock: ${Number(BigInt(receipt.blockNumber))}\nMoved ${unitsToDecimal(s.amount,s.decimals,12)} ${s.symbol} to main wallet.`;
+  assetMoveSimulation=null;
 }
 async function connect(){
   if(!window.ethereum) throw Error('Open this page inside MetaMask or another injected EVM wallet browser.');
@@ -323,6 +422,10 @@ async function execute(){
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
 bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);
 bind('official',checkOfficial);bind('fund',fundVault);bind('refreshBalances',refreshBalances);bind('simulate',simulate);bind('execute',execute);
+bind('loadAsset',loadAsset);bind('simulateAssetMove',simulateAssetMove);bind('moveAsset',moveAsset);
+$('useMaxAsset').onclick=()=>{try{if(!assetState) throw Error('Load token first'); $('assetAmount').value=unitsToDecimal(assetState.tbaBal,assetState.decimals,assetState.decimals); assetMoveSimulation=null; $('moveAsset').disabled=true}catch(e){alert(e.message)}};
+$('assetToken').oninput=()=>{assetState=null;assetMoveSimulation=null;$('moveAsset').disabled=true};
+$('assetAmount').oninput=()=>{assetMoveSimulation=null;$('moveAsset').disabled=true};
 for(const id of ['usdTarget','ethUsd','slippage']) $(id).oninput=()=>{try{calcInputWei()}catch{} quoteState=null;simulationState=null;$('execute').disabled=true};
 $('addresses').textContent=`Owner wallet: ${OWNER}
 Vault TBA (executor): ${VAULT}
