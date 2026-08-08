@@ -1,15 +1,19 @@
-# Rustee Broker Portfolio Executor v1.5
+# Rustee Portfolio Terminal v2.1 — Phase 2
 
-Adds an Account Center and Universal Asset Mover to the working v1.4 standalone.
+Phase 2 builds on Phase 1 automatic Robinhood Stock Token discovery and valuation.
 
-## New
-- Separate Accounts tab for Main Wallet, Vault, Trading, Rewards, Identity.
-- Live ETH, NVDA and WETH balances across all five accounts.
-- Custom ERC-20 support by contract address.
-- Main wallet -> any TBA deposits.
-- Vault / Rewards / Identity -> any account transfers through generic BrokerAccount execute.
-- Trading TBA -> owner recovery through restricted withdrawToken / withdrawETH.
-- Exact eth_estimateGas + eth_call simulation before every real move.
-- 60-second simulation expiry and separate wallet confirmation.
+## Added in Phase 2
+- Dedicated **History + P&L** tab.
+- Read-only ERC-20 transfer-history retrieval for Main Wallet, Vault, Trading, Rewards, and Identity via Robinhood Chain Blockscout.
+- Filters history to canonical Stock Tokens discovered from Robinhood metadata.
+- De-duplicates transfers seen from multiple Rustee addresses.
+- Account filter and direct transaction explorer links.
+- Local per-position USD cost-basis ledger.
+- Current value, tracked cost basis, and unrealized P&L.
+- Exportable JSON ledger containing account map, local cost-basis entries, and indexed transfer history.
 
-Trading TBA intentionally cannot send arbitrary assets directly to another TBA: its recovery methods return assets to the current Broker NFT owner. To move Trading -> another TBA, withdraw to Owner first, then send Owner -> destination.
+## Important accounting boundary
+On-chain ERC-20 transfers prove movement, not purchase price. Transfers among Rustee accounts are not treated as buys or sells. Phase 2 therefore does **not invent historical cost basis**. Cost basis is entered locally by the operator until a later phase adds deterministic trade-receipt reconstruction.
+
+## Preserved
+The existing manual trade executor, exact simulation gate, Account Center, Trading-TBA withdrawal ABI, Universal Asset Mover, automatic Stock Token discovery, and portfolio valuation remain intact.

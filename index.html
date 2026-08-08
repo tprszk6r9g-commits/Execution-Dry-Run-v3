@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rustee Broker Portfolio Executor v1.5</title>
+<title>Rustee Broker Portfolio Terminal v2.1 · Phase 2</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -34,18 +34,62 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 .badge{display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:999px;font-size:11px;color:var(--teal);margin-bottom:8px}
 @media(max-width:650px){.account-grid,.controlgrid{grid-template-columns:1fr}.tabs{overflow:auto}.tabbtn{min-width:100px}}
 
+
+.heroMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.heroMetric{padding:18px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,#07271f,#041914)}
+.heroMetric small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-size:11px}
+.heroMetric strong{display:block;font-size:clamp(23px,5vw,36px);margin-top:7px}
+.portfolioToolbar{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
+.toggleline{display:flex;gap:9px;align-items:center;color:var(--muted);font-size:14px}
+.toggleline input{width:20px;height:20px}
+.portfolioAccounts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.portfolioAccount{border:1px solid var(--line);border-radius:20px;background:#061d18;padding:16px}
+.portfolioAccountHead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
+.portfolioAccountHead h3{margin:0;font-size:20px}
+.usdBig{font:700 18px ui-monospace,monospace}
+.holding{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-top:1px solid #1d4b42}
+.tokenLogo{width:38px;height:38px;border-radius:50%;background:#0a3028;object-fit:cover;border:1px solid #2b675b}
+.holdingTitle{font-weight:800}.holdingMeta{font-size:11px;color:var(--muted);word-break:break-all}
+.holdingValue{text-align:right}.holdingValue b{display:block}.holdingValue span{font-size:11px;color:var(--muted)}
+.allocbar{height:7px;border-radius:999px;background:#0b2a23;overflow:hidden;margin-top:6px}
+.allocbar>i{display:block;height:100%;background:var(--teal);width:0%}
+.sourceNote{font-size:12px;color:var(--muted);line-height:1.45}
+.statusChip{display:inline-block;padding:5px 9px;border-radius:999px;border:1px solid var(--line);font-size:11px;margin-right:5px}
+.statusChip.good{color:var(--green)}.statusChip.warn{color:var(--orange)}
+.emptyState{padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--muted);text-align:center}
+@media(max-width:650px){.heroMetrics{grid-template-columns:1fr}.portfolioAccounts{grid-template-columns:1fr}}
+
+
+.historyGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+.historyMetric{border:1px solid var(--line);border-radius:18px;background:#061d18;padding:15px}
+.historyMetric small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-size:10px}
+.historyMetric strong{display:block;font-size:22px;margin-top:7px}
+.txTableWrap{overflow:auto;border:1px solid var(--line);border-radius:18px;margin-top:14px}
+.txTable{width:100%;border-collapse:collapse;min-width:780px;font-size:13px}
+.txTable th,.txTable td{padding:12px 10px;text-align:left;border-bottom:1px solid #1d4b42;vertical-align:top}
+.txTable th{position:sticky;top:0;background:#08231d;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:10px}
+.txBuy{color:var(--green);font-weight:800}.txSell{color:var(--orange);font-weight:800}.txMove{color:var(--teal);font-weight:800}
+.pnlPos{color:var(--green)}.pnlNeg{color:var(--red)}
+.costInput{width:100%;max-width:150px;padding:8px;border-radius:10px}
+.historyTools{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.historyTools select{padding:12px;border:1px solid var(--line);border-radius:12px;background:#051713;color:var(--text)}
+.lotCard{border:1px solid var(--line);border-radius:16px;padding:13px;margin-top:10px;background:#051713}
+@media(max-width:650px){.historyGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 </style>
 </head>
 <body><main>
 
 <div class="tabs">
   <button class="tabbtn active" data-tab="overviewPane">Overview</button>
+  <button class="tabbtn" data-tab="portfolioPane">Portfolio</button>
+  <button class="tabbtn" data-tab="historyPane">History + P&amp;L</button>
   <button class="tabbtn" data-tab="accountsPane">Accounts</button>
   <button class="tabbtn" data-tab="transferPane">Move Assets</button>
 </div>
 <div id="overviewPane" class="tabpane active">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Executor v1.5 · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.1 · Phase 2 · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -159,6 +203,85 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 </div>
 
 
+</div>
+
+
+<div id="portfolioPane" class="tabpane">
+  <div class="card">
+    <span class="badge">PHASE 2 · HISTORY + COST BASIS + P&L</span>
+    <h2>Rustee Portfolio Terminal</h2>
+    <p>Automatically discovers canonical Robinhood Stock Tokens on chain 4663, scans all five Rustee-controlled addresses, and values non-zero positions using Robinhood's read-only Stock Token APIs.</p>
+
+    <div class="heroMetrics">
+      <div class="heroMetric"><small>Combined portfolio</small><strong id="terminalTotalUsd">—</strong></div>
+      <div class="heroMetric"><small>Stock-token value</small><strong id="terminalStocksUsd">—</strong></div>
+      <div class="heroMetric"><small>Non-zero positions</small><strong id="terminalPositionCount">—</strong></div>
+    </div>
+
+    <div class="portfolioToolbar">
+      <button class="primary" id="discoverPortfolio">Discover + value portfolio</button>
+      <button id="refreshPortfolioPrices">Refresh prices</button>
+      <label class="toggleline"><input type="checkbox" id="showZeroStocks">Show zero balances</label>
+    </div>
+
+    <div>
+      <span class="statusChip" id="catalogStatus">Catalog: not loaded</span>
+      <span class="statusChip" id="priceStatus">Prices: not loaded</span>
+      <span class="statusChip" id="terminalRefreshStatus">Refresh: —</span>
+    </div>
+
+    <div id="portfolioAccountCards" class="portfolioAccounts" style="margin-top:14px">
+      <div class="emptyState">Tap “Discover + value portfolio” to scan canonical Stock Tokens.</div>
+    </div>
+
+    <pre id="terminalLog">Phase 2 portfolio discovery is read-only. No wallet transaction is created by portfolio discovery.</pre>
+    <p class="sourceNote">Valuation uses Robinhood `/rhj/assets` metadata and `/rhj/prices/{symbol}` quotes. REST bid/ask is the raw underlying-equity price, so token-equivalent USD value applies each asset's current corporate-action multiplier. ETH is shown separately because this phase does not use an ETH/USD quote.</p>
+  </div>
+</div>
+
+
+<div id="historyPane" class="tabpane">
+  <div class="card">
+    <span class="badge">PHASE 2 · READ-ONLY ANALYTICS</span>
+    <h2>Transaction History + P&amp;L</h2>
+    <p>Build a local portfolio ledger from on-chain ERC-20 transfers involving the Rustee owner and four TBAs. Cost basis can be entered or imported locally; nothing here broadcasts a transaction.</p>
+
+    <div class="historyGrid">
+      <div class="historyMetric"><small>Current stock value</small><strong id="histCurrentValue">—</strong></div>
+      <div class="historyMetric"><small>Tracked cost basis</small><strong id="histCostBasis">—</strong></div>
+      <div class="historyMetric"><small>Unrealized P&amp;L</small><strong id="histUnrealized">—</strong></div>
+      <div class="historyMetric"><small>Transfer events</small><strong id="histEventCount">—</strong></div>
+    </div>
+
+    <div class="historyTools">
+      <button class="primary" id="loadHistory">Load on-chain history</button>
+      <button id="recalcPnl">Recalculate P&amp;L</button>
+      <button id="exportLedger">Export ledger JSON</button>
+      <button id="clearLedger">Clear local cost basis</button>
+      <select id="historyAccountFilter">
+        <option value="ALL">All Rustee accounts</option>
+        <option value="OWNER">Main Wallet</option>
+        <option value="VAULT">Vault TBA</option>
+        <option value="TRADING">Trading TBA</option>
+        <option value="REWARDS">Rewards TBA</option>
+        <option value="IDENTITY">Identity TBA</option>
+      </select>
+    </div>
+
+    <pre id="historyLog">Load the Portfolio first, then load history. Phase 2 never signs or sends transactions.</pre>
+
+    <h3>Cost-basis ledger</h3>
+    <p class="sourceNote">Because transfers between your own Rustee accounts are not purchases, Phase 2 does not invent a purchase price. Enter total USD cost basis for a position when known. It is stored only in this browser.</p>
+    <div id="costBasisEditor"><div class="emptyState">No non-zero stock positions loaded.</div></div>
+
+    <h3 style="margin-top:22px">On-chain transfer history</h3>
+    <div class="txTableWrap">
+      <table class="txTable">
+        <thead><tr><th>Time</th><th>Asset</th><th>Direction</th><th>Amount</th><th>Account</th><th>Counterparty</th><th>Tx</th></tr></thead>
+        <tbody id="historyRows"><tr><td colspan="7">No history loaded.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div id="accountsPane" class="tabpane">
@@ -678,6 +801,11 @@ document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tabbtn').forEach(x=>x.classList.toggle('active',x===b));
   document.querySelectorAll('.tabpane').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));
   if(b.dataset.tab==='accountsPane') refreshAllAccounts().catch(e=>$('accountCenterLog').textContent='ERROR: '+e.message);
+  if(b.dataset.tab==='portfolioPane' && !terminalState.positions.length) discoverPortfolio().catch(e=>$('terminalLog').textContent='ERROR: '+e.message);
+  if(b.dataset.tab==='historyPane'){
+    if(!terminalState.positions.length) discoverPortfolio().then(()=>{renderCostBasisEditor();renderHistoryMetrics()}).catch(e=>$('historyLog').textContent='ERROR: '+e.message);
+    else {renderCostBasisEditor();renderHistoryMetrics();}
+  }
 }));
 $('moveAssetType').addEventListener('change',()=>{$('customTokenWrap').style.display=$('moveAssetType').value==='CUSTOM'?'block':'none';universalMoveState=null;$('executeUniversalMove').disabled=true});
 $('moveSource').addEventListener('change',()=>{universalMoveState=null;$('executeUniversalMove').disabled=true});
@@ -687,6 +815,331 @@ $('refreshAllAccounts').onclick=()=>refreshAllAccounts().catch(e=>$('accountCent
 $('simulateUniversalMove').onclick=()=>simulateUniversalMove().catch(e=>{$('universalMoveLog').textContent='ERROR: '+e.message;alert(e.message)});
 $('executeUniversalMove').onclick=()=>executeUniversalMove().catch(e=>{$('universalMoveLog').textContent='ERROR: '+e.message;alert(e.message)});
 
+
+
+const RH_ASSETS_API='https://api.robinhood.com/rhj/assets';
+const RH_PRICES_API='https://api.robinhood.com/rhj/prices/';
+const BLOCKSCOUT='https://robinhoodchain.blockscout.com';
+let terminalState={catalog:null,positions:[],quotes:{},generatedAt:null};
+
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function money(v){return Number.isFinite(Number(v))?'$'+Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}
+function pct(v){return Number.isFinite(Number(v))?Number(v).toFixed(1)+'%':'—'}
+function tokenDeployment(asset){
+  return (asset.deployments||[]).find(d=>Number(d.chainId)===CHAIN)||null;
+}
+async function fetchJson(url){
+  const r=await fetch(url,{headers:{'accept':'application/json'}});
+  if(!r.ok) throw Error(`HTTP ${r.status} from ${url}`);
+  return r.json();
+}
+async function loadRobinhoodCatalog(force=false){
+  const cacheKey='rustee-rh-assets-v2';
+  if(!force){
+    try{
+      const c=JSON.parse(localStorage.getItem(cacheKey)||'null');
+      if(c&&Date.now()-c.savedAt<15*60*1000&&Array.isArray(c.assets)){terminalState.catalog=c.assets;return c.assets}
+    }catch{}
+  }
+  const data=await fetchJson(RH_ASSETS_API);
+  const assets=(data.assets||[]).filter(a=>a.status==='ASSET_STATUS_ACTIVE'&&tokenDeployment(a));
+  if(!assets.length) throw Error('Robinhood returned no active chain-4663 Stock Tokens');
+  terminalState.catalog=assets;
+  try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),assets}))}catch{}
+  return assets;
+}
+async function batchPublicRpc(calls){
+  // Read-only batching avoids hundreds of wallet-provider popups/calls.
+  const body=calls.map((c,i)=>({jsonrpc:'2.0',id:i+1,method:c.method,params:c.params}));
+  const r=await fetch(RPC,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok) throw Error(`Public RPC batch HTTP ${r.status}`);
+  const j=await r.json();
+  if(!Array.isArray(j)) throw Error('RPC did not return a batch array');
+  const byId=new Map(j.map(x=>[x.id,x]));
+  return body.map(req=>{
+    const x=byId.get(req.id);
+    if(!x||x.error) return null;
+    return x.result;
+  });
+}
+async function scanCanonicalStockBalances(assets){
+  const keys=['OWNER','VAULT','TRADING','REWARDS','IDENTITY'];
+  const entries=[];
+  for(const asset of assets){
+    const dep=tokenDeployment(asset);
+    if(!dep) continue;
+    const token=dep.contractAddress;
+    for(const key of keys){
+      entries.push({asset,key,token,call:{method:'eth_call',params:[{to:token,data:'0x70a08231'+addrWord(ACCOUNT_MAP[key])},'latest']}});
+    }
+  }
+  const results=[];
+  const chunk=45;
+  for(let i=0;i<entries.length;i+=chunk){
+    $('terminalLog').textContent=`Scanning canonical assets… ${Math.min(i+chunk,entries.length)}/${entries.length} balance reads`;
+    const slice=entries.slice(i,i+chunk);
+    let vals;
+    try{ vals=await batchPublicRpc(slice.map(x=>x.call)); }
+    catch(e){
+      // Graceful fallback via existing RPC transport.
+      vals=[];
+      for(const x of slice){
+        try{vals.push(await rpc(x.call.method,x.call.params))}catch{vals.push(null)}
+      }
+    }
+    for(let k=0;k<slice.length;k++){
+      const x=slice[k],raw=vals[k];
+      if(raw==null) continue;
+      let bal=0n; try{bal=BigInt(raw)}catch{}
+      results.push({...x,balance:bal});
+    }
+  }
+  return results;
+}
+async function enrichStockPositions(scanned){
+  const byToken=new Map();
+  for(const r of scanned){
+    if(!byToken.has(r.token.toLowerCase())){
+      let decimals=18;
+      try{decimals=await tokenDecimals(r.token)}catch{}
+      byToken.set(r.token.toLowerCase(),{asset:r.asset,token:r.token,decimals,balances:{}});
+    }
+    byToken.get(r.token.toLowerCase()).balances[r.key]=r.balance;
+  }
+  return [...byToken.values()];
+}
+async function fetchQuoteForAsset(asset){
+  const sym=asset.tokenSymbol;
+  const data=await fetchJson(RH_PRICES_API+encodeURIComponent(sym));
+  const q=(data.quotes||[]).find(x=>x.tokenSymbol===sym) || (data.quotes||[])[0];
+  if(!q) throw Error(`No quote for ${sym}`);
+  return q;
+}
+async function refreshTerminalPrices(render=true){
+  if(!terminalState.positions.length) throw Error('Discover the portfolio first');
+  const needed=terminalState.positions.filter(p=>Object.values(p.balances).some(b=>b>0n));
+  let ok=0;
+  for(const p of needed){
+    try{terminalState.quotes[p.asset.tokenSymbol]=await fetchQuoteForAsset(p.asset);ok++}catch(e){console.warn(e)}
+  }
+  $('priceStatus').textContent=`Prices: ${ok}/${needed.length}`;
+  $('priceStatus').className='statusChip '+(ok===needed.length?'good':'warn');
+  terminalState.generatedAt=new Date().toISOString();
+  if(render) renderTerminal();
+}
+function tokenAmountNumber(balance,decimals){
+  const s=unitsToDecimal(balance,decimals,Math.min(decimals,12));
+  const n=Number(s); return Number.isFinite(n)?n:0;
+}
+function assetTokenUsd(p){
+  const q=terminalState.quotes[p.asset.tokenSymbol];
+  if(!q) return null;
+  const bid=Number(q.bid),ask=Number(q.ask);
+  const mid=(Number.isFinite(bid)&&Number.isFinite(ask))?(bid+ask)/2:(Number.isFinite(ask)?ask:bid);
+  const mult=Number(p.asset.currentMultiplier||1);
+  if(!Number.isFinite(mid)||!Number.isFinite(mult)) return null;
+  return mid*mult;
+}
+function renderTerminal(){
+  const keys=['OWNER','VAULT','TRADING','REWARDS','IDENTITY'];
+  const showZero=$('showZeroStocks').checked;
+  let combined=0,stockTotal=0,count=0;
+  const accountHtml=[];
+  for(const key of keys){
+    let accountUsd=0;
+    const rows=[];
+    for(const p of terminalState.positions){
+      const bal=p.balances[key]||0n;
+      if(bal===0n&&!showZero) continue;
+      const amount=tokenAmountNumber(bal,p.decimals);
+      const tokenUsd=assetTokenUsd(p);
+      const value=tokenUsd==null?null:amount*tokenUsd;
+      if(value!=null){accountUsd+=value;stockTotal+=value;combined+=value}
+      if(bal>0n) count++;
+      const a=p.asset, q=terminalState.quotes[a.tokenSymbol], dep=tokenDeployment(a);
+      const halted=q?.isTradingHalt===true;
+      rows.push(`<div class="holding">
+        <img class="tokenLogo" src="${escapeHtml(a.logoUrl||'')}" onerror="this.style.visibility='hidden'">
+        <div><div class="holdingTitle">${escapeHtml(a.tokenSymbol)} ${halted?'<span class="statusChip warn">HALT</span>':''}</div>
+        <div class="holdingMeta">${escapeHtml(a.tokenName||'Robinhood Stock Token')}<br>${escapeHtml(dep?.contractAddress||p.token)}</div></div>
+        <div class="holdingValue"><b>${value==null?'—':money(value)}</b><span>${amount.toLocaleString(undefined,{maximumFractionDigits:10})} tokens${tokenUsd==null?'':' · '+money(tokenUsd)+'/token'}</span></div>
+      </div>`);
+    }
+    accountHtml.push(`<div class="portfolioAccount">
+      <div class="portfolioAccountHead"><div><span class="badge">${key==='OWNER'?'OWNER':'ERC-6551'}</span><h3>${ACCOUNT_LABELS[key]}</h3></div><div class="usdBig">${money(accountUsd)}</div></div>
+      <div class="holdingMeta">${ACCOUNT_MAP[key]} · <a href="${BLOCKSCOUT}/address/${ACCOUNT_MAP[key]}" target="_blank" rel="noopener">Explorer ↗</a></div>
+      <div class="allocbar"><i style="width:${stockTotal?Math.min(100,accountUsd/Math.max(stockTotal,1)*100):0}%"></i></div>
+      ${rows.join('')||'<div class="emptyState">No canonical Stock Token balance detected.</div>'}
+    </div>`);
+  }
+  $('terminalTotalUsd').textContent=money(combined);
+  $('terminalStocksUsd').textContent=money(stockTotal);
+  $('terminalPositionCount').textContent=String(count);
+  $('portfolioAccountCards').innerHTML=accountHtml.join('');
+  $('terminalRefreshStatus').textContent='Refresh: '+new Date().toLocaleTimeString();
+  $('terminalRefreshStatus').className='statusChip good';
+  if(typeof renderCostBasisEditor==='function'){renderCostBasisEditor();renderHistoryMetrics();}
+  $('terminalLog').textContent=
+    `PASS — Phase 2 portfolio rendered.\n`+
+    `Canonical active assets in catalog: ${terminalState.catalog?.length||0}\n`+
+    `Non-zero account positions: ${count}\n`+
+    `Valued stock-token total: ${money(stockTotal)}\n`+
+    `Note: ETH is displayed in Accounts but excluded from combined USD until an ETH/USD valuation source is enabled.`;
+}
+async function discoverPortfolio(){
+  $('discoverPortfolio').disabled=true;
+  try{
+    $('catalogStatus').textContent='Catalog: loading…';
+    const assets=await loadRobinhoodCatalog(false);
+    $('catalogStatus').textContent=`Catalog: ${assets.length} active`;
+    $('catalogStatus').className='statusChip good';
+    const scanned=await scanCanonicalStockBalances(assets);
+    terminalState.positions=await enrichStockPositions(scanned);
+    await refreshTerminalPrices(false);
+    renderTerminal();
+  }finally{$('discoverPortfolio').disabled=false}
+}
+$('discoverPortfolio').onclick=()=>discoverPortfolio().catch(e=>{$('terminalLog').textContent='ERROR: '+e.message;$('catalogStatus').className='statusChip warn';alert(e.message)});
+$('refreshPortfolioPrices').onclick=()=>refreshTerminalPrices(true).catch(e=>{$('terminalLog').textContent='ERROR: '+e.message;alert(e.message)});
+$('showZeroStocks').onchange=()=>{if(terminalState.positions.length)renderTerminal()};
+
+
+
+const COST_BASIS_KEY='rustee-cost-basis-v2';
+let historyState={events:[],loadedAt:null};
+function loadCostBasis(){
+  try{return JSON.parse(localStorage.getItem(COST_BASIS_KEY)||'{}')}catch{return {}}
+}
+function saveCostBasis(x){localStorage.setItem(COST_BASIS_KEY,JSON.stringify(x))}
+function positionKey(accountKey,token){return accountKey+':'+token.toLowerCase()}
+function currentPositionUsd(accountKey,p){
+  const bal=p.balances[accountKey]||0n, px=assetTokenUsd(p);
+  return px==null?null:tokenAmountNumber(bal,p.decimals)*px;
+}
+function renderCostBasisEditor(){
+  if(!terminalState.positions.length){$('costBasisEditor').innerHTML='<div class="emptyState">Load Portfolio discovery first.</div>';return}
+  const basis=loadCostBasis(),keys=['OWNER','VAULT','TRADING','REWARDS','IDENTITY'],cards=[];
+  for(const key of keys){
+    for(const p of terminalState.positions){
+      const bal=p.balances[key]||0n;if(bal===0n)continue;
+      const pk=positionKey(key,p.token),cur=currentPositionUsd(key,p),cost=Number(basis[pk]||0),pnl=(cur==null?null:cur-cost);
+      cards.push(`<div class="lotCard">
+        <div class="portfolioAccountHead"><div><b>${escapeHtml(p.asset.tokenSymbol)} · ${escapeHtml(ACCOUNT_LABELS[key])}</b>
+        <div class="holdingMeta">${tokenAmountNumber(bal,p.decimals).toLocaleString(undefined,{maximumFractionDigits:10})} tokens · current ${cur==null?'—':money(cur)}</div></div>
+        <div class="${pnl==null?'':pnl>=0?'pnlPos':'pnlNeg'}">${pnl==null?'—':(pnl>=0?'+':'')+money(pnl)}</div></div>
+        <label class="sourceNote">Total USD cost basis for this current position
+        <input class="costInput" type="number" min="0" step="0.01" data-cost-key="${escapeHtml(pk)}" value="${cost||''}" placeholder="e.g. 4.00"></label>
+      </div>`);
+    }
+  }
+  $('costBasisEditor').innerHTML=cards.join('')||'<div class="emptyState">No non-zero canonical Stock Token positions.</div>';
+  document.querySelectorAll('[data-cost-key]').forEach(inp=>inp.onchange=()=>{
+    const b=loadCostBasis(),v=Number(inp.value);
+    if(Number.isFinite(v)&&v>=0)b[inp.dataset.costKey]=v;else delete b[inp.dataset.costKey];
+    saveCostBasis(b);renderHistoryMetrics();
+  });
+}
+function renderHistoryMetrics(){
+  const basis=loadCostBasis(),keys=['OWNER','VAULT','TRADING','REWARDS','IDENTITY'];
+  let cur=0,cost=0;
+  for(const key of keys)for(const p of terminalState.positions){
+    const bal=p.balances[key]||0n;if(bal===0n)continue;
+    const v=currentPositionUsd(key,p);if(v!=null)cur+=v;
+    cost+=Number(basis[positionKey(key,p.token)]||0);
+  }
+  const pnl=cur-cost;
+  $('histCurrentValue').textContent=money(cur);
+  $('histCostBasis').textContent=money(cost);
+  $('histUnrealized').textContent=(pnl>=0?'+':'')+money(pnl);
+  $('histUnrealized').className=pnl>=0?'pnlPos':'pnlNeg';
+  $('histEventCount').textContent=String(historyState.events.length);
+}
+async function blockscoutTokenTransfers(address){
+  // Blockscout v2 API: read-only indexed transfer history.
+  const url=`${BLOCKSCOUT}/api/v2/addresses/${address}/token-transfers?type=ERC-20`;
+  const data=await fetchJson(url);
+  return data.items||[];
+}
+function knownAccountKey(addr){
+  const a=(addr||'').toLowerCase();
+  return Object.keys(ACCOUNT_MAP).find(k=>ACCOUNT_MAP[k].toLowerCase()===a)||null;
+}
+function normalizeTransfer(item,queriedKey){
+  const tokenAddr=(item.token?.address_hash||item.token?.address||item.token_hash||'').toLowerCase();
+  const p=terminalState.positions.find(x=>x.token.toLowerCase()===tokenAddr);
+  if(!p)return null;
+  const from=item.from?.hash||item.from?.address_hash||item.from||'';
+  const to=item.to?.hash||item.to?.address_hash||item.to||'';
+  const raw=BigInt(item.total?.value||item.value||0);
+  const dec=Number(item.total?.decimals??item.token?.decimals??p.decimals);
+  const fromKey=knownAccountKey(from),toKey=knownAccountKey(to);
+  let direction='MOVE',account=queriedKey,counterparty='';
+  if(toKey===queriedKey && !fromKey){direction='IN';counterparty=from}
+  else if(fromKey===queriedKey && !toKey){direction='OUT';counterparty=to}
+  else if(fromKey&&toKey){direction='INTERNAL';account=fromKey+' → '+toKey;counterparty='Rustee internal'}
+  return {
+    txHash:item.transaction_hash||item.tx_hash||'',
+    timestamp:item.timestamp||item.block_timestamp||'',
+    block:Number(item.block_number||0),
+    token:p.token,symbol:p.asset.tokenSymbol,
+    amount:unitsToDecimal(raw,dec,Math.min(dec,12)),
+    from,to,fromKey,toKey,direction,account,counterparty
+  };
+}
+async function loadOnchainHistory(){
+  if(!terminalState.positions.length)await discoverPortfolio();
+  $('loadHistory').disabled=true;
+  try{
+    const keys=['OWNER','VAULT','TRADING','REWARDS','IDENTITY'],all=[];
+    for(let i=0;i<keys.length;i++){
+      const key=keys[i];
+      $('historyLog').textContent=`Loading indexed ERC-20 history… ${i+1}/${keys.length} ${ACCOUNT_LABELS[key]}`;
+      let items=[];
+      try{items=await blockscoutTokenTransfers(ACCOUNT_MAP[key])}catch(e){console.warn('Blockscout history',key,e)}
+      for(const it of items){const n=normalizeTransfer(it,key);if(n)all.push(n)}
+    }
+    const uniq=new Map();
+    for(const e of all){
+      const k=[e.txHash,e.token,e.from,e.to,e.amount].join(':');
+      if(!uniq.has(k))uniq.set(k,e);
+    }
+    historyState.events=[...uniq.values()].sort((a,b)=>(b.block||0)-(a.block||0));
+    historyState.loadedAt=new Date().toISOString();
+    renderHistoryTable();renderCostBasisEditor();renderHistoryMetrics();
+    $('historyLog').textContent=`PASS — loaded ${historyState.events.length} canonical Stock Token transfer events across five Rustee addresses.\nIndexed source: Robinhood Chain Blockscout.\nCost basis remains local/manual unless explicitly entered.`;
+  }finally{$('loadHistory').disabled=false}
+}
+function renderHistoryTable(){
+  const f=$('historyAccountFilter').value;
+  const rows=historyState.events.filter(e=>f==='ALL'||e.fromKey===f||e.toKey===f);
+  $('historyRows').innerHTML=rows.map(e=>{
+    const cls=e.direction==='IN'?'txBuy':e.direction==='OUT'?'txSell':'txMove';
+    const when=e.timestamp?new Date(e.timestamp).toLocaleString():'#'+e.block;
+    const acct=typeof e.account==='string'&&e.account.includes('→')?e.account:ACCOUNT_LABELS[e.account]||e.account;
+    return `<tr><td>${escapeHtml(when)}</td><td><b>${escapeHtml(e.symbol)}</b></td><td class="${cls}">${escapeHtml(e.direction)}</td>
+      <td>${escapeHtml(e.amount)}</td><td>${escapeHtml(acct)}</td><td class="holdingMeta">${escapeHtml(short(e.counterparty||''))}</td>
+      <td><a href="${BLOCKSCOUT}/tx/${escapeHtml(e.txHash)}" target="_blank" rel="noopener">${escapeHtml(short(e.txHash))} ↗</a></td></tr>`;
+  }).join('')||'<tr><td colspan="7">No matching canonical Stock Token transfers found.</td></tr>';
+}
+function exportLedgerJson(){
+  const payload={
+    project:'Rustee Broker Portfolio Terminal',
+    version:'2.1-phase2',
+    chainId:CHAIN,
+    generatedAt:new Date().toISOString(),
+    accounts:ACCOUNT_MAP,
+    costBasisUsd:loadCostBasis(),
+    transferHistory:historyState.events,
+    note:'Cost basis values are user-entered local ledger data; transfer history is indexed on-chain data.'
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='rustee-portfolio-ledger.json';a.click();URL.revokeObjectURL(a.href);
+}
+$('loadHistory').onclick=()=>loadOnchainHistory().catch(e=>{$('historyLog').textContent='ERROR: '+e.message;alert(e.message)});
+$('recalcPnl').onclick=()=>{renderCostBasisEditor();renderHistoryMetrics()};
+$('exportLedger').onclick=exportLedgerJson;
+$('clearLedger').onclick=()=>{if(confirm('Clear locally stored cost-basis values? On-chain history is unaffected.')){localStorage.removeItem(COST_BASIS_KEY);renderCostBasisEditor();renderHistoryMetrics()}};
+$('historyAccountFilter').onchange=renderHistoryTable;
 
 function bind(id,fn){$(id).onclick=()=>fn().catch(e=>alert(e.message))}
 bind('connect',connect);bind('switch',switchChain);bind('preflight',preflight);bind('quote',getQuote);
