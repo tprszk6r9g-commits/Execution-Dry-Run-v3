@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-uSEGmyZrGzhTzZ/vTuIfL0SzJPmLtyGxbcl9wPZw2+M='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6awd4pVUSCWucM9D3lAMVA19D6WrvW/T1DHa6B/Sw6Q='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
 <title>Rustee Broker Portfolio Terminal v2.8.4 · Wallet Recovery</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
@@ -232,6 +232,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
         <button id="commandSwitch">Switch/add Robinhood Chain</button>
         <button id="commandWalletRefresh">Refresh wallet</button>
       </div>
+      <div class="actions" id="walletChoices" style="margin-top:8px;display:none"></div>
       <pre id="commandWalletLog">Waiting for injected wallet provider.</pre>
     </div>
 
@@ -1164,7 +1165,7 @@ async function moveAsset(){
 }
 async function connect(){
   const p=await waitForInjectedWallet(4000);
-  if(!p) throw Error('Injected wallet not detected. Open this page inside MetaMask or another EVM wallet browser.');
+  if(!p) throw Error(announcedWallets.size>1?'Multiple wallets detected. Choose one above, then tap Connect wallet.':'No EVM wallet detected. Open this page in your wallet browser, or enable the extension for this site.');
   if($('commandWalletLog'))$('commandWalletLog').textContent='Requesting wallet connection…';
   let a;
   try{
@@ -3045,10 +3046,14 @@ async function validateSecurityDestination(tx){
   return true;
 }
 async function hardenedTxPreflight(tx,label='Transaction'){
-  if(!window.ethereum)throw Error('SECURITY: no injected wallet provider');
+  // `wallet` was never declared here; it resolved to the <strong id="wallet">
+  // DOM element via the global-name lookup, so wallet.request threw a
+  // TypeError and every signed transaction died at this gate.
+  const wallet=injectedWalletProvider();
+  if(!wallet)throw Error('SECURITY: no injected wallet provider');
 
   const cid=Number(BigInt(await withTimeout(
-    ethereum.request({method:'eth_chainId'}),3000,'wallet chain check'
+    wallet.request({method:'eth_chainId'}),3000,'wallet chain check'
   )));
   if(cid!==CHAIN)throw Error(`SECURITY: wrong chain ${cid}; expected ${CHAIN}`);
 
@@ -3091,6 +3096,11 @@ async function secureSendTransaction(tx,label='Transaction'){
     setSticky('Security pre-sign check…');
     await hardenedTxPreflight(tx,label);
     setSticky('Opening wallet…');
+    // Same undeclared-`wallet` bug as the preflight: this resolved to the
+    // <strong id="wallet"> element, so the signature request never reached
+    // the wallet.
+    const wallet=injectedWalletProvider();
+    if(!wallet)throw Error('SECURITY: no injected wallet provider at signature time');
     const hash=await withTimeout(
       wallet.request({method:'eth_sendTransaction',params:[tx]}),
       120000,
@@ -3168,20 +3178,85 @@ $('receiptList')?.addEventListener('click',e=>{
 });
 
 
-// --- v2.8.4 iOS / injected-wallet recovery ---
-function injectedWalletProvider(){
+// --- v2.8.5 EIP-6963 multi-wallet discovery ---
+// Rabby and other modern wallets announce themselves over EIP-6963 and may
+// never claim window.ethereum (Rabby does not when "set as default wallet"
+// is off). Discovery therefore listens for announcements first and only
+// falls back to the legacy global.
+const WALLET_CHOICE_KEY='rustee-wallet-rdns';
+const announcedWallets=new Map();   // rdns -> {info, provider}
+
+window.addEventListener('eip6963:announceProvider', ev=>{
+  const d=ev?.detail;
+  if(!d?.info?.rdns||typeof d?.provider?.request!=='function')return;
+  const isNew=!announcedWallets.has(d.info.rdns);
+  announcedWallets.set(d.info.rdns,d);
+  if(isNew){
+    try{renderWalletChoices()}catch{}
+    try{renderWalletConnectionState()}catch{}
+  }
+});
+function requestAnnouncements(){
+  try{window.dispatchEvent(new Event('eip6963:requestProvider'))}catch{}
+}
+requestAnnouncements();
+
+function legacyProvider(){
   const p=window.ethereum||globalThis.ethereum||null;
   if(!p)return null;
   if(Array.isArray(p.providers)&&p.providers.length){
-    return p.providers.find(x=>x?.isMetaMask)||p.providers.find(x=>typeof x?.request==='function')||p;
+    // Deliberately no isMetaMask preference: that silently hijacked Rabby
+    // in multi-wallet browsers.
+    return p.providers.find(x=>typeof x?.request==='function')||null;
   }
   return typeof p.request==='function'?p:null;
 }
+function selectedWalletRdns(){
+  try{return localStorage.getItem(WALLET_CHOICE_KEY)||null}catch{return null}
+}
+function selectWallet(rdns){
+  try{localStorage.setItem(WALLET_CHOICE_KEY,rdns)}catch{}
+  renderWalletChoices();
+  renderWalletConnectionState();
+  restoreWalletConnection().catch(()=>{});
+}
+function injectedWalletProvider(){
+  const chosen=selectedWalletRdns();
+  if(chosen&&announcedWallets.has(chosen))return announcedWallets.get(chosen).provider;
+  if(announcedWallets.size===1)return [...announcedWallets.values()][0].provider;
+  if(announcedWallets.size>1)return null;   // ambiguous: user must pick
+  return legacyProvider();
+}
+function activeWalletName(){
+  const chosen=selectedWalletRdns();
+  if(chosen&&announcedWallets.has(chosen))return announcedWallets.get(chosen).info.name;
+  if(announcedWallets.size===1)return [...announcedWallets.values()][0].info.name;
+  return legacyProvider()?'Injected (legacy)':null;
+}
+function renderWalletChoices(){
+  const host=$('walletChoices');
+  if(!host)return;
+  host.innerHTML='';
+  if(announcedWallets.size<2){host.style.display='none';return}
+  host.style.display='';
+  const chosen=selectedWalletRdns();
+  const label=document.createElement('small');
+  label.textContent='Multiple wallets detected — choose one:';
+  host.appendChild(label);
+  for(const {info} of announcedWallets.values()){
+    const b=document.createElement('button');
+    b.textContent=(info.rdns===chosen?'\u2713 ':'')+info.name;
+    b.addEventListener('click',()=>selectWallet(info.rdns));
+    host.appendChild(b);
+  }
+}
 async function waitForInjectedWallet(timeoutMs=4000){
   const started=Date.now();
+  requestAnnouncements();
   while(Date.now()-started<timeoutMs){
     const p=injectedWalletProvider();
     if(p)return p;
+    if((Date.now()-started)%500<110)requestAnnouncements();
     await new Promise(r=>setTimeout(r,100));
   }
   return null;
@@ -3189,7 +3264,9 @@ async function waitForInjectedWallet(timeoutMs=4000){
 function renderWalletConnectionState(){
   const p=injectedWalletProvider();
   if($('cmdProvider')){
-    $('cmdProvider').textContent=p?'Injected ✓':'Not detected';
+    const nm=activeWalletName();
+    $('cmdProvider').textContent=p?(nm?nm+' \u2713':'Injected \u2713')
+      :(announcedWallets.size>1?'Choose a wallet':'Not detected');
     $('cmdProvider').className=p?'healthGood':'healthWarn';
   }
   if($('cmdWalletAddress'))$('cmdWalletAddress').textContent=account?short(account):'—';
@@ -3284,7 +3361,18 @@ async function installWalletListeners(){
     restoreWalletConnection().catch(()=>{});
   });
 }
-installWalletListeners().catch(()=>{});
-setTimeout(()=>restoreWalletConnection().catch(()=>{}),250);
+// Startup errors were previously swallowed by empty catch handlers, which is
+// why a failure here left the Provider field frozen on its initial "Checking…"
+// value with nothing logged anywhere.
+function reportStartupFailure(where,e){
+  const msg=`WALLET STARTUP FAILURE (${where})\n${e?.name||'Error'}: ${e?.message||e}`;
+  if($('commandWalletLog'))$('commandWalletLog').textContent=msg;
+  if($('cmdProvider')){$('cmdProvider').textContent='Startup error';$('cmdProvider').className='healthBad'}
+  console.error(where,e);
+}
+try{renderWalletChoices()}catch(e){reportStartupFailure('renderWalletChoices',e)}
+try{renderWalletConnectionState()}catch(e){reportStartupFailure('renderWalletConnectionState',e)}
+installWalletListeners().catch(e=>reportStartupFailure('installWalletListeners',e));
+setTimeout(()=>restoreWalletConnection().catch(e=>reportStartupFailure('restoreWalletConnection',e)),250);
 </script>
 </body></html>

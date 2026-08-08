@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rustee Wallet Diagnostic</title>
+<style>
+body{margin:0;background:#07100e;color:#dceee8;
+  font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;padding:14px;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+h1{font-size:17px;margin:0 0 4px}
+.sub{color:#7d998f;font-size:12px;margin-bottom:14px}
+section{background:#0d1a17;border:1px solid #1c332d;border-radius:10px;
+  padding:12px;margin-bottom:10px}
+h2{font-size:12px;margin:0 0 8px;color:#2fd4a8;text-transform:uppercase;letter-spacing:.08em}
+pre{background:#050d0b;border:1px solid #1c332d;border-radius:8px;padding:10px;
+  font-size:11.5px;white-space:pre-wrap;word-break:break-all;margin:0;color:#b9d6cc}
+button{width:100%;padding:12px;margin-top:8px;border-radius:8px;border:1px solid #1c332d;
+  background:#12241f;color:#dceee8;font:600 13px ui-monospace,monospace;-webkit-appearance:none}
+button.go{background:#2fd4a8;color:#04120e;border-color:#2fd4a8}
+.ok{color:#3ddc97}.bad{color:#e2544c}.warn{color:#e8b53d}
+</style>
+</head>
+<body>
+<h1>Wallet Diagnostic</h1>
+<div class="sub">Read-only. Nothing is signed. No CSP, no dependencies.</div>
+
+<section>
+  <h2>1 &middot; Environment</h2>
+  <pre id="env">collecting…</pre>
+</section>
+
+<section>
+  <h2>2 &middot; Legacy window.ethereum</h2>
+  <pre id="legacy">collecting…</pre>
+</section>
+
+<section>
+  <h2>3 &middot; EIP-6963 announcements</h2>
+  <pre id="six">listening…</pre>
+  <button id="reask">Re-request announcements</button>
+</section>
+
+<section>
+  <h2>4 &middot; Try connecting</h2>
+  <div id="connectButtons"></div>
+  <pre id="connectLog">Pick a provider above.</pre>
+</section>
+
+<section>
+  <h2>5 &middot; Copy for support</h2>
+  <button id="copy" class="go">Copy full report</button>
+  <pre id="copyLog">&nbsp;</pre>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+const announced = new Map();
+const errors = [];
+
+window.addEventListener('error', e => {
+  errors.push('window.error: ' + (e?.message || e));
+  render();
+});
+window.addEventListener('unhandledrejection', e => {
+  errors.push('unhandledrejection: ' + (e?.reason?.message || e?.reason || e));
+  render();
+});
+
+window.addEventListener('eip6963:announceProvider', ev => {
+  const d = ev?.detail;
+  if (!d?.info?.rdns) return;
+  announced.set(d.info.rdns, d);
+  render();
+});
+function reask() {
+  try { window.dispatchEvent(new Event('eip6963:requestProvider')); }
+  catch (e) { errors.push('requestProvider failed: ' + e.message); }
+  render();
+}
+
+function describeLegacy() {
+  const e = window.ethereum;
+  if (!e) return { present: false };
+  const flags = {};
+  for (const k of ['isMetaMask','isRabby','isCoinbaseWallet','isBraveWallet',
+                   'isTrust','isRainbow','isZerion','isOkxWallet','isPhantom']) {
+    if (e[k]) flags[k] = true;
+  }
+  const out = {
+    present: true,
+    hasRequest: typeof e.request === 'function',
+    flags,
+    providersArray: Array.isArray(e.providers) ? e.providers.length : null,
+  };
+  if (Array.isArray(e.providers)) {
+    out.providers = e.providers.map(p => {
+      const f = {};
+      for (const k of ['isMetaMask','isRabby','isCoinbaseWallet','isBraveWallet']) {
+        if (p?.[k]) f[k] = true;
+      }
+      return { hasRequest: typeof p?.request === 'function', flags: f };
+    });
+  }
+  return out;
+}
+
+function report() {
+  return {
+    time: new Date().toISOString(),
+    url: location.href,
+    userAgent: navigator.userAgent,
+    secureContext: window.isSecureContext,
+    protocol: location.protocol,
+    legacy: describeLegacy(),
+    eip6963: [...announced.values()].map(d => ({
+      rdns: d.info.rdns, name: d.info.name
+    })),
+    errors,
+  };
+}
+
+function render() {
+  const r = report();
+  $('env').textContent =
+    `protocol:       ${r.protocol}\n` +
+    `secureContext:  ${r.secureContext}\n` +
+    `userAgent:      ${r.userAgent}`;
+
+  const L = r.legacy;
+  $('legacy').innerHTML = L.present
+    ? `<span class="ok">window.ethereum PRESENT</span>\n` +
+      `request():      ${L.hasRequest}\n` +
+      `flags:          ${Object.keys(L.flags).join(', ') || '(none)'}\n` +
+      `providers[]:    ${L.providersArray ?? 'absent'}` +
+      (L.providers ? '\n' + JSON.stringify(L.providers, null, 2) : '')
+    : `<span class="bad">window.ethereum ABSENT</span>\n` +
+      `On iOS this means the page is NOT inside a wallet browser,\n` +
+      `or the wallet does not claim the legacy global.`;
+
+  $('six').innerHTML = announced.size
+    ? `<span class="ok">${announced.size} wallet(s) announced</span>\n` +
+      [...announced.values()].map(d => `  ${d.info.name}  (${d.info.rdns})`).join('\n')
+    : `<span class="warn">no EIP-6963 announcements received</span>`;
+
+  const host = $('connectButtons');
+  host.innerHTML = '';
+  const opts = [];
+  for (const d of announced.values()) opts.push({ label: d.info.name, provider: d.provider });
+  if (L.present && typeof window.ethereum.request === 'function' && !announced.size) {
+    opts.push({ label: 'window.ethereum (legacy)', provider: window.ethereum });
+  }
+  if (!opts.length) {
+    host.innerHTML = '<div class="warn">No provider available to connect.</div>';
+  } else {
+    for (const o of opts) {
+      const b = document.createElement('button');
+      b.textContent = 'Connect via ' + o.label;
+      b.addEventListener('click', () => tryConnect(o));
+      host.appendChild(b);
+    }
+  }
+
+  if (errors.length) {
+    $('copyLog').innerHTML = '<span class="bad">' + errors.length + ' error(s) captured</span>';
+  }
+}
+
+async function tryConnect(o) {
+  $('connectLog').textContent = 'Requesting accounts from ' + o.label + '…';
+  try {
+    const accounts = await o.provider.request({ method: 'eth_requestAccounts' });
+    let chain = null;
+    try { chain = await o.provider.request({ method: 'eth_chainId' }); } catch {}
+    $('connectLog').innerHTML =
+      `<span class="ok">CONNECTED via ${o.label}</span>\n` +
+      `accounts: ${JSON.stringify(accounts)}\n` +
+      `chainId:  ${chain} (${chain ? Number(BigInt(chain)) : '?'})`;
+  } catch (e) {
+    $('connectLog').innerHTML =
+      `<span class="bad">FAILED via ${o.label}</span>\n` +
+      `code:    ${e?.code ?? '(none)'}\n` +
+      `message: ${e?.message || e}`;
+  }
+}
+
+$('reask').addEventListener('click', reask);
+$('copy').addEventListener('click', async () => {
+  const text = JSON.stringify(report(), null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    $('copyLog').textContent = 'Copied. Paste it into the chat.';
+  } catch {
+    $('copyLog').textContent = text;
+  }
+});
+
+render();
+reask();
+// Wallets can inject late on iOS; keep polling for a while.
+let n = 0;
+const t = setInterval(() => { reask(); render(); if (++n > 20) clearInterval(t); }, 500);
+</script>
+</body>
+</html>
