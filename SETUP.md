@@ -1,22 +1,24 @@
-# GitHub setup for v4.9
+# v4.9.2 Setup
 
-1. Upload this package's files to the repository root.
-2. Confirm the workflow exists at `.github/workflows/main.yaml`.
-3. In GitHub: Settings -> Secrets and variables -> Actions.
-4. Add only the production variables you actually possess and can document.
-5. Run `Rustee Broker Production Input Resolution v4.9`.
-6. Read the generated report. Do not proceed to a live transaction unless the
-   separate final preflight phase is built and all safety gates are green.
+Upload the package preserving:
 
-Important: `main.yaml` at the root is only an easy-to-find copy. GitHub Actions
-uses `.github/workflows/main.yaml`.
+`.github/workflows/main.yaml`
 
+The root `main.yaml` is included for easy iPhone access.
 
-## v4.9.1 correction
+Your existing `ARCHIVE_RPC_URL` secret remains unchanged.
 
-`ARCHIVE_RPC_URL` is read from **GitHub Actions Secrets**, not Variables:
+When you obtain the full authoritative Chainlink ETH/USD Data Streams feed ID,
+add it under:
 
-- Secret name: `ARCHIVE_RPC_URL`
-- Workflow expression: `${{ secrets.ARCHIVE_RPC_URL }}`
+GitHub -> Settings -> Secrets and variables -> Actions -> Variables
 
-All non-sensitive configuration values may remain repository variables.
+as:
+
+`ETH_USD_DATA_STREAM_ID`
+
+Also add its official provenance URL as:
+
+`ETH_USD_DATA_STREAM_PROVENANCE_URL`
+
+Do not enter an abbreviated ID such as `0x0003...xxxx`.

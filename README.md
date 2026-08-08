@@ -1,38 +1,42 @@
-# Rustee Broker Production Input Resolution v4.9
+# Rustee Broker Data Streams + Sequencer Resolution v4.9.2
 
-v4.9 is the production-input resolution phase after v4.8.1.
+This phase locks in two production architecture decisions:
 
-It remains strictly read-only and cannot broadcast any mainnet transaction.
+1. **ETH/USD:** Chainlink Data Streams through Robinhood Chain's verified
+   verifier proxy.
+2. **Sequencer protection:** `REGISTRY_V2_CHAIN_SPECIFIC_GUARD`.
 
-## Repository variables
+The current deployed Registry remains paused.
 
-Set only values you can document authoritatively. `ARCHIVE_RPC_URL` must be a GitHub Actions **secret**; the remaining non-sensitive inputs may be repository variables:
+## Required GitHub inputs
 
-- `ARCHIVE_RPC_URL`
-- `ETH_USD_FEED_ADDRESS`
-- `ETH_USD_PROVENANCE_URL`
-- `ETH_USD_HEARTBEAT_SECONDS`
+`ARCHIVE_RPC_URL` remains a GitHub Actions **secret** and is already expected to
+be configured.
+
+Add these repository variables only when you have authoritative values:
+
 - `ETH_USD_DATA_STREAM_ID`
 - `ETH_USD_DATA_STREAM_PROVENANCE_URL`
-- `SEQUENCER_PRODUCTION_OPTION`
+- `ETH_USD_SIGNED_REPORT_EVIDENCE_URL`
 - `ORACLE_AUDIT_URL`
 - `ADAPTER_AUDIT_URL`
 
-Allowed sequencer options:
+Do not invent or abbreviate the feed ID.
 
-- `REGISTRY_V2_CHAIN_SPECIFIC_GUARD`
-- `KEEP_CURRENT_REGISTRY_PAUSED`
+## What v4.9.2 does
 
-Do not invent feed addresses, Data Streams feed IDs, provenance, or audit evidence.
+- rechecks deployed Rustee/Robinhood bindings;
+- reconfirms archive historical-state access;
+- validates a full bytes32 Data Streams feed ID if supplied;
+- pins Robinhood's Data Streams verifier proxy;
+- selects the Registry V2 chain-specific guard architecture;
+- generates `REGISTRY_V2_GUARD_SPEC.md`;
+- records audit evidence inputs;
+- keeps every mainnet write permission false.
 
-## Completion condition
+## Next phase
 
-v4.9 reports `readyForFinalMainnetPreflight: true` only when:
+`v4.9.3` should replay a real signed ETH/USD Data Streams report through the
+Robinhood verifier path and implement/test the Registry V2 guard on a fork.
 
-1. archive evidence passes with at least 8 successful historical samples;
-2. liquidity continuity passes;
-3. an authoritative ETH/USD candidate path is configured;
-4. a production sequencer design is explicitly selected;
-5. independent oracle and adapter review evidence is present.
-
-Even then, every mainnet write flag remains false. The next phase is a separate final preflight.
+No live transaction is authorized here.
