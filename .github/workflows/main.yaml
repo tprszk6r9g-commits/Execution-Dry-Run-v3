@@ -1,4 +1,4 @@
-name: Deploy Rustee Portfolio Terminal v2.8.3 Hardened
+name: Deploy Rustee Portfolio Terminal v2.8.4 Hardened
 
 on:
   push:
@@ -26,9 +26,12 @@ jobs:
         run: |
           set -euo pipefail
           test -s index.html
-          grep -q "Portfolio Terminal v2.8.3" index.html
+          grep -q "Portfolio Terminal v2.8.4" index.html
           grep -q "Content-Security-Policy" index.html
           grep -q "secureSendTransaction" index.html
+          grep -q "waitForInjectedWallet" index.html
+          grep -q "commandConnect" index.html
+          grep -q "restoreWalletConnection" index.html
           grep -q "withTimeout" index.html
           grep -q "commandRefreshPromise" index.html
           grep -q "optionalSecurityDigest" index.html
@@ -77,7 +80,7 @@ jobs:
                   raise RuntimeError("refusing unexpected snapshot host: "+str(parsed.hostname))
               req=urllib.request.Request(url,headers={
                   "Accept":"application/json",
-                  "User-Agent":"Rustee-Portfolio-Terminal-v2.8.3"
+                  "User-Agent":"Rustee-Portfolio-Terminal-v2.8.4"
               })
               last=None
               for i in range(3):
