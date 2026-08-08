@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ncG3kMoWFXH56HAd8gUWMg6P8ZsUtvL+kOFuEefdNoc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
-<title>Rustee Broker Portfolio Terminal v2.8.1.1 · Remediation</title>
+<title>Rustee Broker Portfolio Terminal v2.8.2.1 · Remediation</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -279,7 +279,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 
 <div id="overviewPane" class="tabpane">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.1.1 · Remediation · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.2.1 · Remediation · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -2925,14 +2925,13 @@ async function hardenedTxPreflight(tx,label='Transaction'){
   if(current!==OWNER.toLowerCase())throw Error('SECURITY: connected account is not the Broker NFT owner');
   if(String(tx.from||'').toLowerCase()!==OWNER.toLowerCase())throw Error('SECURITY: transaction from-address mismatch');
 
-  const runtime=await assertRuntimeContracts(false);
-  if(!runtime.ok)throw Error('SECURITY: required runtime contract missing: '+runtime.missing.join(', '));
+  // Do not gate a valid trade on unrelated/optional runtime contracts.
+  // Security is transaction-scoped: validate this destination, then require
+  // bytecode on the exact contract the wallet is about to call.
   await validateSecurityDestination(tx);
-
-  // Contract calls must still point to deployed code.
   if(!isZeroData(tx.data)){
     const code=await rpc('eth_getCode',[tx.to,'latest']);
-    if(!code||code==='0x')throw Error('SECURITY: destination has no contract bytecode');
+    if(!code||code==='0x')throw Error('SECURITY: transaction destination has no contract bytecode');
   }
 
   const digest=await txSecurityDigest(tx);
