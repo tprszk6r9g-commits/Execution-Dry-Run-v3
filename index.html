@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-3gCtkJIWcLwQ9Znazu+rUFqSTMf2sNroHXwhAIO4MYg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
-<title>Rustee Broker Portfolio Terminal v2.8.10 · Mobile Wallet Recovery</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-goKbHDS9BWz4no+AQpKHYRhs4lG1rqHw91sP6fHP9tE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
+<title>Rustee Broker Portfolio Terminal v2.8.11 · CSP Wallet Fix</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -296,7 +296,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 
 <div id="overviewPane" class="tabpane">
 
-<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.10 · Mobile Wallet Recovery · Manual Signature Only</span>
+<span class="pill">Robinhood Chain · Mainnet 4663 · Portfolio Terminal v2.8.11 · CSP Wallet Fix · Manual Signature Only</span>
 <h1>Rustee NVDA Trade Executor</h1>
 <p>This standalone performs a manually approved, real mainnet NVDA purchase using Rustee's generic <b>Vault TBA</b> as the executor and sends the purchased NVDA directly to the <b>Trading TBA</b>. It does not enable autonomous trading or change the paused StockTokenRegistry.</p>
 
@@ -971,85 +971,6 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 <div class="footer">No seed phrase or private key is ever requested. Wallet signatures are performed only by the injected wallet provider.</div>
 </main>
 
-<script id="rustee-wallet-bootstrap">
-// v2.8.10 mobile wallet bootstrap: runs independently of the main terminal.
-// This keeps Rabby/EIP-6963 discovery alive even if another UI module throws.
-(function(){
-  const bridge=window.__rusteeWalletBridge=window.__rusteeWalletBridge||{providers:new Map(),provider:null,account:null};
-  const OWNER='0x8fC320c8582f812695b6f62b2b5d13B14475B955';
-  function byId(id){return document.getElementById(id)}
-  function short(a){return a?`${a.slice(0,8)}…${a.slice(-6)}`:'—'}
-  function remember(p,name,rdns){
-    if(!p||typeof p.request!=='function')return;
-    bridge.provider=p; bridge.name=name||'Injected wallet'; bridge.rdns=rdns||null;
-    window.__rusteeEarlyProvider=p;
-    paint();
-  }
-  function legacy(){
-    const e=window.ethereum||globalThis.ethereum;
-    if(!e)return null;
-    if(Array.isArray(e.providers)){
-      const rabby=e.providers.find(x=>x?.isRabby);
-      return rabby||e.providers.find(x=>typeof x?.request==='function')||null;
-    }
-    return typeof e.request==='function'?e:null;
-  }
-  function paint(){
-    const pv=byId('cmdProvider');
-    if(pv){
-      pv.textContent=bridge.provider?`${bridge.name||'Injected'} ✓`:'Searching for wallet…';
-      pv.className=bridge.provider?'healthGood':'healthWarn';
-    }
-    const wa=byId('cmdWalletAddress'); if(wa)wa.textContent=bridge.account?short(bridge.account):'—';
-    const st=byId('cmdWalletStatus');
-    if(st){
-      const ok=bridge.account&&bridge.account.toLowerCase()===OWNER.toLowerCase();
-      st.textContent=ok?'OWNER CONNECTED ✓':bridge.account?'WRONG WALLET':'Disconnected';
-      st.className=ok?'healthGood':bridge.account?'healthBad':'healthWarn';
-    }
-  }
-  async function refreshAccounts(){
-    const p=bridge.provider||legacy(); if(!p)return;
-    if(!bridge.provider)remember(p,p.isRabby?'Rabby Wallet':'Injected (legacy)',p.isRabby?'io.rabby':null);
-    try{
-      const a=await p.request({method:'eth_accounts'});
-      bridge.account=a?.[0]||null; window.__rusteeEarlyAccount=bridge.account; paint();
-    }catch{}
-  }
-  async function connect(){
-    let p=bridge.provider||legacy();
-    if(!p){ request(); await new Promise(r=>setTimeout(r,800)); p=bridge.provider||legacy(); }
-    if(!p)throw new Error('No injected EVM wallet detected yet. Keep this page open inside Rabby and tap Connect again.');
-    remember(p,bridge.name||(p.isRabby?'Rabby Wallet':'Injected wallet'),bridge.rdns);
-    const a=await p.request({method:'eth_requestAccounts'});
-    bridge.account=a?.[0]||null; window.__rusteeEarlyAccount=bridge.account; paint();
-    try{window.dispatchEvent(new CustomEvent('rustee:wallet-ready',{detail:{provider:p,account:bridge.account}}))}catch{}
-    return bridge.account;
-  }
-  function request(){try{window.dispatchEvent(new Event('eip6963:requestProvider'))}catch{}}
-  window.addEventListener('eip6963:announceProvider',ev=>{
-    const d=ev?.detail; if(!d?.provider||typeof d.provider.request!=='function')return;
-    bridge.providers.set(d.info?.rdns||d.info?.name||String(bridge.providers.size),d);
-    const isRabby=/rabby/i.test(d.info?.name||'')||/rabby/i.test(d.info?.rdns||'')||d.provider?.isRabby;
-    if(isRabby||!bridge.provider)remember(d.provider,d.info?.name||'Injected wallet',d.info?.rdns||null);
-    refreshAccounts();
-  });
-  window.addEventListener('ethereum#initialized',()=>{const p=legacy();if(p)remember(p,p.isRabby?'Rabby Wallet':'Injected (legacy)');refreshAccounts();},{once:false});
-  bridge.connect=connect; bridge.refresh=refreshAccounts; bridge.request=request;
-  const attach=()=>{
-    const b=byId('commandConnect');
-    if(b&&!b.dataset.earlyWalletBound){
-      b.dataset.earlyWalletBound='1';
-      b.addEventListener('click',()=>connect().catch(e=>{
-        const l=byId('commandWalletLog'); if(l)l.textContent='Wallet connection: '+(e?.message||e);
-      }),true);
-    }
-  };
-  attach(); paint(); request();
-  [0,250,750,1500,3000,6000,10000,15000].forEach(ms=>setTimeout(()=>{attach();const p=legacy();if(p&&!bridge.provider)remember(p,p.isRabby?'Rabby Wallet':'Injected (legacy)');request();refreshAccounts();},ms));
-})();
-</script>
-
 <script>
 // --- boot instrumentation (must be first) ---
 // Global handlers used to be registered ~2200 lines in. Anything that threw
@@ -1111,7 +1032,7 @@ const SEL_QUOTE_PATH='cdca1753', SEL_EXACT_INPUT_PATH='b858183f';
 const SEL_TRANSFER='a9059cbb', SEL_DECIMALS='313ce567', SEL_SYMBOL='95d89b41', SEL_APPROVE='095ea7b3', SEL_ALLOWANCE='dd62ed3e';
 const SEL_WITHDRAW_TOKEN='9e281a98', SEL_WITHDRAW_ETH='f14210a6';
 
-let account=window.__rusteeEarlyAccount||null, quoteState=null, simulationState=null, assetState=null, assetMoveSimulation=null;
+let account=null, quoteState=null, simulationState=null, assetState=null, assetMoveSimulation=null;
 
 const $=id=>document.getElementById(id);
 const word=x=>BigInt(x).toString(16).padStart(64,'0');
@@ -1300,7 +1221,7 @@ async function moveAsset(){
   assetMoveSimulation=null;
 }
 async function connect(){
-  const p=await waitForInjectedWallet(12000);
+  const p=await waitForInjectedWallet(4000);
   if(!p) throw Error(announcedWallets.size>1?'Multiple wallets detected. Choose one above, then tap Connect wallet.':'No EVM wallet detected. Open this page in your wallet browser, or enable the extension for this site.');
   if($('commandWalletLog'))$('commandWalletLog').textContent='Requesting wallet connection…';
   let a;
@@ -1329,7 +1250,7 @@ async function connect(){
   return account;
 }
 async function switchChain(){
-  const p=await waitForInjectedWallet(12000);
+  const p=await waitForInjectedWallet(4000);
   if(!p) throw Error('Injected wallet not detected');
   try{
     await p.request({method:'wallet_switchEthereumChain',params:[{chainId:CHAIN_HEX}]});
@@ -3381,8 +3302,6 @@ function requestAnnouncements(){
 requestAnnouncements();
 
 function legacyProvider(){
-  const early=window.__rusteeEarlyProvider||window.__rusteeWalletBridge?.provider||null;
-  if(early&&typeof early.request==='function')return early;
   const p=window.ethereum||globalThis.ethereum||null;
   if(!p)return null;
   if(Array.isArray(p.providers)&&p.providers.length){
@@ -3431,7 +3350,7 @@ function renderWalletChoices(){
     host.appendChild(b);
   }
 }
-async function waitForInjectedWallet(timeoutMs=12000){
+async function waitForInjectedWallet(timeoutMs=4000){
   const started=Date.now();
   requestAnnouncements();
   while(Date.now()-started<timeoutMs){
@@ -3526,7 +3445,7 @@ function startBalanceAutoRefresh(){
   },15000);
 }
 async function installWalletListeners(){
-  const p=await waitForInjectedWallet(12000);
+  const p=await waitForInjectedWallet(4000);
   renderWalletConnectionState();
   if(!p)return;
   startBalanceAutoRefresh();
@@ -3542,20 +3461,6 @@ async function installWalletListeners(){
     restoreWalletConnection().catch(()=>{});
   });
 }
-window.addEventListener('ethereum#initialized',()=>{
-  try{renderWalletConnectionState()}catch{}
-  restoreWalletConnection().catch(()=>{});
-});
-window.addEventListener('rustee:wallet-ready',e=>{
-  try{
-    if(e?.detail?.provider)window.__rusteeEarlyProvider=e.detail.provider;
-    if(e?.detail?.account){account=e.detail.account;window.__rusteeEarlyAccount=account;}
-    renderWalletConnectionState();
-  }catch{}
-  restoreWalletConnection().catch(()=>{});
-});
-[1000,3000,7000,12000].forEach(ms=>setTimeout(()=>{requestAnnouncements();restoreWalletConnection().catch(()=>{});},ms));
-
 // Startup errors were previously swallowed by empty catch handlers, which is
 // why a failure here left the Provider field frozen on its initial "Checking…"
 // value with nothing logged anywhere.
