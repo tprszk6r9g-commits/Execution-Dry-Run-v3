@@ -1,5 +1,40 @@
 # Rustee Broker
 
+## Current Release — v3.6B.1 Registry Hardening & Deployment Qualification
+
+### Current-release features
+- unique on-chain capability nonce per Broker NFT/token ID
+- per-capability action-digest replay protection
+- pinned authorized executor
+- instant executor deauthorization kill path
+- guardian emergency pause; owner-only unpause
+- max 30-day validity and bounded uses
+- stricter risk/policy validation
+- v3.6A signed Capability Passport digest binding
+- broader hash-chained audit events
+- mainnet-blocked Foundry deployment script
+- dedicated Foundry CI with 5,000-run fuzz gate
+- no autonomous trade execution yet
+
+### Stable features retained
+v3.6A Capability Passport/ERC-1271 verification, rotating Trading TBAs, TBA Migration, STONKBROKER/Stock Token trading, Strategy Lab, Autopilot, Limits + Risk, Live Policy Controls, Metadata Studio, Transfer Readiness, Recovery Center, and the working iPhone/Rabby wallet handoff.
+
+---
+## v3.6B.1 Compilation Qualification
+
+**Status: COMPILED + TESTED** with Forge v1.7.1 and solc 0.8.26.
+
+- Full Rustee Foundry suite: **16/16 PASS**
+- Capability Registry high-fuzz gate: **9/9 PASS with 5,000 fuzz runs**
+- Registry runtime size: **10,227 bytes**
+- Mainnet deployment remains explicitly gated.
+
+See `Rustee_Broker_v3.6B.1_COMPILE_TEST_REPORT.md` and `evidence/` for exact logs/artifacts.
+
+---
+
+
+
 ## Current Release
 
 **v3.5 — Rotating Trading TBA Manager**  
