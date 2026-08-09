@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-xcPJ9eDZqkr2bnifZLy4Kf8ZKiFjhu3rYmqSRSZVRHw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
-<title>Rustee Broker v3.5 Rotating TBA Manager · Robinhood Chain</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ZigHC5gYsJ66Zhvx5UeSXZXfNYDwNczuldeE7VMTA5M='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<title>Rustee Broker v3.5.2 TBA Migration Manager · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -255,6 +255,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <button class="tabbtn" data-tab="historyPane">History + P&amp;L</button>
   <button class="tabbtn" data-tab="accountsPane">Accounts</button>
   <button class="tabbtn" data-tab="tbaManagerPane">TBA Manager</button>
+  <button class="tabbtn" data-tab="tbaMigrationPane">TBA Migration</button>
   <button class="tabbtn" data-tab="transferPane">Move Assets</button>
   <button class="tabbtn" data-tab="operationsPane">Operations</button>
   <button class="tabbtn" data-tab="securityPane">Policy + Security</button>
@@ -1137,6 +1138,97 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
       <p class="sourceNote">Creating a new TBA does not automatically migrate assets. Before activating a new generation, use Move Assets to recover/move positions as appropriate. If an older generation still contains assets, you can switch back to it later for recovery because its ownership still follows the Broker NFT.</p>
       <div class="tbaActions"><button data-open-tab="transferPane">Open Move Assets</button><button id="tbaRefreshAll">Refresh generation verification</button><button id="tbaExport">Export generation map</button></div>
       <pre id="tbaManagerLog">Rotating TBA Manager ready.</pre>
+    </div>
+  </div>
+</div>
+
+
+<div id="tbaMigrationPane" class="tabpane">
+  <div class="card">
+    <span class="badge">v3.5.2 · PERSISTENT TWO-STEP MIGRATION</span>
+    <h2>TBA Migration Manager</h2>
+    <p>Move assets from one verified Trading TBA generation to another without changing the Broker NFT or permanent Vault. The restricted Trading account can only withdraw to the current NFT owner, so Rustee performs migration as two separately simulated, separately signed steps.</p>
+
+    <div class="tbaBoundary"><b>Migration path:</b> Source Trading TBA → current Broker NFT owner → Destination Trading TBA. Rustee verifies the source reduction after Step 1 and destination increase after Step 2. Destination activation is always a separate action.</div>
+
+    <div class="tbaMetrics">
+      <div class="tbaMetric"><small>Migration state</small><strong id="migState">IDLE</strong></div>
+      <div class="tbaMetric"><small>Source generation</small><strong id="migSourceMetric">—</strong></div>
+      <div class="tbaMetric"><small>Destination generation</small><strong id="migDestMetric">—</strong></div>
+      <div class="tbaMetric"><small>Asset</small><strong id="migAssetMetric">—</strong></div>
+    </div>
+
+    <div class="tbaHero">
+      <div class="tbaCard">
+        <h3>Migration plan</h3>
+        <div class="controlgrid">
+          <div class="field"><label>Source Trading generation</label><select id="migSource"></select></div>
+          <div class="field"><label>Destination Trading generation</label><select id="migDestination"></select></div>
+        </div>
+        <div class="controlgrid" style="margin-top:10px">
+          <div class="field"><label>Asset</label>
+            <select id="migAsset">
+              <option value="ETH">ETH</option>
+              <option value="WETH">WETH</option>
+              <option value="NVDA">NVDA</option>
+              <option value="STONKBROKER">STONKBROKER</option>
+              <option value="CUSTOM">Custom ERC-20</option>
+            </select>
+          </div>
+          <div class="field"><label>Amount</label><input id="migAmount" inputmode="decimal" placeholder="0.0"></div>
+        </div>
+        <div id="migCustomWrap" class="field" style="display:none;margin-top:10px"><label>Custom ERC-20 contract</label><input id="migCustomToken" placeholder="0x…"></div>
+        <div class="tbaActions" style="margin-top:10px">
+          <button id="migUseMax">Use source max</button>
+          <button id="migInventory" class="primary">Inventory generations</button>
+          <button id="migPrepareWithdraw">Prepare Step 1</button>
+        </div>
+        <pre id="migPlanLog">Choose verified source and destination generations, then inventory balances.</pre>
+      </div>
+
+      <div class="tbaCard">
+        <h3>Persistent migration state</h3>
+        <p class="sourceNote">The migration checkpoint is stored locally so closing/reopening Rustee after a Rabby confirmation does not lose which step comes next.</p>
+        <div class="tbaActions">
+          <button id="migResume">Resume / verify checkpoint</button>
+          <button id="migClear" class="danger">Clear local checkpoint</button>
+        </div>
+        <pre id="migCheckpointLog">No migration checkpoint.</pre>
+      </div>
+    </div>
+
+    <div class="tbaCard" style="margin-top:12px">
+      <h3>Generation inventory</h3>
+      <div id="migInventoryGrid" class="account-grid"><div class="emptyState">Inventory not loaded.</div></div>
+    </div>
+
+    <div class="tbaCard" style="margin-top:12px">
+      <h3>Step 1 — Withdraw from source generation</h3>
+      <p class="sourceNote">The restricted StockTradingAccount sends ETH/ERC-20 withdrawals only to the current Broker NFT owner. Rustee simulates the exact withdrawal first.</p>
+      <div class="tbaActions">
+        <button id="migExecuteWithdraw" disabled>Open wallet for Step 1</button>
+      </div>
+      <pre id="migWithdrawLog">Not prepared.</pre>
+    </div>
+
+    <div class="tbaCard" style="margin-top:12px">
+      <h3>Step 2 — Deposit into destination generation</h3>
+      <p class="sourceNote">Step 2 unlocks only after Rustee verifies Step 1 on-chain. It transfers the same asset/amount from the current NFT owner into the destination Trading TBA.</p>
+      <div class="tbaActions">
+        <button id="migPrepareDeposit" disabled>Prepare Step 2</button>
+        <button id="migExecuteDeposit" disabled>Open wallet for Step 2</button>
+      </div>
+      <pre id="migDepositLog">Waiting for verified Step 1.</pre>
+    </div>
+
+    <div class="tbaCard" style="margin-top:12px">
+      <h3>Finalize</h3>
+      <p class="sourceNote">Completing migration does not automatically make the destination active. Return to TBA Manager and use <b>Verify + make active</b> only when you are satisfied with the new generation.</p>
+      <div class="tbaActions">
+        <button data-open-tab="tbaManagerPane">Open TBA Manager</button>
+        <button id="migMarkRecovery">Mark source Recovery Only</button>
+      </div>
+      <pre id="migFinalLog">No completed migration yet.</pre>
     </div>
   </div>
 </div>
@@ -2139,6 +2231,7 @@ async function executeUniversalMove(){
 document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tabbtn').forEach(x=>x.classList.toggle('active',x===b));
   document.querySelectorAll('.tabpane').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));
+  if(b.dataset.tab==='tbaMigrationPane'){migPopulateGenerations();migRenderCheckpoint();}
   if(b.dataset.tab==='accountsPane') refreshAllAccounts().catch(e=>$('accountCenterLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='commandPane') refreshCommandCenter().catch(e=>$('commandLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='securityPane') runSecurityPreflight().catch(()=>{});
@@ -4432,7 +4525,230 @@ async function tbaActivateGeneration(gen){const x=tbaLoad(),g=x.generations.find
 async function tbaRefreshGenerations(){const x=tbaLoad(),lines=[];for(const g of x.generations){try{const code=await fallbackRpc('eth_getCode',[g.address,'latest']);if(!code||code==='0x'){g.verified=false;lines.push(`Gen ${g.generation}: counterfactual / no code`);continue}const v=await tbaVerifyAccount(g.address);g.verified=v.pass;g.lastVerifiedAt=new Date().toISOString();lines.push(`Gen ${g.generation}: ${v.pass?'PASS':'FAIL'} · ${g.address}`)}catch(e){g.verified=false;lines.push(`Gen ${g.generation}: ERROR ${e.message}`)}}tbaSave(x);$('tbaManagerLog').textContent=lines.join('\n');tbaRender()}
 function tbaRender(){const x=tbaInitState();if($('tbaActiveGeneration'))$('tbaActiveGeneration').textContent='Gen '+(x.activeGeneration??'?');if($('tbaActiveAddress'))$('tbaActiveAddress').textContent=x.activeAddress||TRADING;if($('tbaGenerationCount'))$('tbaGenerationCount').textContent=String(x.generations.length);if($('tbaImplementationShort'))$('tbaImplementationShort').textContent=short(STOCK_TRADING_IMPLEMENTATION);if($('tbaRegistryAddress'))$('tbaRegistryAddress').textContent=ERC6551_REGISTRY;if($('tbaImplementationAddress'))$('tbaImplementationAddress').textContent=STOCK_TRADING_IMPLEMENTATION;if($('tbaPermanentVault'))$('tbaPermanentVault').textContent=VAULT;if($('tbaGenerationInput')){const max=Math.max(1,...x.generations.map(g=>Number(g.generation)||1));if(Number($('tbaGenerationInput').value)<=max)$('tbaGenerationInput').value=String(max+1)}if($('tbaGenerationList'))$('tbaGenerationList').innerHTML=x.generations.map(g=>{const active=String(g.address).toLowerCase()===String(TRADING).toLowerCase(),cls=active?'tbaActive':g.status==='READY'?'tbaReady':'tbaRetired',label=active?'ACTIVE':g.status||'RETIRED';return `<div class="tbaRow"><div><b>Generation ${Number(g.generation)}</b> <span class="tbaStatus ${cls}">${label}</span><div class="tbaAddress">${escapeHtml(g.address)}</div><div class="tbaMeta">${escapeHtml(g.scheme||'unknown scheme')}${g.createdAt?' · created '+escapeHtml(g.createdAt):''}${g.verified===false?' · verification needs attention':''}</div></div><div class="tbaActions">${active?'':`<button data-tba-activate="${Number(g.generation)}">Verify + make active</button>`}<button data-tba-explorer="${escapeHtml(g.address)}">Explorer ↗</button></div></div>`}).join('')||'<div class="emptyState">No generations.</div>';document.querySelectorAll('[data-tba-activate]').forEach(b=>b.onclick=()=>tbaActivateGeneration(Number(b.dataset.tbaActivate)).catch(e=>{$('tbaManagerLog').textContent='ERROR: '+e.message}));document.querySelectorAll('[data-tba-explorer]').forEach(b=>b.onclick=()=>window.open(BLOCKSCOUT+'/address/'+b.dataset.tbaExplorer,'_blank','noopener'))}
 function tbaExportState(){const x=tbaLoad(),payload={project:'Rustee Broker #1',schema:'rustee-trading-tba-generations/v1',exportedAt:new Date().toISOString(),brokerNft:NFT||null,tokenId:BROKER_TOKEN_ID===null?null:BROKER_TOKEN_ID.toString(),erc6551Registry:ERC6551_REGISTRY,tradingImplementation:STOCK_TRADING_IMPLEMENTATION,permanentVault:VAULT,...x,note:'Generation status is operator/dashboard state. Every deployed TBA remains on-chain and ownerOf()-controlled.'};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-trading-tba-generations.json';a.click();URL.revokeObjectURL(a.href)}
-if($('tbaPredict'))$('tbaPredict').onclick=()=>tbaPredictGeneration().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaPrepareCreate'))$('tbaPrepareCreate').onclick=()=>tbaPrepareCreate().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaExecuteCreate'))$('tbaExecuteCreate').onclick=()=>tbaExecuteCreate().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaRefreshAll'))$('tbaRefreshAll').onclick=()=>tbaRefreshGenerations().catch(e=>{$('tbaManagerLog').textContent='ERROR: '+e.message});if($('tbaExport'))$('tbaExport').onclick=tbaExportState;tbaRender();
+
+/* v3.5.2 TBA Migration Manager */
+const TBA_MIGRATION_KEY='rustee-tba-migration-v352';
+let tbaMigrationRuntime={inventory:null,preparedWithdraw:null,preparedDeposit:null};
+
+function migLoad(){try{return JSON.parse(localStorage.getItem(TBA_MIGRATION_KEY)||'null')}catch{return null}}
+function migSave(x){if(x){x.updatedAt=new Date().toISOString();localStorage.setItem(TBA_MIGRATION_KEY,JSON.stringify(x))}else localStorage.removeItem(TBA_MIGRATION_KEY);migRenderCheckpoint();return x}
+function migTokenInfo(){
+  const kind=$('migAsset').value;
+  if(kind==='ETH')return {kind,token:null,symbol:'ETH',decimals:18};
+  if(kind==='WETH')return {kind,token:WETH,symbol:'WETH',decimals:null};
+  if(kind==='NVDA')return {kind,token:NVDA,symbol:'NVDA',decimals:null};
+  if(kind==='STONKBROKER')return {kind,token:STONKBROKER,symbol:'STONKBROKER',decimals:null};
+  const token=$('migCustomToken').value.trim();
+  if(!/^0x[0-9a-fA-F]{40}$/.test(token)||/^0x0{40}$/i.test(token))throw Error('Enter a valid custom ERC-20 contract');
+  return {kind,token,symbol:'CUSTOM',decimals:null};
+}
+function migKnownDeployed(){
+  const x=tbaLoad();
+  return x.generations.filter(g=>/^0x[0-9a-fA-F]{40}$/.test(String(g.address||'')));
+}
+function migGeneration(gen){
+  return tbaLoad().generations.find(g=>Number(g.generation)===Number(gen))||null;
+}
+function migPopulateGenerations(){
+  if(!$('migSource')||!$('migDestination'))return;
+  const gens=migKnownDeployed();
+  const opts=gens.map(g=>`<option value="${Number(g.generation)}">Generation ${Number(g.generation)} · ${short(g.address)}${String(g.address).toLowerCase()===String(TRADING).toLowerCase()?' · ACTIVE':''}</option>`).join('');
+  const s=$('migSource').value,d=$('migDestination').value;
+  $('migSource').innerHTML=opts;$('migDestination').innerHTML=opts;
+  if(gens.length){
+    const active=gens.find(g=>String(g.address).toLowerCase()===String(TRADING).toLowerCase());
+    const other=gens.find(g=>!active||Number(g.generation)!==Number(active.generation));
+    $('migSource').value=String(active?.generation??gens[0].generation);
+    $('migDestination').value=String(other?.generation??gens[gens.length-1].generation);
+    if(s&&gens.some(g=>String(g.generation)===s))$('migSource').value=s;
+    if(d&&gens.some(g=>String(g.generation)===d))$('migDestination').value=d;
+  }
+}
+async function migReadBalance(address,info){
+  if(!info.token)return BigInt(await fallbackRpc('eth_getBalance',[address,'latest']));
+  return erc20Balance(info.token,address);
+}
+async function migResolvedInfo(){
+  const info=migTokenInfo();
+  if(info.token){
+    info.decimals=await tokenDecimals(info.token);
+    try{info.symbol=await tokenSymbol(info.token)}catch{if(info.symbol==='CUSTOM')info.symbol='ERC20'}
+  }
+  return info;
+}
+async function migInventoryAll(){
+  await resolveAuthorityState(true);
+  const info=await migResolvedInfo(),rows=[];
+  for(const g of migKnownDeployed()){
+    try{
+      const code=await fallbackRpc('eth_getCode',[g.address,'latest']);
+      if(!code||code==='0x'){rows.push({g,pass:false,error:'No bytecode'});continue}
+      const v=await tbaVerifyAccount(g.address);
+      const bal=await migReadBalance(g.address,info);
+      rows.push({g,pass:v.pass,balance:bal,info});
+    }catch(e){rows.push({g,pass:false,error:e.message})}
+  }
+  tbaMigrationRuntime.inventory={time:Date.now(),info,rows};
+  $('migInventoryGrid').innerHTML=rows.map(r=>`<div class="acct"><span class="badge">${r.pass?'VERIFIED':'CHECK'}</span><h3>Generation ${Number(r.g.generation)}</h3><div class="addr">${escapeHtml(r.g.address)}</div>${r.error?`<div class="assetrow"><span>${escapeHtml(r.error)}</span></div>`:`<div class="assetrow"><div><b>${escapeHtml(info.symbol)}</b><br><span>${String(r.g.address).toLowerCase()===String(TRADING).toLowerCase()?'ACTIVE':'known generation'}</span></div><b>${unitsToDecimal(r.balance,info.decimals,12)}</b></div>`}</div>`).join('');
+  $('migPlanLog').textContent=`Inventory complete for ${info.symbol}. ${rows.filter(r=>r.pass).length}/${rows.length} generations passed live binding verification.`;
+  return rows;
+}
+async function migUseSourceMax(){
+  const info=await migResolvedInfo(),g=migGeneration(Number($('migSource').value));
+  if(!g)throw Error('Select a source generation');
+  const v=await tbaVerifyAccount(g.address);if(!v.pass)throw Error('Source generation failed live verification');
+  const bal=await migReadBalance(g.address,info);
+  $('migAmount').value=unitsToDecimal(bal,info.decimals,18);
+  $('migPlanLog').textContent=`Source Generation ${g.generation} maximum loaded: ${unitsToDecimal(bal,info.decimals,18)} ${info.symbol}.`;
+}
+function migValidatePair(){
+  const sg=migGeneration(Number($('migSource').value)),dg=migGeneration(Number($('migDestination').value));
+  if(!sg||!dg)throw Error('Select known source and destination generations');
+  if(Number(sg.generation)===Number(dg.generation)||String(sg.address).toLowerCase()===String(dg.address).toLowerCase())throw Error('Source and destination generations must be different');
+  return {sg,dg};
+}
+async function migPrepareWithdraw(){
+  clearPreparedWalletHandoff();
+  tbaMigrationRuntime.preparedWithdraw=null;tbaMigrationRuntime.preparedDeposit=null;
+  await ensureOwnerAndChain();
+  const {sg,dg}=migValidatePair(),[sv,dv]=await Promise.all([tbaVerifyAccount(sg.address),tbaVerifyAccount(dg.address)]);
+  if(!sv.pass||!dv.pass)throw Error('Both source and destination must pass live ERC-6551 verification');
+  const info=await migResolvedInfo(),amount=decimalToUnits($('migAmount').value,info.decimals);
+  if(amount<=0n)throw Error('Migration amount must be greater than zero');
+  const sourceBefore=await migReadBalance(sg.address,info);
+  if(amount>sourceBefore)throw Error('Migration amount exceeds source balance');
+  const destinationBefore=await migReadBalance(dg.address,info);
+  const ownerBefore=await migReadBalance(OWNER,info);
+  let data;
+  if(!info.token)data='0x'+SEL_WITHDRAW_ETH+word(amount);
+  else data=withdrawTokenCalldata(info.token,amount);
+  const tx0={from:OWNER,to:sg.address,data},gas=BigInt(await rpc('eth_estimateGas',[tx0]));
+  const result=await rpc('eth_call',[tx0,'latest']);
+  const tx={...tx0,gas:hexQty(gas*120n/100n)};
+  await armPreparedWalletHandoff(tx,`TBA migration Step 1 · Gen ${sg.generation} → owner · ${info.symbol}`,120000);
+  const checkpoint={
+    schema:'rustee-tba-migration/v1',state:'WITHDRAW_READY',
+    sourceGeneration:Number(sg.generation),sourceAddress:sg.address,
+    destinationGeneration:Number(dg.generation),destinationAddress:dg.address,
+    assetKind:info.kind,token:info.token,symbol:info.symbol,decimals:info.decimals,
+    amount:amount.toString(),sourceBefore:sourceBefore.toString(),
+    destinationBefore:destinationBefore.toString(),ownerBefore:ownerBefore.toString(),
+    createdAt:new Date().toISOString()
+  };
+  migSave(checkpoint);
+  tbaMigrationRuntime.preparedWithdraw={tx,time:Date.now(),checkpoint};
+  $('migExecuteWithdraw').disabled=false;$('migExecuteWithdraw').textContent='Open wallet for Step 1';
+  $('migWithdrawLog').textContent=`STEP 1 SIMULATION PASS\nSource: Generation ${sg.generation}\nSource TBA: ${sg.address}\nRecipient: current NFT owner ${OWNER}\nAsset: ${info.symbol}\nAmount: ${unitsToDecimal(amount,info.decimals,18)}\nEstimated gas: ${gas}\neth_call: ${result}\n\nWallet handoff armed for 120 seconds.`;
+}
+async function migExecuteWithdraw(){
+  const p=tbaMigrationRuntime.preparedWithdraw,c=migLoad();
+  if(!p||!c||c.state!=='WITHDRAW_READY')throw Error('Prepare Step 1 first');
+  if(Date.now()-p.time>120000)throw Error('Step 1 preparation expired. Prepare again.');
+  const hash=await secureSendTransaction(p.tx,`TBA migration Step 1 · ${c.symbol}`);
+  c.state='WITHDRAW_SUBMITTED';c.withdrawTx=hash;migSave(c);
+  $('migExecuteWithdraw').disabled=true;$('migWithdrawLog').textContent=`STEP 1 SUBMITTED\n${hash}\nWaiting for confirmation…`;
+  const receipt=await waitReceipt(hash);
+  const info={token:c.token,symbol:c.symbol,decimals:Number(c.decimals)},sourceAfter=await migReadBalance(c.sourceAddress,info);
+  const expected=BigInt(c.sourceBefore)-BigInt(c.amount);
+  if(sourceAfter!==expected)throw Error(`Step 1 receipt confirmed but source balance verification failed. Expected ${expected}, got ${sourceAfter}`);
+  c.state='WITHDRAW_CONFIRMED';c.withdrawBlock=Number(BigInt(receipt.blockNumber));c.sourceAfter=sourceAfter.toString();c.withdrawVerifiedAt=new Date().toISOString();migSave(c);
+  tbaMigrationRuntime.preparedWithdraw=null;
+  $('migPrepareDeposit').disabled=false;
+  $('migWithdrawLog').textContent=`STEP 1 CONFIRMED + VERIFIED ✓\nTx: ${hash}\nBlock: ${c.withdrawBlock}\nSource decreased by exactly ${unitsToDecimal(BigInt(c.amount),Number(c.decimals),18)} ${c.symbol}.\n\nStep 2 can now be prepared.`;
+}
+async function migVerifyCheckpoint(){
+  const c=migLoad();if(!c){migRenderCheckpoint();return}
+  await resolveAuthorityState(true);
+  const [sg,dg]=[migGeneration(c.sourceGeneration),migGeneration(c.destinationGeneration)];
+  if(!sg||!dg||String(sg.address).toLowerCase()!==String(c.sourceAddress).toLowerCase()||String(dg.address).toLowerCase()!==String(c.destinationAddress).toLowerCase())throw Error('Checkpoint generation map does not match current TBA state');
+  const [sv,dv]=await Promise.all([tbaVerifyAccount(c.sourceAddress),tbaVerifyAccount(c.destinationAddress)]);
+  if(!sv.pass||!dv.pass)throw Error('Checkpoint source/destination failed live verification');
+  const info={token:c.token,symbol:c.symbol,decimals:Number(c.decimals)};
+  const [sb,db]=await Promise.all([migReadBalance(c.sourceAddress,info),migReadBalance(c.destinationAddress,info)]);
+  const amount=BigInt(c.amount),sourceExpected=BigInt(c.sourceBefore)-amount,destExpected=BigInt(c.destinationBefore)+amount;
+  if(sb===sourceExpected&&db>=destExpected){c.state='COMPLETED';c.sourceAfter=sb.toString();c.destinationAfter=db.toString();c.completedAt=c.completedAt||new Date().toISOString();migSave(c)}
+  else if(sb===sourceExpected&&['WITHDRAW_READY','WITHDRAW_SUBMITTED'].includes(c.state)){c.state='WITHDRAW_CONFIRMED';c.sourceAfter=sb.toString();c.withdrawVerifiedAt=new Date().toISOString();migSave(c)}
+  migRenderCheckpoint();
+  if(c.state==='WITHDRAW_CONFIRMED')$('migPrepareDeposit').disabled=false;
+  if(c.state==='COMPLETED')$('migFinalLog').textContent=`MIGRATION COMPLETE ✓\nGeneration ${c.sourceGeneration} → Generation ${c.destinationGeneration}\n${unitsToDecimal(amount,Number(c.decimals),18)} ${c.symbol}\nDestination activation remains separate.`;
+  return c;
+}
+async function migPrepareDeposit(){
+  clearPreparedWalletHandoff();
+  tbaMigrationRuntime.preparedDeposit=null;
+  const c=await migVerifyCheckpoint();
+  if(!c||c.state!=='WITHDRAW_CONFIRMED')throw Error('Step 1 must be confirmed and verified first');
+  await ensureOwnerAndChain();
+  const info={token:c.token,symbol:c.symbol,decimals:Number(c.decimals)},amount=BigInt(c.amount);
+  const ownerBal=await migReadBalance(OWNER,info);
+  if(ownerBal<amount)throw Error(`Owner wallet no longer has enough ${c.symbol} for Step 2`);
+  let tx0;
+  if(!c.token)tx0={from:OWNER,to:c.destinationAddress,value:hexQty(amount),data:'0x'};
+  else tx0={from:OWNER,to:c.token,data:transferCalldata(c.destinationAddress,amount)};
+  const gas=BigInt(await rpc('eth_estimateGas',[tx0])),result=await rpc('eth_call',[tx0,'latest']),tx={...tx0,gas:hexQty(gas*120n/100n)};
+  await armPreparedWalletHandoff(tx,`TBA migration Step 2 · owner → Gen ${c.destinationGeneration} · ${c.symbol}`,120000);
+  c.state='DEPOSIT_READY';c.depositOwnerBalance=ownerBal.toString();migSave(c);
+  tbaMigrationRuntime.preparedDeposit={tx,time:Date.now(),checkpoint:c};
+  $('migExecuteDeposit').disabled=false;$('migExecuteDeposit').textContent='Open wallet for Step 2';
+  $('migDepositLog').textContent=`STEP 2 SIMULATION PASS\nDestination: Generation ${c.destinationGeneration}\nDestination TBA: ${c.destinationAddress}\nAsset: ${c.symbol}\nAmount: ${unitsToDecimal(amount,Number(c.decimals),18)}\nEstimated gas: ${gas}\neth_call: ${result}\n\nWallet handoff armed for 120 seconds.`;
+}
+async function migExecuteDeposit(){
+  const p=tbaMigrationRuntime.preparedDeposit,c=migLoad();
+  if(!p||!c||c.state!=='DEPOSIT_READY')throw Error('Prepare Step 2 first');
+  if(Date.now()-p.time>120000)throw Error('Step 2 preparation expired. Prepare again.');
+  const hash=await secureSendTransaction(p.tx,`TBA migration Step 2 · ${c.symbol}`);
+  c.state='DEPOSIT_SUBMITTED';c.depositTx=hash;migSave(c);
+  $('migExecuteDeposit').disabled=true;$('migDepositLog').textContent=`STEP 2 SUBMITTED\n${hash}\nWaiting for confirmation…`;
+  const receipt=await waitReceipt(hash);
+  const info={token:c.token,symbol:c.symbol,decimals:Number(c.decimals)},destinationAfter=await migReadBalance(c.destinationAddress,info),expected=BigInt(c.destinationBefore)+BigInt(c.amount);
+  if(destinationAfter<expected)throw Error(`Step 2 receipt confirmed but destination balance verification failed. Expected at least ${expected}, got ${destinationAfter}`);
+  c.state='COMPLETED';c.depositBlock=Number(BigInt(receipt.blockNumber));c.destinationAfter=destinationAfter.toString();c.completedAt=new Date().toISOString();migSave(c);
+  tbaMigrationRuntime.preparedDeposit=null;
+  $('migDepositLog').textContent=`STEP 2 CONFIRMED + VERIFIED ✓\nTx: ${hash}\nBlock: ${c.depositBlock}\nDestination received the migration amount.`;
+  $('migFinalLog').textContent=`MIGRATION COMPLETE ✓\nGeneration ${c.sourceGeneration} → Generation ${c.destinationGeneration}\n${unitsToDecimal(BigInt(c.amount),Number(c.decimals),18)} ${c.symbol}\n\nRustee did NOT activate Generation ${c.destinationGeneration}. Activation remains a separate verified action in TBA Manager.`;
+  await migInventoryAll().catch(()=>{});
+}
+function migMarkRecoveryOnly(){
+  const c=migLoad();if(!c||c.state!=='COMPLETED')throw Error('Complete a migration before marking the source Recovery Only');
+  const x=tbaLoad(),g=x.generations.find(r=>Number(r.generation)===Number(c.sourceGeneration));if(!g)throw Error('Source generation no longer exists in local generation map');
+  if(String(g.address).toLowerCase()===String(TRADING).toLowerCase())throw Error('Source generation is still ACTIVE. Activate the destination before marking this source Recovery Only.');
+  g.status='RECOVERY_ONLY';g.recoveryOnlyAt=new Date().toISOString();tbaSave(x);tbaRender();
+  $('migFinalLog').textContent+=`\n\nGeneration ${c.sourceGeneration} marked RECOVERY ONLY in local Rustee state. The TBA still exists on-chain and remains ownerOf()-controlled.`;
+}
+function migClearCheckpoint(){
+  if(!confirm('Clear only the local TBA migration checkpoint? This does not move assets or change any on-chain account.'))return;
+  migSave(null);tbaMigrationRuntime={inventory:tbaMigrationRuntime.inventory,preparedWithdraw:null,preparedDeposit:null};clearPreparedWalletHandoff();
+  $('migExecuteWithdraw').disabled=true;$('migPrepareDeposit').disabled=true;$('migExecuteDeposit').disabled=true;
+  $('migWithdrawLog').textContent='Not prepared.';$('migDepositLog').textContent='Waiting for verified Step 1.';$('migFinalLog').textContent='No completed migration yet.';
+}
+function migRenderCheckpoint(){
+  if(!$('migCheckpointLog'))return;
+  const c=migLoad();
+  if(!c){$('migCheckpointLog').textContent='No migration checkpoint.';$('migState').textContent='IDLE';$('migSourceMetric').textContent='—';$('migDestMetric').textContent='—';$('migAssetMetric').textContent='—';return}
+  $('migState').textContent=c.state||'UNKNOWN';$('migSourceMetric').textContent='Gen '+c.sourceGeneration;$('migDestMetric').textContent='Gen '+c.destinationGeneration;$('migAssetMetric').textContent=c.symbol||c.assetKind||'—';
+  $('migCheckpointLog').textContent=`State: ${c.state}\nSource: Generation ${c.sourceGeneration} · ${c.sourceAddress}\nDestination: Generation ${c.destinationGeneration} · ${c.destinationAddress}\nAsset: ${c.symbol}\nAmount: ${unitsToDecimal(BigInt(c.amount),Number(c.decimals),18)}\nStep 1 tx: ${c.withdrawTx||'—'}\nStep 2 tx: ${c.depositTx||'—'}\nUpdated: ${c.updatedAt||'—'}`;
+}
+function migInit(){
+  if(!$('migSource'))return;
+  migPopulateGenerations();migRenderCheckpoint();
+  $('migAsset').onchange=()=>{$('migCustomWrap').style.display=$('migAsset').value==='CUSTOM'?'block':'none';tbaMigrationRuntime.inventory=null};
+  $('migSource').onchange=()=>{tbaMigrationRuntime.preparedWithdraw=null;clearPreparedWalletHandoff()};
+  $('migDestination').onchange=()=>{tbaMigrationRuntime.preparedWithdraw=null;clearPreparedWalletHandoff()};
+  $('migAmount').oninput=()=>{tbaMigrationRuntime.preparedWithdraw=null;clearPreparedWalletHandoff();$('migExecuteWithdraw').disabled=true};
+  $('migInventory').onclick=()=>migInventoryAll().catch(e=>$('migPlanLog').textContent='ERROR: '+e.message);
+  $('migUseMax').onclick=()=>migUseSourceMax().catch(e=>$('migPlanLog').textContent='ERROR: '+e.message);
+  $('migPrepareWithdraw').onclick=()=>migPrepareWithdraw().catch(e=>$('migWithdrawLog').textContent='ERROR: '+e.message);
+  $('migExecuteWithdraw').onclick=()=>migExecuteWithdraw().catch(e=>$('migWithdrawLog').textContent='ERROR: '+e.message);
+  $('migPrepareDeposit').onclick=()=>migPrepareDeposit().catch(e=>$('migDepositLog').textContent='ERROR: '+e.message);
+  $('migExecuteDeposit').onclick=()=>migExecuteDeposit().catch(e=>$('migDepositLog').textContent='ERROR: '+e.message);
+  $('migResume').onclick=()=>migVerifyCheckpoint().catch(e=>$('migCheckpointLog').textContent='ERROR: '+e.message);
+  $('migClear').onclick=migClearCheckpoint;
+  $('migMarkRecovery').onclick=()=>{try{migMarkRecoveryOnly()}catch(e){$('migFinalLog').textContent='ERROR: '+e.message}};
+  const c=migLoad();if(c?.state==='WITHDRAW_CONFIRMED')$('migPrepareDeposit').disabled=false;
+  if(c?.state==='COMPLETED')$('migFinalLog').textContent=`MIGRATION COMPLETE ✓\nGeneration ${c.sourceGeneration} → Generation ${c.destinationGeneration}\nDestination activation remains separate.`;
+}
+
+if($('tbaPredict'))$('tbaPredict').onclick=()=>tbaPredictGeneration().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaPrepareCreate'))$('tbaPrepareCreate').onclick=()=>tbaPrepareCreate().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaExecuteCreate'))$('tbaExecuteCreate').onclick=()=>tbaExecuteCreate().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaRefreshAll'))$('tbaRefreshAll').onclick=()=>tbaRefreshGenerations().catch(e=>{$('tbaManagerLog').textContent='ERROR: '+e.message});if($('tbaExport'))$('tbaExport').onclick=tbaExportState;tbaRender();migInit();
 // -----------------------------------------------------------------------------
 
 // --- v3.4.4 Transfer Readiness + Ownership Migration Check --------------------
