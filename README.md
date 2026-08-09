@@ -1,4 +1,4 @@
-# Rustee Broker v3.7.4 — Production Execution Layer Candidate
+# Rustee Broker v3.7.5 — Rehearsal Permission Gate
 
 ## Current release
 
@@ -228,3 +228,8 @@ The next phase should configure and qualify an actual Robinhood Chain venue path
 11. only then consider controlled activation
 
 No production venue is hard-coded in v3.7.4.
+
+
+## v3.7.5 Rehearsal Permission Gate
+
+Adds exact token/pair/venue/selector permission staging and an exact tiny Generation-10-to-Adapter ERC-20 allowance workflow. All autonomous layers remain paused and no trade execution is exposed in this release. See `REHEARSAL_PERMISSION_GATE_3_7_5.md`.

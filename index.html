@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-53eO8mERl4F/1kJzEgb/usBjgb9VKo/u33Uj3KZ6Fck='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-MHYjbjkc+roe0ETjiOXX/mtz+FlUaP2a1N3KzICd/z4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
 <title>Rustee Broker v3.5.2 TBA Migration Manager · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
@@ -1398,6 +1398,30 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
     <div class="kv"><span>Production Adapter</span><b id="v374AdapterAddr">—</b></div>
     <div class="kv"><span>Production Runner</span><b id="v374RunnerAddr">—</b></div>
     <pre id="v374Log">Not deployed. Generation 10 core stack remains unchanged and paused.</pre>
+  </div>
+
+
+
+  <div class="card warn">
+    <span class="badge">v3.7.5 · REHEARSAL PERMISSION GATE</span>
+    <h2>Exact permissions + tiny rehearsal allowance</h2>
+    <p>Stage the exact token pair, venue and venue function that the Generation 10 production Adapter may use. Every permission is separately simulated and wallet-signed. This section does <b>not</b> unpause the Runner, Adapter, Trading Engine or TBA engine path and does not execute a trade.</p>
+    <div class="riskBoundary"><b>Fail-closed:</b> configure only a verified venue contract and exact 4-byte selector. The allowance tool grants the Adapter only the tiny amount entered below and can revoke it back to zero.</div>
+    <label>Token in</label><input id="v375TokenIn" placeholder="0x…">
+    <div class="actions"><button id="v375UseWeth">Use canonical Robinhood WETH</button></div>
+    <label>Token out</label><input id="v375TokenOut" placeholder="0x…">
+    <label>Venue / router contract</label><input id="v375Venue" placeholder="0x…">
+    <label>Allowed venue function selector</label><input id="v375Selector" placeholder="0x12345678" maxlength="10">
+    <label>Tiny rehearsal allowance (Token in units)</label><input id="v375Allowance" inputmode="decimal" placeholder="0.001">
+    <div class="actions">
+      <button id="v375Preflight">1 · Permission preflight</button>
+      <button id="v375Stage" disabled>2 · Stage exact permissions</button>
+      <button id="v375Verify" disabled>3 · Verify permission gate</button>
+      <button id="v375AllowanceBtn" disabled>4 · Set exact tiny allowance</button>
+      <button id="v375VerifyAllowance" disabled>Verify allowance</button>
+      <button id="v375Revoke" disabled>Revoke allowance to zero</button>
+    </div>
+    <pre id="v375Log">Waiting for exact token pair + verified venue + selector. All autonomous layers remain paused.</pre>
   </div>
 
   <div class="card">
@@ -3877,6 +3901,39 @@ if($('v374DeployRunner'))$('v374DeployRunner').onclick=()=>v374DeployRunner().ca
 if($('v374Configure'))$('v374Configure').onclick=()=>v374Configure().catch(e=>$('v374Log').textContent='ERROR: '+e.message);
 if($('v374Verify'))$('v374Verify').onclick=()=>v374Verify().catch(e=>$('v374Log').textContent='ERROR: '+e.message);
 v374Render();
+
+
+// v3.7.5 — exact permission + rehearsal allowance staging. No autonomous unpause or trade broadcast lives here.
+const V375_KEY='rustee-rehearsal-permission-gate-v3.7.5';
+const V375_WETH='0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
+function v375Load(){try{return JSON.parse(localStorage.getItem(V375_KEY)||'{}')}catch{return {}}}
+function v375Save(x){localStorage.setItem(V375_KEY,JSON.stringify(x));v375Render()}
+function v375Field(id){return String($(id)?.value||'').trim()}
+function v375SelectorValue(){const x=v375Field('v375Selector');if(!/^0x[0-9a-fA-F]{8}$/.test(x))throw Error('Venue selector must be exactly 4 bytes, e.g. 0x12345678');if(x.toLowerCase()==='0x00000000')throw Error('Zero selector is not allowed');return x.toLowerCase()}
+function v375Address(id,label){const a=v372Addr(v375Field(id));if(!a)throw Error('Enter a valid '+label+' address');return a}
+function v375Render(){const s=v375Load();for(const [id,k] of [['v375TokenIn','tokenIn'],['v375TokenOut','tokenOut'],['v375Venue','venue'],['v375Selector','selector'],['v375Allowance','allowance']]){const e=$(id);if(e&&!e.value&&s[k])e.value=s[k]}if($('v375Stage'))$('v375Stage').disabled=!s.preflight;if($('v375Verify'))$('v375Verify').disabled=!s.staged;if($('v375AllowanceBtn'))$('v375AllowanceBtn').disabled=!s.verified;if($('v375VerifyAllowance'))$('v375VerifyAllowance').disabled=!s.allowanceSet;if($('v375Revoke'))$('v375Revoke').disabled=!s.allowanceSet}
+async function v375Adapter(){const s=v374Load();if(!v372Addr(s.adapter)||!v372Addr(s.runner))throw Error('Deploy and verify v3.7.4 Runner + Adapter first');await v372ContractCode(s.adapter,'Production Adapter');v372VerifiedContracts.add(s.adapter.toLowerCase());return s.adapter}
+function v375BoolAddr(sig,a){return '0x'+selectorOf(sig)+addrWord(a)+word(1)}
+function v375PairData(a,b){return '0x'+selectorOf('setPair(address,address,bool)')+addrWord(a)+addrWord(b)+word(1)}
+function v375VenueSelectorData(v,sel){return '0x'+selectorOf('setVenueSelector(address,bytes4,bool)')+addrWord(v)+sel.slice(2).padEnd(64,'0')+word(1)}
+async function v375Preflight(){await ensureOwnerAndChain();const adapter=await v375Adapter(),tokenIn=v375Address('v375TokenIn','Token in'),tokenOut=v375Address('v375TokenOut','Token out'),venue=v375Address('v375Venue','venue'),selector=v375SelectorValue();if(tokenIn.toLowerCase()===tokenOut.toLowerCase())throw Error('Token in and token out must be different');const [aCode,bCode,vCode]=await Promise.all([fallbackRpc('eth_getCode',[tokenIn,'latest']),fallbackRpc('eth_getCode',[tokenOut,'latest']),fallbackRpc('eth_getCode',[venue,'latest'])]);if(!aCode||aCode==='0x')throw Error('Token in has no deployed bytecode');if(!bCode||bCode==='0x')throw Error('Token out has no deployed bytecode');if(!vCode||vCode==='0x')throw Error('Venue has no deployed bytecode');const ap=await v374ReadBool(adapter,'0x'+V374_SEL_PAUSED),rp=await v374ReadBool(v374Load().runner,'0x'+V374_SEL_PAUSED);if(!ap||!rp)throw Error('Refusing permission staging because Runner/Adapter are not both paused');const s={tokenIn,tokenOut,venue,selector,allowance:v375Field('v375Allowance'),preflight:true,staged:false,verified:false,allowanceSet:false};v375Save(s);$('v375Log').textContent=`PREFLIGHT PASS ✓\nAdapter: ${adapter}\nToken in code: PASS\nToken out code: PASS\nVenue code: PASS\nSelector: ${selector}\nAdapter paused: ${ap}\nRunner paused: ${rp}\n\nNo write has occurred. Review the exact addresses before Step 2.`}
+async function v375Stage(){await ensureOwnerAndChain();const adapter=await v375Adapter(),s=v375Load();if(!s.preflight)throw Error('Run preflight first');if(v375Address('v375TokenIn','Token in').toLowerCase()!==s.tokenIn.toLowerCase()||v375Address('v375TokenOut','Token out').toLowerCase()!==s.tokenOut.toLowerCase()||v375Address('v375Venue','venue').toLowerCase()!==s.venue.toLowerCase()||v375SelectorValue()!==s.selector)throw Error('Inputs changed after preflight. Run preflight again');await v372CallTx(adapter,v375BoolAddr('setToken(address,bool)',s.tokenIn),'Allow exact rehearsal input token');await v372CallTx(adapter,v375BoolAddr('setToken(address,bool)',s.tokenOut),'Allow exact rehearsal output token');await v372CallTx(adapter,v375PairData(s.tokenIn,s.tokenOut),'Allow exact directed rehearsal token pair');await v372CallTx(adapter,v375BoolAddr('setVenue(address,bool)',s.venue),'Allow exact rehearsal venue');await v372CallTx(adapter,v375VenueSelectorData(s.venue,s.selector),'Allow exact rehearsal venue selector');s.staged=true;s.verified=false;v375Save(s);$('v375Log').textContent=`EXACT PERMISSIONS SUBMITTED ✓\nToken in: ${s.tokenIn}\nToken out: ${s.tokenOut}\nDirected pair: allowed\nVenue: ${s.venue}\nSelector: ${s.selector}\n\nAll execution layers remain paused. Verify on-chain next.`}
+async function v375CallBool(to,sig,args=''){return v374ReadBool(to,'0x'+selectorOf(sig)+args)}
+async function v375Verify(){const adapter=await v375Adapter(),s=v375Load();if(!s.staged)throw Error('Stage permissions first');const pairRaw=await fallbackRpc('eth_call',[{to:adapter,data:'0x'+selectorOf('pairKey(address,address)')+addrWord(s.tokenIn)+addrWord(s.tokenOut)},'latest']);const [tin,tout,pair,venue,sel,ap,rp]=await Promise.all([v375CallBool(adapter,'allowedTokens(address)',addrWord(s.tokenIn)),v375CallBool(adapter,'allowedTokens(address)',addrWord(s.tokenOut)),v375CallBool(adapter,'allowedPairs(bytes32)',String(pairRaw).replace(/^0x/,'')),v375CallBool(adapter,'allowedVenues(address)',addrWord(s.venue)),v375CallBool(adapter,'allowedVenueSelectors(address,bytes4)',addrWord(s.venue)+s.selector.slice(2).padEnd(64,'0')),v374ReadBool(adapter,'0x'+V374_SEL_PAUSED),v374ReadBool(v374Load().runner,'0x'+V374_SEL_PAUSED)]);const ok=tin&&tout&&pair&&venue&&sel&&ap&&rp;s.verified=ok;v375Save(s);$('v375Log').textContent=`PERMISSION GATE ${ok?'VERIFIED ✓':'INCOMPLETE'}\nToken in allowed: ${tin?'PASS ✓':'FAIL'}\nToken out allowed: ${tout?'PASS ✓':'FAIL'}\nDirected pair allowed: ${pair?'PASS ✓':'FAIL'}\nVenue allowed: ${venue?'PASS ✓':'FAIL'}\nExact selector allowed: ${sel?'PASS ✓':'FAIL'}\nAdapter paused: ${ap}\nRunner paused: ${rp}\n\n${ok?'SAFE REHEARSAL PERMISSIONS STAGED. No trade can execute while paused.':'Do not proceed to allowance.'}`;return ok}
+function v375ApproveData(spender,amount){return '0x'+selectorOf('approve(address,uint256)')+addrWord(spender)+word(amount)}
+async function v375AllowanceAmount(){const s=v375Load(),txt=v375Field('v375Allowance');if(!txt)throw Error('Enter a tiny rehearsal allowance');const dec=await tokenDecimals(s.tokenIn);const amount=decimalToUnits(txt,dec);if(amount<=0n)throw Error('Allowance must be greater than zero');return {amount,dec,txt}}
+async function v375ReadAllowance(){const core=await v374Core(),adapter=await v375Adapter(),s=v375Load();const raw=await fallbackRpc('eth_call',[{to:s.tokenIn,data:'0x'+SEL_ALLOWANCE+addrWord(core.tba)+addrWord(adapter)},'latest']);return BigInt(raw||'0x0')}
+async function v375SetAllowance(){await ensureOwnerAndChain();const core=await v374Core(),adapter=await v375Adapter(),s=v375Load();if(!s.verified)throw Error('Verify exact permissions first');const {amount,txt}=await v375AllowanceAmount();const approve=v375ApproveData(adapter,amount),data=genericExecuteCalldata(s.tokenIn,0n,approve);await v372CallTx(core.tba,data,`Generation 10 tiny rehearsal allowance · ${txt}`);const after=await v375ReadAllowance();if(after!==amount)throw Error('Post-write allowance does not equal the exact requested amount');s.allowance=txt;s.allowanceRaw=amount.toString();s.allowanceSet=true;v375Save(s);$('v375Log').textContent=`EXACT TINY ALLOWANCE CONFIRMED ✓\nGeneration 10: ${core.tba}\nToken in: ${s.tokenIn}\nAdapter: ${adapter}\nAllowance: ${txt} (${amount.toString()} raw)\n\nRunner/Adapter remain paused. No trade executed.`}
+async function v375VerifyAllowance(){const s=v375Load();if(!s.allowanceSet)throw Error('No staged allowance recorded');const a=await v375ReadAllowance(),expected=BigInt(s.allowanceRaw||'0');const ok=a===expected;$('v375Log').textContent=`ALLOWANCE ${ok?'VERIFIED ✓':'MISMATCH ✕'}\nOn-chain: ${a.toString()} raw\nExpected: ${expected.toString()} raw\n\n${ok?'Ready for a separate tiny-value execution rehearsal build. Still paused.':'Revoke before proceeding.'}`;return ok}
+async function v375Revoke(){await ensureOwnerAndChain();const core=await v374Core(),adapter=await v375Adapter(),s=v375Load();const data=genericExecuteCalldata(s.tokenIn,0n,v375ApproveData(adapter,0n));await v372CallTx(core.tba,data,'Revoke Generation 10 rehearsal Adapter allowance');const after=await v375ReadAllowance();if(after!==0n)throw Error('Allowance revocation verification failed');s.allowanceSet=false;s.allowanceRaw='0';v375Save(s);$('v375Log').textContent='ALLOWANCE REVOKED ✓\nOn-chain Generation 10 → Adapter allowance = 0.\nPermissions remain staged but execution layers are still paused.'}
+if($('v375UseWeth'))$('v375UseWeth').onclick=()=>{$('v375TokenIn').value=V375_WETH};
+if($('v375Preflight'))$('v375Preflight').onclick=()=>v375Preflight().catch(e=>$('v375Log').textContent='ERROR: '+e.message);
+if($('v375Stage'))$('v375Stage').onclick=()=>v375Stage().catch(e=>$('v375Log').textContent='ERROR: '+e.message);
+if($('v375Verify'))$('v375Verify').onclick=()=>v375Verify().catch(e=>$('v375Log').textContent='ERROR: '+e.message);
+if($('v375AllowanceBtn'))$('v375AllowanceBtn').onclick=()=>v375SetAllowance().catch(e=>$('v375Log').textContent='ERROR: '+e.message);
+if($('v375VerifyAllowance'))$('v375VerifyAllowance').onclick=()=>v375VerifyAllowance().catch(e=>$('v375Log').textContent='ERROR: '+e.message);
+if($('v375Revoke'))$('v375Revoke').onclick=()=>v375Revoke().catch(e=>$('v375Log').textContent='ERROR: '+e.message);
+v375Render();
 
 if($('v372UseOwner'))$('v372UseOwner').onclick=async()=>{await resolveAuthorityState(true);$('v372Guardian').value=OWNER||''};
 if($('v372Preflight'))$('v372Preflight').onclick=()=>v372Preflight().catch(e=>$('v372Log').textContent='ERROR: '+e.message);
