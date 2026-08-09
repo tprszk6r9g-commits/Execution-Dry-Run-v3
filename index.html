@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-uLzGcccLFHXNmHv+TbfbaGH8G3TEsC3AGideqHNP1is='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
-<title>Rustee Broker v3.1 Operator Edition · Robinhood Chain</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-R0rRMsENVJcVVef5sPq762EnnYx8vyWamXLl8TiryZM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<title>Rustee Broker v3.3 Strategy Lab · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -220,6 +220,12 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 .operatorTableWrap{overflow:auto;border:1px solid var(--line);border-radius:18px;margin-top:14px}.operatorTable{width:100%;border-collapse:collapse;min-width:820px;font-size:12px}.operatorTable th,.operatorTable td{padding:11px 9px;text-align:left;border-bottom:1px solid #1d4b42}.operatorTable th{background:#08231d;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
 @media(max-width:650px){.operatorStatus{grid-template-columns:1fr}.allowanceRow{grid-template-columns:1fr}.allowanceButtons{justify-content:flex-start}}
 
+
+/* v3.2 Supervised Autopilot */
+.autopilotHero{display:grid;grid-template-columns:1.05fr .95fr;gap:12px}.autopilotCard{border:1px solid var(--line);border-radius:20px;padding:17px;background:#061d18}.autopilotCard h3{margin:0 0 10px;font-size:20px}.autoMetrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0}.autoMetric{border:1px solid var(--line);border-radius:14px;padding:11px;background:#051713}.autoMetric small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}.autoMetric strong{display:block;margin-top:6px;font-size:18px}.autoRule{display:grid;grid-template-columns:1fr auto;gap:10px;padding:12px 0;border-top:1px solid #1d4b42}.autoRule:first-child{border-top:0}.autoRuleMeta{font-size:11px;color:var(--muted);line-height:1.45}.autoCandidate{border:1px solid var(--teal);border-radius:18px;padding:15px;background:#05251f}.autoCandidate.empty{border-style:dashed;border-color:var(--line);color:var(--muted)}.autoBoundary{border-left:6px solid var(--orange);background:#21170b;padding:12px 14px;border-radius:14px;color:#f7e4cf;font-size:13px;line-height:1.5}.autoSwitch{display:flex;align-items:center;gap:10px}.autoSwitch input{width:22px;height:22px}.autoStatusOn{color:var(--green)}.autoStatusOff{color:var(--muted)}.autoStatusKill{color:var(--red)}.autoAudit{max-height:260px}.autoRuleButtons{display:flex;gap:6px;align-items:start}.autoRuleButtons button{padding:9px 11px;margin:0}.autoInline{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.autoInline3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}@media(max-width:650px){.autopilotHero,.autoInline,.autoInline3{grid-template-columns:1fr}.autoMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* v3.3 Strategy Lab */
+.strategyHero{display:grid;grid-template-columns:1.05fr .95fr;gap:12px}.strategyCard{border:1px solid var(--line);border-radius:20px;padding:17px;background:#061d18}.strategyCard h3{margin:0 0 10px;font-size:20px}.strategyMetrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0}.strategyMetric{border:1px solid var(--line);border-radius:14px;padding:11px;background:#051713}.strategyMetric small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}.strategyMetric strong{display:block;margin-top:6px;font-size:18px}.strategyRow{display:grid;grid-template-columns:1fr auto;gap:10px;padding:12px 0;border-top:1px solid #1d4b42}.strategyRow:first-child{border-top:0}.strategyMeta{font-size:11px;color:var(--muted);line-height:1.5}.strategyStage{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);font-size:10px;letter-spacing:.08em}.strategyStage.DRAFT{color:var(--muted)}.strategyStage.PAPER{color:var(--orange);border-color:#8d6734}.strategyStage.ARMED{color:var(--green);border-color:#2d7659}.strategyButtons{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}.strategyButtons button{padding:9px 11px;margin:0}.strategyInline{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.strategyInline3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.strategyResultGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0}.strategyResult{border:1px solid var(--line);border-radius:13px;padding:10px;background:#041713}.strategyResult small{display:block;color:var(--muted);font-size:9px;text-transform:uppercase}.strategyResult strong{display:block;margin-top:5px;font-size:16px}.strategyDataBadge{display:inline-block;margin:2px 4px 2px 0;padding:5px 8px;border:1px solid var(--line);border-radius:999px;font-size:10px}.strategyBoundary{border-left:6px solid var(--teal);background:#06241e;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.5}.strategyTableWrap{overflow:auto;max-height:320px;border:1px solid var(--line);border-radius:14px}.strategyTableWrap table{min-width:720px}.paperGood{color:var(--green)}.paperBad{color:var(--red)}.paperNeutral{color:var(--muted)}@media(max-width:650px){.strategyHero,.strategyInline,.strategyInline3{grid-template-columns:1fr}.strategyMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.strategyResultGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.strategyRow{grid-template-columns:1fr}.strategyButtons{justify-content:flex-start}}
 </style>
 </head>
 <body><main>
@@ -230,6 +236,8 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <button class="tabbtn" data-tab="overviewPane">Overview</button>
   <button class="tabbtn" data-tab="portfolioPane">Portfolio</button>
   <button class="tabbtn" data-tab="tradePane">Trade</button>
+  <button class="tabbtn" data-tab="autopilotPane">Autopilot</button>
+  <button class="tabbtn" data-tab="strategyPane">Strategy Lab</button>
   <button class="tabbtn" data-tab="convertPane">ETH ↔ WETH</button>
   <button class="tabbtn" data-tab="historyPane">History + P&amp;L</button>
   <button class="tabbtn" data-tab="accountsPane">Accounts</button>
@@ -250,6 +258,8 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
       <p>NFT-rooted broker command center for portfolio visibility, guarded trading, ERC-6551 account operations, on-chain identity, metadata administration, security evidence, and recovery.</p>
       <div class="quickDock">
         <button class="primary" data-open-tab="tradePane">BUY / SELL</button>
+        <button data-open-tab="autopilotPane">AUTOPILOT</button>
+        <button data-open-tab="strategyPane">STRATEGY LAB</button>
         <button id="cmdWrap" data-open-tab="convertPane">WRAP</button>
         <button id="cmdUnwrap" data-open-tab="convertPane">UNWRAP</button>
         <button data-open-tab="transferPane">MOVE</button>
@@ -591,6 +601,149 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 </div>
 
 
+
+
+<div id="autopilotPane" class="tabpane">
+  <div class="card">
+    <span class="badge">v3.2 · SUPERVISED AUTOPILOT</span>
+    <h2>Rustee Rule-Driven Autopilot</h2>
+    <p>Rustee can watch live/snapshot prices, evaluate only the rules you define, enforce local risk limits, queue a candidate, and automatically prepare + simulate the first transaction. The wallet signature remains a separate human authorization step.</p>
+    <div class="autoBoundary"><b>Execution boundary:</b> this mode never calls <code>eth_sendTransaction</code> on its own. A prepared candidate stops at <b>Open wallet to sign</b>. iOS may suspend background browser timers, so monitoring is reliable only while Rustee is open/active.</div>
+
+    <div class="autoMetrics">
+      <div class="autoMetric"><small>State</small><strong id="autoState">OFF</strong></div>
+      <div class="autoMetric"><small>Rules enabled</small><strong id="autoRuleCount">0</strong></div>
+      <div class="autoMetric"><small>Today's buy spend</small><strong id="autoDailySpend">$0.00</strong></div>
+      <div class="autoMetric"><small>Today's realized P&amp;L</small><strong id="autoDailyPnl">$0.00</strong></div>
+    </div>
+
+    <div class="autopilotHero">
+      <div class="autopilotCard">
+        <h3>Autopilot controls</h3>
+        <label class="autoSwitch"><input id="autoEnabled" type="checkbox"> Enable rule monitoring while Rustee is open</label>
+        <label class="autoSwitch"><input id="autoPrepare" type="checkbox" checked> Auto-prepare + simulate a triggered candidate</label>
+        <div class="autoInline">
+          <div><label>Maximum BUY candidate (USD)</label><input id="autoMaxTradeUsd" type="number" min="0.10" max="5" step="0.10" value="1.00"></div>
+          <div><label>Maximum BUY spend / day (USD)</label><input id="autoDailyBudgetUsd" type="number" min="0.10" max="25" step="0.10" value="3.00"></div>
+          <div><label>Daily realized-loss stop (USD)</label><input id="autoDailyLossUsd" type="number" min="0" max="25" step="0.10" value="1.00"></div>
+          <div><label>Rule cooldown (minutes)</label><input id="autoCooldownMinutes" type="number" min="1" max="1440" step="1" value="15"></div>
+          <div><label>Monitor interval (seconds)</label><input id="autoRefreshSeconds" type="number" min="60" max="3600" step="30" value="60"></div>
+          <div><label>Maximum slippage</label><select id="autoSlippage"><option value="0.5" selected>0.5%</option><option value="1">1.0%</option><option value="2">2.0%</option><option value="3">3.0%</option></select></div>
+        </div>
+        <div class="actions">
+          <button class="primary" id="autoSave">Save + arm settings</button>
+          <button id="autoEvaluate">Evaluate now</button>
+          <button class="danger" id="autoKill">KILL SWITCH</button>
+        </div>
+        <pre id="autoMonitorLog">Supervised Autopilot is off.</pre>
+      </div>
+
+      <div class="autopilotCard">
+        <h3>Candidate queue</h3>
+        <div id="autoCandidate" class="autoCandidate empty">No candidate queued.</div>
+        <div class="actions">
+          <button class="primary" id="autoPrepareCandidate" disabled>Prepare + simulate candidate</button>
+          <button id="autoOpenTrade" disabled>Open Trade terminal</button>
+          <button id="autoDismiss" disabled>Dismiss</button>
+        </div>
+        <p class="sourceNote">Preparing a candidate may read your connected wallet, balances and chain state. It does not broadcast. The final wallet sheet must still be opened by you.</p>
+      </div>
+    </div>
+
+    <div class="autopilotHero" style="margin-top:12px">
+      <div class="autopilotCard">
+        <h3>Add rule</h3>
+        <div class="autoInline">
+          <div><label>Ticker</label><input id="autoRuleSymbol" placeholder="NVDA" autocapitalize="characters"></div>
+          <div><label>Side</label><select id="autoRuleSide"><option value="BUY">BUY</option><option value="SELL">SELL</option></select></div>
+          <div><label>Trigger</label><select id="autoRuleTrigger"><option value="PRICE_BELOW">Price at/below</option><option value="PRICE_ABOVE">Price at/above</option><option value="PNL_BELOW">Position P&amp;L % at/below</option><option value="PNL_ABOVE">Position P&amp;L % at/above</option></select></div>
+          <div><label>Trigger value</label><input id="autoRuleThreshold" type="number" step="0.01" placeholder="100.00"></div>
+          <div><label id="autoRuleSizeLabel">BUY size (USD)</label><input id="autoRuleSize" type="number" min="0.10" step="0.10" value="1.00"></div>
+          <div><label>Rule label (optional)</label><input id="autoRuleLabel" placeholder="NVDA entry"></div>
+        </div>
+        <div class="actions"><button class="primary" id="autoAddRule">Add rule</button></div>
+        <p class="sourceNote">BUY rules use USD size. SELL rules use a percentage of the Trading TBA position (1–100%). Rustee does not invent entry/exit levels; every threshold is operator-defined.</p>
+      </div>
+      <div class="autopilotCard">
+        <h3>Rules</h3>
+        <div id="autoRules"><div class="emptyState">No rules configured.</div></div>
+      </div>
+    </div>
+
+    <div class="autopilotCard" style="margin-top:12px">
+      <h3>Decision / risk audit</h3>
+      <div class="actions"><button id="autoClearAudit">Clear audit</button></div>
+      <pre id="autoAudit" class="autoAudit">No Autopilot decisions recorded yet.</pre>
+    </div>
+  </div>
+</div>
+
+
+<div id="strategyPane" class="tabpane">
+  <div class="card">
+    <span class="badge">v3.3 · STRATEGY LAB</span>
+    <h2>Strategy Lab + Paper Twin</h2>
+    <p>Design and test deterministic trading rules without sending transactions. Rustee can record market observations locally, import historical price series, replay strategies, run a paper twin, compare strategies, and explicitly promote a tested strategy into the existing supervised Autopilot.</p>
+    <div class="strategyBoundary"><b>Zero-broadcast lab:</b> Strategy Lab never calls <code>eth_sendTransaction</code>, never opens the wallet, and never executes a real trade. Promotion only creates supervised Autopilot rules. Real execution still stops at the existing owner wallet signature boundary.</div>
+
+    <div class="strategyMetrics">
+      <div class="strategyMetric"><small>Strategies</small><strong id="stratCount">0</strong></div>
+      <div class="strategyMetric"><small>Recorded samples</small><strong id="stratSamples">0</strong></div>
+      <div class="strategyMetric"><small>Paper strategies</small><strong id="stratPaperCount">0</strong></div>
+      <div class="strategyMetric"><small>Best backtest</small><strong id="stratBestReturn">—</strong></div>
+    </div>
+
+    <div class="strategyHero">
+      <div class="strategyCard">
+        <h3>Strategy designer</h3>
+        <div class="strategyInline">
+          <div><label>Name</label><input id="stratName" placeholder="NVDA bracket"></div>
+          <div><label>Ticker</label><input id="stratSymbol" placeholder="NVDA" autocapitalize="characters"></div>
+          <div><label>Entry trigger</label><select id="stratEntryTrigger"><option value="PRICE_BELOW">Price at/below</option><option value="PRICE_ABOVE">Price at/above</option></select></div>
+          <div><label>Entry price</label><input id="stratEntryThreshold" type="number" step="0.01" placeholder="100.00"></div>
+          <div><label>Entry capital (USD)</label><input id="stratEntryUsd" type="number" min="0.10" max="5" step="0.10" value="1.00"></div>
+          <div><label>Take profit (%)</label><input id="stratTakeProfit" type="number" min="0.1" max="100" step="0.1" value="5"></div>
+          <div><label>Stop loss (%)</label><input id="stratStopLoss" type="number" min="0.1" max="100" step="0.1" value="3"></div>
+          <div><label>Max hold (hours, 0 = off)</label><input id="stratMaxHold" type="number" min="0" max="8760" step="1" value="0"></div>
+          <div><label>Assumed slippage / side (%)</label><input id="stratSlippage" type="number" min="0" max="10" step="0.05" value="0.25"></div>
+          <div><label>Assumed fee / side (%)</label><input id="stratFee" type="number" min="0" max="10" step="0.01" value="0.05"></div>
+        </div>
+        <div class="actions"><button class="primary" id="stratSave">Save strategy</button><button id="stratResetForm">Clear form</button></div>
+        <p class="sourceNote">Backtests are deterministic replays of the price samples you provide or Rustee records. They are not predictions and do not include unobserved intrabar prices, liquidity changes, taxes, or execution effects beyond your configured fee/slippage assumptions.</p>
+      </div>
+
+      <div class="strategyCard">
+        <h3>Market recorder + historical data</h3>
+        <label class="autoSwitch"><input id="stratRecorderEnabled" type="checkbox"> Record strategy tickers while Rustee is open</label>
+        <div class="strategyInline">
+          <div><label>Recorder interval (seconds)</label><input id="stratRecorderSeconds" type="number" min="60" max="3600" step="30" value="60"></div>
+          <div><label>Backtest starting capital (USD)</label><input id="stratStartingCapital" type="number" min="1" max="1000000" step="1" value="1000"></div>
+        </div>
+        <div class="actions"><button class="primary" id="stratCapture">Capture prices now</button><button id="stratExportData">Export history</button><button id="stratImportButton">Import CSV / JSON</button><input id="stratImportFile" type="file" accept=".csv,.json,text/csv,application/json" style="display:none"></div>
+        <div id="stratDataSummary"><span class="strategyDataBadge">No local history yet</span></div>
+        <pre id="stratDataLog">The recorder is off. Imported and recorded history stays in this browser unless exported.</pre>
+      </div>
+    </div>
+
+    <div class="strategyHero" style="margin-top:12px">
+      <div class="strategyCard">
+        <h3>Saved strategies</h3>
+        <div class="actions"><button id="stratRunAll">Run strategy tournament</button></div>
+        <div id="stratList"><div class="emptyState">No strategies saved.</div></div>
+      </div>
+      <div class="strategyCard">
+        <h3>Backtest / Paper Twin result</h3>
+        <div id="stratResult"><div class="emptyState">Choose Backtest on a saved strategy.</div></div>
+      </div>
+    </div>
+
+    <div class="strategyCard" style="margin-top:12px">
+      <h3>Strategy tournament</h3>
+      <p class="sourceNote">Every strategy is replayed against its own available local/imported price history using the same starting-capital setting. Ranking is by total return; sample counts are shown so thin datasets are obvious.</p>
+      <div id="stratTournament"><div class="emptyState">Run the tournament after saving strategies and loading history.</div></div>
+    </div>
+  </div>
+</div>
 
 <div id="tradePane" class="tabpane">
   <div class="card">
@@ -1378,6 +1531,7 @@ async function simulateAssetMove(){
   const gas=BigInt(await rpc('eth_estimateGas',[tx]));
   const result=await rpc('eth_call',[tx,'latest']);
 
+  await armPreparedWalletHandoff(tx,`Trading TBA withdrawal · ${assetState.symbol}`);
   assetMoveSimulation={
     time:Date.now(),token:assetState.token,amount,data,gas,
     decimals:assetState.decimals,symbol:assetState.symbol
@@ -1395,14 +1549,8 @@ async function simulateAssetMove(){
 async function moveAsset(){
   if(!assetMoveSimulation) throw Error('Simulate the asset move first');
   if(Date.now()-assetMoveSimulation.time>60000) throw Error('Simulation expired. Simulate again.');
-  if(!account) await connect();
+  if(!account||account.toLowerCase()!==OWNER.toLowerCase()) throw Error('Broker owner wallet is not connected');
   const s=assetMoveSimulation;
-  if(!confirm(
-    `REAL MAINNET ASSET WITHDRAWAL\n\n`+
-    `Call Trading TBA withdrawToken() to move ${unitsToDecimal(s.amount,s.decimals,12)} ${s.symbol} `+
-    `to the current Broker NFT owner wallet?\n\nYou will get a wallet confirmation next.`
-  )) return;
-
   const hash=await secureSendTransaction(
     {from:account,to:TRADING,data:s.data,gas:hexQty(s.gas*120n/100n)},
     `Trading TBA withdrawal · ${s.symbol}`
@@ -1570,6 +1718,7 @@ async function simulate(){
   const tx={from:OWNER,to:VAULT,data};
   const gas=BigInt(await rpc('eth_estimateGas',[tx]));
   const result=await rpc('eth_call',[tx,'latest']);
+  await armPreparedWalletHandoff(tx,'Legacy NVDA buy');
   simulationState={time:Date.now(),data,gas,quoteTime:quoteState.time,beforeNvda:bal.nvda};
   $('simLog').textContent='PASS — exact mainnet call simulated successfully.\nEstimated gas: '+gas.toString()+
     '\nVault: '+VAULT+'\nRouter: '+ROUTER+'\nNVDA recipient: '+TRADING+
@@ -1580,8 +1729,7 @@ async function simulate(){
 async function execute(){
   if(!simulationState||!quoteState) throw Error('Run simulation first');
   if(Date.now()-simulationState.time>60000||simulationState.quoteTime!==quoteState.time) throw Error('Simulation expired. Quote and simulate again.');
-  if(!account) await connect();
-  if(!confirm(`REAL MAINNET TRADE\n\nSpend ${fromWei(quoteState.amountIn)} ETH from Rustee Vault TBA to buy NVDA and deliver it to Trading TBA?\n\nYou will get a wallet confirmation next.`)) return;
+  if(!account||account.toLowerCase()!==OWNER.toLowerCase()) throw Error('Broker owner wallet is not connected');
   const gas=simulationState.gas*120n/100n;
   const hash=await secureSendTransaction(
     {from:account,to:VAULT,data:simulationState.data,gas:hexQty(gas)},
@@ -1694,9 +1842,10 @@ async function simulateUniversalMove(){
   const gas=BigInt(await rpc('eth_estimateGas',[tx]));
   const result=await rpc('eth_call',[tx,'latest']);
   universalMoveState={time:Date.now(),sourceKey,destKey,source,dest,token,amountUnits,symbol,decimals,tx,gas};
-  $('executeUniversalMove').disabled=false;
+  await armPreparedWalletHandoff(tx,`Asset move · ${symbol}`);
+  $('executeUniversalMove').disabled=false;$('executeUniversalMove').textContent='Open wallet to sign';
   $('universalMoveLog').textContent=
-    `PASS — exact move simulated.\n`+
+    `PASS — exact move simulated and wallet handoff armed.\n`+
     `${ACCOUNT_LABELS[sourceKey]} → ${ACCOUNT_LABELS[destKey]}\n`+
     `Asset: ${symbol}\nAmount: ${unitsToDecimal(amountUnits,decimals,12)}\n`+
     `Estimated gas: ${gas}\neth_call: ${result}`;
@@ -1705,12 +1854,10 @@ async function executeUniversalMove(){
   const s=universalMoveState;
   if(!s) throw Error('Simulate the move first');
   if(Date.now()-s.time>60000) throw Error('Simulation expired. Simulate again.');
-  if(!account) await connect();
-  if(!confirm(`REAL MAINNET MOVE\n\n${ACCOUNT_LABELS[s.sourceKey]} → ${ACCOUNT_LABELS[s.destKey]}\n${unitsToDecimal(s.amountUnits,s.decimals,12)} ${s.symbol}\n\nReview the wallet confirmation carefully.`)) return;
   const sendTx={...s.tx,gas:hexQty(s.gas*120n/100n)};
   const hash=await secureSendTransaction(sendTx,`Asset move · ${s.symbol}`);
   recordReceipt({hash,status:'PENDING',type:'ASSET_MOVE',label:`${ACCOUNT_LABELS[s.sourceKey]} → ${ACCOUNT_LABELS[s.destKey]} · ${s.symbol}`,createdAt:new Date().toISOString()});
-  $('executeUniversalMove').disabled=true;
+  $('executeUniversalMove').disabled=true;$('executeUniversalMove').textContent='Execute real move';
   $('universalMoveLog').textContent='Submitted:\n'+hash+'\nWaiting for confirmation…';
   const receipt=await waitReceipt(hash);
   $('universalMoveLog').textContent=`CONFIRMED ✓\nTransaction: ${hash}\nBlock: ${Number(BigInt(receipt.blockNumber))}\n${ACCOUNT_LABELS[s.sourceKey]} → ${ACCOUNT_LABELS[s.destKey]}\n${unitsToDecimal(s.amountUnits,s.decimals,12)} ${s.symbol}`;
@@ -1729,16 +1876,18 @@ document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.tab==='evidencePane') buildEvidenceBundle();
   if(b.dataset.tab==='portfolioPane' && !terminalState.positions.length) discoverPortfolio().catch(e=>$('terminalLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='tradePane') ensureTradeCatalog().catch(e=>$('tradeQuoteLog').textContent='ERROR: '+e.message);
+  if(b.dataset.tab==='autopilotPane' && typeof autopilotRender==='function') autopilotRender();
+  if(b.dataset.tab==='strategyPane' && typeof strategyRender==='function') strategyRender();
   if(b.dataset.tab==='operationsPane'){try{refreshAllAccounts()}catch{}}
   if(b.dataset.tab==='historyPane'){
     if(!terminalState.positions.length) discoverPortfolio().then(()=>{renderCostBasisEditor();renderHistoryMetrics()}).catch(e=>$('historyLog').textContent='ERROR: '+e.message);
     else {renderCostBasisEditor();renderHistoryMetrics();}
   }
 }));
-$('moveAssetType').addEventListener('change',()=>{$('customTokenWrap').style.display=$('moveAssetType').value==='CUSTOM'?'block':'none';universalMoveState=null;$('executeUniversalMove').disabled=true});
-$('moveSource').addEventListener('change',()=>{universalMoveState=null;$('executeUniversalMove').disabled=true});
-$('moveDestination').addEventListener('change',()=>{universalMoveState=null;$('executeUniversalMove').disabled=true});
-$('universalAmount').addEventListener('input',()=>{universalMoveState=null;$('executeUniversalMove').disabled=true});
+$('moveAssetType').addEventListener('change',()=>{$('customTokenWrap').style.display=$('moveAssetType').value==='CUSTOM'?'block':'none';universalMoveState=null;clearPreparedWalletHandoff();$('executeUniversalMove').disabled=true;$('executeUniversalMove').textContent='Execute real move'});
+$('moveSource').addEventListener('change',()=>{universalMoveState=null;clearPreparedWalletHandoff();$('executeUniversalMove').disabled=true;$('executeUniversalMove').textContent='Execute real move'});
+$('moveDestination').addEventListener('change',()=>{universalMoveState=null;clearPreparedWalletHandoff();$('executeUniversalMove').disabled=true;$('executeUniversalMove').textContent='Execute real move'});
+$('universalAmount').addEventListener('input',()=>{universalMoveState=null;clearPreparedWalletHandoff();$('executeUniversalMove').disabled=true;$('executeUniversalMove').textContent='Execute real move'});
 $('refreshAllAccounts').onclick=()=>refreshAllAccounts().catch(e=>$('accountCenterLog').textContent='ERROR: '+e.message);
 $('simulateUniversalMove').onclick=()=>simulateUniversalMove().catch(e=>{$('universalMoveLog').textContent='ERROR: '+e.message;alert(e.message)});
 $('executeUniversalMove').onclick=()=>executeUniversalMove().catch(e=>{$('universalMoveLog').textContent='ERROR: '+e.message;alert(e.message)});
@@ -2250,7 +2399,7 @@ function renderOpsPlan(){
       <td>${s.txHash?`<a href="${BLOCKSCOUT}/tx/${s.txHash}" target="_blank" rel="noopener">${escapeHtml(short(s.txHash))} ↗</a>`:'—'}</td></tr>`;
   }).join('')||'<tr><td colspan="7">No active operations plan.</td></tr>';
   const next=steps.find(x=>x.status==='READY');
-  $('executeNextRouteStep').disabled=!(opsState.kind==='ROUTE'&&next);
+  $('executeNextRouteStep').disabled=!(opsState.kind==='ROUTE'&&next);$('executeNextRouteStep').textContent=(opsState.kind==='ROUTE'&&next)?'Open wallet to sign':'Execute next step';
   $('executeNextSweepStep').disabled=!(opsState.kind==='SWEEP'&&next);
 }
 async function ensureOwnerAndChain(){
@@ -2292,6 +2441,7 @@ async function simulateOpsStep(step,index){
   try{
     const gas=BigInt(await rpc('eth_estimateGas',[tx]));
     const result=await rpc('eth_call',[tx,'latest']);
+    await armPreparedWalletHandoff(tx,`Operations · ${step.route}`);
     step.gas=gas;step.tx=tx;step.callResult=result;step.status='READY';step.simulatedAt=Date.now();
     return true;
   }catch(e){
@@ -2309,11 +2459,10 @@ async function simulateCurrentPlan(){
     const ok=await simulateOpsStep(s,i);
     if(ok) pass++; else if(s.status==='WAITING') waiting++; else fail++;
   }
-  $('opsLog').textContent=`Simulation complete.\nREADY: ${pass}\nWAITING ON PRIOR RECEIPT: ${waiting}\nFAILED: ${fail}\nNo transaction was sent.`;
+  $('opsLog').textContent=`Simulation complete.\nREADY: ${pass}\nWAITING ON PRIOR RECEIPT: ${waiting}\nFAILED: ${fail}\nNo transaction was sent.\n\nIf READY > 0, tap Open wallet to sign; Rustee will call the wallet immediately.`;
   renderOpsPlan();
 }
 async function executeNextOpsStep(kind){
-  await ensureOwnerAndChain();
   if(opsState.kind!==kind) throw Error('Wrong plan type');
   let idx=opsState.steps.findIndex(x=>x.status==='READY');
   if(idx<0) throw Error('No simulated READY step. Simulate the plan first.');
@@ -2321,7 +2470,6 @@ async function executeNextOpsStep(kind){
   if(Date.now()-(s.simulatedAt||0)>60000){
     s.status='PENDING';renderOpsPlan();throw Error('Simulation expired. Simulate again.');
   }
-  if(!confirm(`REAL MAINNET OPERATION\n\nStep ${idx+1}/${opsState.steps.length}\n${s.route}\n${unitsToDecimal(s.amountUnits,s.decimals,12)} ${s.symbol}\n\nThis requires a real wallet signature.`)) return;
   const tx={...s.tx,gas:hexQty(s.gas*120n/100n)};
   const hash=await secureSendTransaction(tx,`Operations · ${s.route}`);
   recordReceipt({hash,status:'PENDING',type:s.type,label:s.route,createdAt:new Date().toISOString()});
@@ -2743,7 +2891,7 @@ function renderTradePlan(){
     const optionalNote=x.optional?'<div class="holdingMeta">Recovery-only step; needed if swap fails or is abandoned with allowance remaining.</div>':'';
     return `<div class="tradeStep"><div class="tradeStepNo">${i+1}</div><div><b>${escapeHtml(x.label)}</b><div class="holdingMeta">${escapeHtml(x.type)}</div>${custodyWarn}${optionalNote}</div><div class="tradeStatus ${cls}">${escapeHtml(x.status||'PENDING')}</div></div>`;
   }).join('')||'<div class="emptyState">Build a plan after obtaining a route quote.</div>';
-  $('tradeExecuteNext').disabled=!s.some(x=>x.status==='READY');
+  $('tradeExecuteNext').disabled=!s.some(x=>x.status==='READY');$('tradeExecuteNext').textContent=s.some(x=>x.status==='READY')?'Open wallet to sign':'Execute next step';
 }
 async function simulateNextTradeStep(){
   await ensureOwnerAndChain();
@@ -2766,15 +2914,15 @@ async function simulateNextTradeStep(){
   try{
     const gas=BigInt(await rpc('eth_estimateGas',[tx]));
     const result=await rpc('eth_call',[tx,'latest']);
+    await armPreparedWalletHandoff(tx,`Trade step · ${step.label}`);
     step.tx=tx;step.gas=gas;step.callResult=result;step.status='READY';step.simulatedAt=Date.now();
-    $('tradeExecLog').textContent=`PASS — step ${idx+1}/${tradeState.steps.length} simulated.\n${step.label}\nEstimated gas: ${gas}\neth_call: ${result}`;
+    $('tradeExecLog').textContent=`PASS — step ${idx+1}/${tradeState.steps.length} simulated.\n${step.label}\nEstimated gas: ${gas}\neth_call: ${result}\n\nREADY — tap Open wallet to sign.`;
     renderTradePlan();
   }catch(e){
     step.status='FAILED';step.error=e.message;renderTradePlan();throw e;
   }
 }
 async function executeNextTradeStep(){
-  await ensureOwnerAndChain();
   const idx=tradeState.steps.findIndex(x=>x.status==='READY');
   if(idx<0) throw Error('Simulate the next step first');
   const step=tradeState.steps[idx];
@@ -2782,7 +2930,6 @@ async function executeNextTradeStep(){
   const custodyNote=step.type==='SELL_WITHDRAW'
     ?'\n\nAfter this step the stock token is in the Owner wallet, NOT a TBA. Complete SELL_STAGE in the same session.'
     :'';
-  if(!confirm(`REAL MAINNET TRADE STEP\n\n${idx+1}/${tradeState.steps.length}\n${step.label}${custodyNote}\n\nReview the wallet destination and gas carefully.`)) return;
   const tx={...step.tx,gas:hexQty(step.gas*120n/100n)};
   const hash=await secureSendTransaction(tx,`Trade step · ${step.label}`);
   recordReceipt({hash,status:'PENDING',type:step.type,label:step.label,createdAt:new Date().toISOString()});
@@ -2822,6 +2969,7 @@ async function executeNextTradeStep(){
     renderTradePlan();
     await refreshBalances();
     try{await refreshAllAccounts()}catch{}
+    if(typeof autopilotAfterStepConfirmed==='function'){try{await autopilotAfterStepConfirmed(step)}catch(err){console.warn('Autopilot next-step simulation',err)}}
     const remainingRequired=tradeState.steps.some(x=>!x.optional&&!['DONE','SKIPPED'].includes(x.status));
     if(!remainingRequired){
       try{await finalizeConfirmedTrade()}catch(err){console.warn('Trade accounting/verification',err);$('tradeVerificationLog').textContent='Trade confirmed, but local accounting verification needs review: '+err.message}
@@ -2895,6 +3043,7 @@ async function finalizeConfirmedTrade(){
   localStorage.setItem(LAST_TRADE_VERIFY_KEY,verification);
   $('tradeVerificationLog').textContent=verification;
   renderCostBasisEditor();renderHistoryMetrics();
+  if(typeof autopilotOnConfirmedTrade==='function')autopilotOnConfirmedTrade(entry);
   return entry;
 }
 function restoreLastTradeVerification(){try{const x=localStorage.getItem(LAST_TRADE_VERIFY_KEY);if(x&&$('tradeVerificationLog'))$('tradeVerificationLog').textContent=x}catch{}}
@@ -3032,18 +3181,17 @@ async function refreshConvertBalances(){
   const [eth,weth]=await Promise.all([rpc('eth_getBalance',[VAULT,'latest']).then(BigInt),erc20Balance(WETH,VAULT)]);
   $('convertVaultEth').textContent=fromWei(eth);$('convertVaultWeth').textContent=unitsToDecimal(weth,18,12);return {eth,weth};
 }
-function resetConvert(){convertState=null;$('executeConvert').disabled=true;$('convertStatus').textContent='Idle';$('convertLog').textContent='Conversion changed. Simulate again.'}
+function resetConvert(){convertState=null;clearPreparedWalletHandoff();$('executeConvert').disabled=true;$('executeConvert').textContent='Execute conversion';$('convertStatus').textContent='Idle';$('convertLog').textContent='Conversion changed. Simulate again.'}
 async function useConvertFraction(frac){const b=await refreshConvertBalances();const src=$('convertDirection').value==='WRAP'?b.eth:b.weth;const amt=src*BigInt(Math.round(frac*10000))/10000n;$('convertAmount').value=unitsToDecimal(amt,18,18);resetConvert()}
 async function simulateConvert(){
   await ensureOwnerAndChain();const b=await refreshConvertBalances();const direction=$('convertDirection').value;const amount=decimalToUnits($('convertAmount').value,18);if(amount<=0n)throw Error('Enter an amount greater than zero');
   if(direction==='WRAP'&&amount>b.eth)throw Error('Amount exceeds Vault native ETH balance');if(direction==='UNWRAP'&&amount>b.weth)throw Error('Amount exceeds Vault WETH balance');
   const inner=direction==='WRAP'?'0xd0e30db0':'0x2e1a7d4d'+word(amount);const value=direction==='WRAP'?amount:0n;const tx={from:OWNER,to:VAULT,data:genericExecuteCalldata(WETH,value,inner)};
-  const gas=BigInt(await rpc('eth_estimateGas',[tx]));const result=await rpc('eth_call',[tx,'latest']);convertState={direction,amount,before:b,tx,gas,time:Date.now()};$('convertStatus').textContent='READY';$('executeConvert').disabled=false;
+  const gas=BigInt(await rpc('eth_estimateGas',[tx]));const result=await rpc('eth_call',[tx,'latest']);await armPreparedWalletHandoff(tx,`Vault ${direction==='WRAP'?'ETH → WETH':'WETH → ETH'} · ${unitsToDecimal(amount,18,18)}`);convertState={direction,amount,before:b,tx,gas,time:Date.now()};$('convertStatus').textContent='READY';$('executeConvert').disabled=false;$('executeConvert').textContent='Open wallet to sign';
   $('convertLog').textContent=`PASS — ${direction==='WRAP'?'ETH → WETH':'WETH → ETH'} simulated.\nAmount: ${unitsToDecimal(amount,18,18)}\nEstimated gas: ${gas}\nVault: ${VAULT}\nWETH: ${WETH}\neth_call: ${result}`;
 }
 async function executeConvert(){
-  await ensureOwnerAndChain();const c=convertState;if(!c)throw Error('Simulate conversion first');if(Date.now()-c.time>60000){resetConvert();throw Error('Simulation expired. Simulate again.')}
-  if(!confirm(`REAL MAINNET VAULT CONVERSION\n\n${c.direction==='WRAP'?'ETH → WETH':'WETH → ETH'}\nAmount: ${unitsToDecimal(c.amount,18,18)}\n\nFunds remain inside Rustee Vault. Continue to wallet signature?`))return;
+  const c=convertState;if(!c)throw Error('Simulate conversion first');if(Date.now()-c.time>60000){resetConvert();throw Error('Simulation expired. Simulate again.')}
   const hash=await secureSendTransaction({...c.tx,gas:hexQty(c.gas*120n/100n)},`Vault ${c.direction==='WRAP'?'ETH → WETH':'WETH → ETH'} · ${unitsToDecimal(c.amount,18,18)}`);recordReceipt({hash,status:'PENDING',type:'CONVERT_'+c.direction,label:`Vault ${c.direction}`,createdAt:new Date().toISOString()});$('executeConvert').disabled=true;$('convertStatus').textContent='PENDING';$('convertLog').textContent='Submitted:\n'+hash+'\nWaiting for confirmation…';
   const receipt=await waitReceipt(hash);const after=await refreshConvertBalances();const expected=c.amount;const ok=c.direction==='WRAP'?(after.weth>=c.before.weth+expected&&after.eth<=c.before.eth-expected):(after.eth>=c.before.eth+expected&&after.weth<=c.before.weth-expected);
   recordReceipt({hash,status:'CONFIRMED',type:'CONVERT_'+c.direction,label:`Vault ${c.direction}`,block:Number(BigInt(receipt.blockNumber)),createdAt:new Date().toISOString()});recordOperatorEntry({id:hash,kind:'CONVERSION',time:new Date().toISOString(),direction:c.direction,amount:unitsToDecimal(c.amount,18,18),tx:hash,gasUsed:receipt.gasUsed?BigInt(receipt.gasUsed).toString():'0'});
@@ -3062,8 +3210,8 @@ async function scanAllowanceManager(){
   await ensureTradeCatalog();if(!terminalState.positions.length)try{await discoverPortfolio()}catch{};allowanceManagerState=new Map();const rows=[];for(const pos of terminalState.positions){try{const amount=await readVaultRouterAllowance(pos.token);if(amount>0n){allowanceManagerState.set(pos.token.toLowerCase(),{token:pos.token,symbol:pos.asset.tokenSymbol,amount,decimals:pos.decimals,ready:false});rows.push(allowanceManagerState.get(pos.token.toLowerCase()))}}catch{}}
   $('allowanceManagerList').innerHTML=rows.map(x=>`<div class="allowanceRow"><div><b>${escapeHtml(x.symbol)}</b><span class="holdingMeta">Allowance: ${escapeHtml(unitsToDecimal(x.amount,x.decimals,12))}<br>${escapeHtml(x.token)}</span></div><div class="allowanceButtons"><button data-allowance-sim="${escapeHtml(x.token)}">Simulate</button><button data-allowance-revoke="${escapeHtml(x.token)}" disabled>Revoke</button></div></div>`).join('')||'<div class="emptyState">No non-zero canonical Vault → Router allowances detected ✓</div>';$('allowanceManagerLog').textContent=`Allowance scan complete. Non-zero allowances: ${rows.length}`;return rows
 }
-async function simulateAllowanceRevoke(token){await ensureOwnerAndChain();const x=allowanceManagerState.get(token.toLowerCase());if(!x)throw Error('Allowance is no longer in the active scan');const tx={from:OWNER,to:VAULT,data:genericExecuteCalldata(x.token,0n,approveCalldata(ROUTER,0n))};const gas=BigInt(await rpc('eth_estimateGas',[tx]));const result=await rpc('eth_call',[tx,'latest']);x.tx=tx;x.gas=gas;x.time=Date.now();x.ready=true;const b=document.querySelector(`[data-allowance-revoke="${x.token}"]`);if(b)b.disabled=false;$('allowanceManagerLog').textContent=`PASS — ${x.symbol} revoke simulated.\nEstimated gas: ${gas}\neth_call: ${result}`}
-async function executeAllowanceRevoke(token){await ensureOwnerAndChain();const x=allowanceManagerState.get(token.toLowerCase());if(!x?.ready)throw Error('Simulate this revoke first');if(Date.now()-x.time>60000){x.ready=false;throw Error('Revoke simulation expired. Simulate again.')}if(!confirm(`REVOKE VAULT ROUTER ALLOWANCE\n\n${x.symbol}\nSet SwapRouter02 allowance to zero?`))return;const hash=await secureSendTransaction({...x.tx,gas:hexQty(x.gas*120n/100n)},`Revoke Vault → Router allowance · ${x.symbol}`);recordReceipt({hash,status:'PENDING',type:'ALLOWANCE_REVOKE',label:`Revoke ${x.symbol} router allowance`,createdAt:new Date().toISOString()});const receipt=await waitReceipt(hash);const after=await readVaultRouterAllowance(x.token);recordReceipt({hash,status:'CONFIRMED',type:'ALLOWANCE_REVOKE',label:`Revoke ${x.symbol} router allowance`,block:Number(BigInt(receipt.blockNumber)),createdAt:new Date().toISOString()});$('allowanceManagerLog').textContent=`CONFIRMED ✓\n${x.symbol} allowance after: ${after.toString()}\nTx: ${hash}`;await scanAllowanceManager()}
+async function simulateAllowanceRevoke(token){await ensureOwnerAndChain();const x=allowanceManagerState.get(token.toLowerCase());if(!x)throw Error('Allowance is no longer in the active scan');const tx={from:OWNER,to:VAULT,data:genericExecuteCalldata(x.token,0n,approveCalldata(ROUTER,0n))};const gas=BigInt(await rpc('eth_estimateGas',[tx]));const result=await rpc('eth_call',[tx,'latest']);await armPreparedWalletHandoff(tx,`Revoke Vault → Router allowance · ${x.symbol}`);x.tx=tx;x.gas=gas;x.time=Date.now();x.ready=true;const b=document.querySelector(`[data-allowance-revoke="${x.token}"]`);if(b)b.disabled=false;$('allowanceManagerLog').textContent=`PASS — ${x.symbol} revoke simulated.\nEstimated gas: ${gas}\neth_call: ${result}`}
+async function executeAllowanceRevoke(token){const x=allowanceManagerState.get(token.toLowerCase());if(!x?.ready)throw Error('Simulate this revoke first');if(Date.now()-x.time>60000){x.ready=false;throw Error('Revoke simulation expired. Simulate again.')}const hash=await secureSendTransaction({...x.tx,gas:hexQty(x.gas*120n/100n)},`Revoke Vault → Router allowance · ${x.symbol}`);recordReceipt({hash,status:'PENDING',type:'ALLOWANCE_REVOKE',label:`Revoke ${x.symbol} router allowance`,createdAt:new Date().toISOString()});const receipt=await waitReceipt(hash);const after=await readVaultRouterAllowance(x.token);recordReceipt({hash,status:'CONFIRMED',type:'ALLOWANCE_REVOKE',label:`Revoke ${x.symbol} router allowance`,block:Number(BigInt(receipt.blockNumber)),createdAt:new Date().toISOString()});$('allowanceManagerLog').textContent=`CONFIRMED ✓\n${x.symbol} allowance after: ${after.toString()}\nTx: ${hash}`;await scanAllowanceManager()}
 async function scanRecoveryCenter(){
   $('recoveryCenterLog').textContent='Scanning Rustee recovery signals…';if(!terminalState.positions.length)try{await discoverPortfolio()}catch{};const items=[];let saved=null;try{saved=JSON.parse(localStorage.getItem(TRADE_RECOVERY_KEY)||'null')}catch{};items.push({level:saved?'WARN':'GOOD',title:'Interrupted sell checkpoint',detail:saved?`${saved.symbol||'Stock'} · ${saved.mode||'saved state'} · ${saved.updatedAt||''}`:'None stored'});
   const ownerStocks=[],vaultStocks=[];for(const p of terminalState.positions||[]){if((p.balances.OWNER||0n)>0n)ownerStocks.push(p.asset.tokenSymbol);if((p.balances.VAULT||0n)>0n)vaultStocks.push(p.asset.tokenSymbol)}items.push({level:ownerStocks.length?'WARN':'GOOD',title:'Stock tokens in owner wallet',detail:ownerStocks.length?ownerStocks.join(', '):'None ✓'});items.push({level:vaultStocks.length?'WARN':'GOOD',title:'Stock tokens in Vault',detail:vaultStocks.length?vaultStocks.join(', '):'None ✓'});
@@ -3592,6 +3740,69 @@ async function validateSecurityDestination(tx){
   if(!fixed&&!dynamic&&!dynamicNft)throw Error('SECURITY: destination is not a fixed Rustee contract, resolved Broker NFT, or an active canonical/session token');
   return true;
 }
+
+// --- v3.1.2 mobile wallet handoff ---
+// Signing-sensitive flows use a two-step contract: SIMULATE arms the exact
+// transaction; the next explicit signing-button tap calls eth_sendTransaction
+// immediately, before any await, network check, or JavaScript confirmation.
+const preparedWalletHandoffs=new Map();
+function walletTxKey(tx){
+  return [String(tx?.from||'').toLowerCase(),String(tx?.to||'').toLowerCase(),String(tx?.value||'0x0').toLowerCase(),String(tx?.data||'0x').toLowerCase()].join('|');
+}
+function clearPreparedWalletHandoff(){preparedWalletHandoffs.clear()}
+function assertPreparedWalletDestinationSync(tx){
+  const to=String(tx?.to||'').toLowerCase();
+  if(!/^0x[0-9a-f]{40}$/.test(to))throw Error('SECURITY: invalid transaction destination');
+  if(String(tx?.from||'').toLowerCase()!==OWNER.toLowerCase())throw Error('SECURITY: transaction from-address mismatch');
+  const value=BigInt(tx?.value||'0x0');
+  if(value>0n&&isZeroData(tx.data)){
+    const ethTargets=[VAULT,TRADING,REWARDS,IDENTITY].map(x=>x.toLowerCase());
+    if(!ethTargets.includes(to))throw Error('SECURITY: direct ETH destination is not a Rustee TBA');
+    if(to===VAULT.toLowerCase()&&value>SECURITY_MAX_FUND_WEI)throw Error(`SECURITY: direct Vault funding exceeds ${fromWei(SECURITY_MAX_FUND_WEI)} ETH ceiling`);
+    return true;
+  }
+  const fixed=SECURITY_FIXED_CONTRACTS.includes(to);
+  const dynamic=securityDynamicTokens().has(to);
+  const brokerNft=(NFT||'').toLowerCase();
+  if(!fixed&&!dynamic&&!(brokerNft&&to===brokerNft))throw Error('SECURITY: destination is not an approved Rustee contract/token');
+  return true;
+}
+async function armPreparedWalletHandoff(tx,label='Transaction',ttlMs=60000){
+  const wallet=injectedWalletProvider();
+  if(!wallet)throw Error('SECURITY: no injected wallet provider');
+  const cid=Number(BigInt(await withTimeout(wallet.request({method:'eth_chainId'}),3000,'wallet chain check')));
+  if(cid!==CHAIN)throw Error(`SECURITY: wrong chain ${cid}; expected ${CHAIN}`);
+  const accounts=await withTimeout(wallet.request({method:'eth_accounts'}),3000,'wallet account check');
+  const current=(accounts?.[0]||'').toLowerCase();
+  if(current!==OWNER.toLowerCase())throw Error('SECURITY: connected account is not the Broker NFT owner');
+  assertPreparedWalletDestinationSync(tx);
+  if(!isZeroData(tx.data)){
+    const code=await withTimeout(rpc('eth_getCode',[tx.to,'latest']),4000,'transaction destination bytecode');
+    if(!code||code==='0x')throw Error('SECURITY: transaction destination has no contract bytecode');
+  }
+  const digest=await optionalSecurityDigest(tx);
+  const key=walletTxKey(tx);preparedWalletHandoffs.set(key,{key,label,expiresAt:Date.now()+ttlMs,digest,owner:current,provider:wallet});
+  if($('securitySealLog'))$('securitySealLog').textContent=`SIMULATION + PRE-SIGN PASS\n${label}\nDestination: ${tx.to}\nSelector: ${txSelector(tx.data)}\nSHA-256: ${digest||'unavailable — wallet handoff not blocked'}\nSigning button armed for ${Math.round(ttlMs/1000)} seconds.`;
+  return preparedWalletHandoffs.get(key);
+}
+function getPreparedWalletHandoff(tx){const x=preparedWalletHandoffs.get(walletTxKey(tx));if(!x)return null;if(Date.now()>x.expiresAt){preparedWalletHandoffs.delete(x.key);return null}return x}
+function preparedWalletHandoffMatches(tx){return !!getPreparedWalletHandoff(tx)}
+function sendPreparedWalletTransaction(tx,label='Transaction'){
+  // MUST remain synchronous until wallet.request() is called. This is the iOS
+  // handoff boundary. The Promise is awaited only after the wallet has received it.
+  const prepared=getPreparedWalletHandoff(tx);
+  if(!prepared)throw Error('Wallet handoff is not armed or expired. Simulate again, then tap Open wallet to sign.');
+  if(prepared.owner!==OWNER.toLowerCase())throw Error('SECURITY: prepared owner mismatch');
+  assertPreparedWalletDestinationSync(tx);
+  // Use the exact provider that passed the simulation-time owner/chain checks.
+  // Re-discovering a provider here can make a multi-wallet mobile browser ambiguous.
+  const wallet=prepared.provider;
+  if(!wallet||typeof wallet.request!=='function')throw Error('SECURITY: prepared wallet provider is unavailable at signature time');
+  setSticky('Opening wallet for signature…');
+  const pending=wallet.request({method:'eth_sendTransaction',params:[tx]});
+  preparedWalletHandoffs.delete(walletTxKey(tx));
+  return withTimeout(Promise.resolve(pending),120000,'wallet signature request').then(hash=>{setSticky('Wallet request submitted ✓');return hash},err=>{setSticky('Wallet request stopped: '+(err?.message||err));throw err});
+}
 async function hardenedTxPreflight(tx,label='Transaction'){
   // `wallet` was never declared here; it resolved to the <strong id="wallet">
   // DOM element via the global-name lookup, so wallet.request threw a
@@ -3640,6 +3851,7 @@ async function hardenedTxPreflight(tx,label='Transaction'){
 }
 async function secureSendTransaction(tx,label='Transaction'){
   try{
+    if(preparedWalletHandoffMatches(tx)) return await sendPreparedWalletTransaction(tx,label);
     setSticky('Security pre-sign check…');
     await hardenedTxPreflight(tx,label);
     setSticky('Opening wallet…');
@@ -4026,6 +4238,7 @@ async function aioMetadataSimulate(){
   const tx={from:OWNER,to:s.nft,data};
   const gas=BigInt(await rpc('eth_estimateGas',[tx]));
   const call=await rpc('eth_call',[tx,'latest']);
+  await armPreparedWalletHandoff(tx,'Rustee Broker #1 setTokenURI',120000);
   aioMetadataSimulation={time:Date.now(),nft:s.nft,tokenId:s.tokenId,data,gas};
   aioMetaStatus('aioMetaBytes',((data.length-2)/2).toLocaleString()+' bytes');
   aioMetaStatus('aioMetaGas',gas.toLocaleString()+' gas','metaPass');
@@ -4037,7 +4250,6 @@ async function aioMetadataExecute(){
   const s=aioMetadataSimulation;
   if(!s)throw Error('Run metadata simulation first.');
   if(Date.now()-s.time>120000){aioMetadataSimulation=null;$('aioMetaExecute').disabled=true;throw Error('Metadata simulation expired. Simulate again.');}
-  if(!confirm(`REAL MAINNET METADATA WRITE\n\nRustee Broker #1\n${AIO_TOKEN_URI.length.toLocaleString()} characters of fully on-chain metadata.\n\nContinue to the security pre-sign gate?`))return;
   const tx={from:OWNER,to:s.nft,data:s.data,gas:hexQty(s.gas*120n/100n)};
   const hash=await secureSendTransaction(tx,'Rustee Broker #1 setTokenURI');
   $('aioMetaExecute').disabled=true;
@@ -4082,6 +4294,176 @@ aioBind('aioMetaExecute',aioMetadataExecute);
 aioBind('aioMetaVerify',aioMetadataVerify);
 aioBind('aioMetaFreeze',aioMetadataFreeze);
 $('aioNftPayloadLen').textContent=AIO_TOKEN_URI.length.toLocaleString()+' chars';
+
+
+// --- v3.2 Supervised Autopilot -------------------------------------------------
+const AUTOPILOT_KEY='rustee-supervised-autopilot-v32';
+const AUTOPILOT_AUDIT_KEY='rustee-autopilot-audit-v32';
+let autopilotTimer=null,autopilotBusy=false;
+function autopilotDefaults(){return {version:2,enabled:false,autoPrepare:true,maxTradeUsd:1,dailyBudgetUsd:3,dailyLossUsd:1,cooldownMinutes:15,refreshSeconds:60,slippage:0.5,rules:[],candidate:null,killed:false,lastEvaluation:null}}
+function autopilotLoad(){try{return {...autopilotDefaults(),...JSON.parse(localStorage.getItem(AUTOPILOT_KEY)||'{}')}}catch{return autopilotDefaults()}}
+function autopilotSave(s){localStorage.setItem(AUTOPILOT_KEY,JSON.stringify(s));return s}
+function autopilotAudit(message,level='INFO',extra={}){let rows=[];try{rows=JSON.parse(localStorage.getItem(AUTOPILOT_AUDIT_KEY)||'[]')}catch{};rows.unshift({time:new Date().toISOString(),level,message,...extra});rows=rows.slice(0,250);localStorage.setItem(AUTOPILOT_AUDIT_KEY,JSON.stringify(rows));autopilotRenderAudit();}
+function autopilotAuditRows(){try{return JSON.parse(localStorage.getItem(AUTOPILOT_AUDIT_KEY)||'[]')}catch{return []}}
+function autopilotTodayEntries(){const d=new Date().toISOString().slice(0,10);return operatorTradeEntries().filter(x=>String(x.time||'').slice(0,10)===d)}
+function autopilotTodaySpend(){return autopilotTodayEntries().filter(x=>x.side==='BUY').reduce((a,x)=>a+(Number(x.usdValue)||0),0)}
+function autopilotTodayPnl(){return autopilotTodayEntries().filter(x=>x.side==='SELL').reduce((a,x)=>a+(Number(x.realizedPnlUsd)||0),0)}
+function autopilotRuleText(r){const trig={PRICE_BELOW:'price ≤',PRICE_ABOVE:'price ≥',PNL_BELOW:'P&L % ≤',PNL_ABOVE:'P&L % ≥'}[r.trigger]||r.trigger;const size=r.side==='BUY'?`${money(r.size)} buy`:`sell ${Number(r.size).toFixed(1)}%`;return `${r.side} ${r.symbol} · ${trig} ${r.threshold} · ${size}`}
+function autopilotRenderAudit(){const el=$('autoAudit');if(!el)return;const rows=autopilotAuditRows();el.textContent=rows.length?rows.slice(0,80).map(x=>`${new Date(x.time).toLocaleString()} [${x.level}] ${x.message}`).join('\n'):'No Autopilot decisions recorded yet.'}
+function autopilotRender(){
+  if(!$('autoState'))return;
+  const s=autopilotLoad();
+  $('autoEnabled').checked=!!s.enabled;$('autoPrepare').checked=!!s.autoPrepare;$('autoMaxTradeUsd').value=s.maxTradeUsd;$('autoDailyBudgetUsd').value=s.dailyBudgetUsd;$('autoDailyLossUsd').value=s.dailyLossUsd;$('autoCooldownMinutes').value=s.cooldownMinutes;$('autoRefreshSeconds').value=s.refreshSeconds;$('autoSlippage').value=String(s.slippage);
+  const state=s.killed?'KILLED':s.enabled?'ARMED':'OFF';$('autoState').textContent=state;$('autoState').className=s.killed?'autoStatusKill':s.enabled?'autoStatusOn':'autoStatusOff';
+  $('autoRuleCount').textContent=String((s.rules||[]).filter(r=>r.enabled!==false).length);$('autoDailySpend').textContent=money(autopilotTodaySpend());const pnl=autopilotTodayPnl();$('autoDailyPnl').textContent=(pnl>=0?'+':'')+money(pnl);$('autoDailyPnl').className=pnl>=0?'pnlPos':'pnlNeg';
+  const rules=s.rules||[];$('autoRules').innerHTML=rules.map(r=>`<div class="autoRule"><div><b>${escapeHtml(r.label||r.symbol)}</b><div>${escapeHtml(autopilotRuleText(r))}</div><div class="autoRuleMeta">${r.enabled===false?'DISABLED':'Enabled'}${r.lastFired?' · last queued '+escapeHtml(new Date(r.lastFired).toLocaleString()):''}</div></div><div class="autoRuleButtons"><button data-auto-toggle="${escapeHtml(r.id)}">${r.enabled===false?'Enable':'Disable'}</button><button class="danger" data-auto-delete="${escapeHtml(r.id)}">Delete</button></div></div>`).join('')||'<div class="emptyState">No rules configured.</div>';
+  const c=s.candidate;if(c){const age=Math.max(0,Math.round((Date.now()-new Date(c.createdAt).getTime())/1000));$('autoCandidate').className='autoCandidate';$('autoCandidate').innerHTML=`<b>${escapeHtml(c.side)} ${escapeHtml(c.symbol)}</b><div class="autoRuleMeta">${escapeHtml(c.reason)}<br>Observed price: ${money(c.price)}${c.pnlPct==null?'':` · position P&L ${Number(c.pnlPct).toFixed(2)}%`}<br>${c.side==='BUY'?`Size: ${money(c.sizeUsd)}`:`Sell: ${Number(c.sellPct).toFixed(1)}% of Trading position`} · queued ${age}s ago<br>Status: ${escapeHtml(c.status||'QUEUED')}</div>`;$('autoPrepareCandidate').disabled=c.status==='PREPARING'||c.status==='PREPARED';$('autoOpenTrade').disabled=false;$('autoDismiss').disabled=false;}else{$('autoCandidate').className='autoCandidate empty';$('autoCandidate').textContent='No candidate queued.';$('autoPrepareCandidate').disabled=true;$('autoOpenTrade').disabled=true;$('autoDismiss').disabled=true;}
+  autopilotRenderAudit();autopilotSchedule();
+}
+function autopilotReadSettings(){const s=autopilotLoad();s.enabled=$('autoEnabled').checked;s.autoPrepare=$('autoPrepare').checked;s.maxTradeUsd=Math.min(5,Math.max(.1,Number($('autoMaxTradeUsd').value)||1));s.dailyBudgetUsd=Math.max(.1,Number($('autoDailyBudgetUsd').value)||3);s.dailyLossUsd=Math.max(0,Number($('autoDailyLossUsd').value)||0);s.cooldownMinutes=Math.max(1,Number($('autoCooldownMinutes').value)||15);s.refreshSeconds=Math.max(60,Number($('autoRefreshSeconds').value)||60);s.slippage=[.5,1,2,3].includes(Number($('autoSlippage').value))?Number($('autoSlippage').value):.5;if(s.killed&&s.enabled)throw Error('Kill switch is active. Save with monitoring OFF, then explicitly reset the kill switch by reloading settings after turning it off.');return autopilotSave(s)}
+function autopilotSchedule(){if(autopilotTimer){clearInterval(autopilotTimer);autopilotTimer=null}const s=autopilotLoad();if(!s.enabled||s.killed)return;autopilotTimer=setInterval(()=>{if(document.visibilityState==='visible')autopilotEvaluate('timer').catch(e=>{if($('autoMonitorLog'))$('autoMonitorLog').textContent='AUTOPILOT ERROR: '+e.message})},Math.max(60,Number(s.refreshSeconds)||60)*1000)}
+function autopilotSetRuleSizeLabel(){if(!$('autoRuleSizeLabel'))return;const sell=$('autoRuleSide').value==='SELL';$('autoRuleSizeLabel').textContent=sell?'SELL size (% of Trading position)':'BUY size (USD)';$('autoRuleSize').min=sell?'1':'0.10';$('autoRuleSize').max=sell?'100':'5';$('autoRuleSize').step=sell?'1':'0.10';$('autoRuleSize').value=sell?'25':'1.00'}
+function autopilotRuleAsset(symbol){const s=String(symbol||'').trim().toUpperCase();return (terminalState.catalog||[]).find(a=>String(a.tokenSymbol||'').toUpperCase()===s)||null}
+function autopilotPriceFromQuote(asset,q){if(!q)return null;const bid=Number(q.bid),ask=Number(q.ask);const raw=(Number.isFinite(bid)&&Number.isFinite(ask))?(bid+ask)/2:(Number.isFinite(ask)?ask:bid);const mult=Number(asset.currentMultiplier||1);const px=raw*mult;return Number.isFinite(px)&&px>0?px:null}
+async function autopilotObserved(rule){await ensureTradeCatalog();const asset=autopilotRuleAsset(rule.symbol);if(!asset)throw Error(`${rule.symbol} is not an active canonical asset`);const q=await fetchQuoteForAsset(asset);terminalState.quotes[asset.tokenSymbol]=q;if(q?.isTradingHalt===true)throw Error(`${rule.symbol} is halted`);const price=autopilotPriceFromQuote(asset,q);if(!(price>0))throw Error(`No usable price for ${rule.symbol}`);const dep=tokenDeployment(asset);const pos=(terminalState.positions||[]).find(p=>p.token.toLowerCase()===String(dep?.contractAddress||'').toLowerCase());let pnlPct=null,qty=0,basis=0;if(pos){const bal=pos.balances.TRADING||0n;qty=tokenAmountNumber(bal,pos.decimals);basis=Number(loadCostBasis()[positionKey('TRADING',pos.token)]||0);if(qty>0&&basis>0)pnlPct=((qty*price-basis)/basis)*100;if(typeof strategyRecordObservation==='function')strategyRecordObservation(rule.symbol,price,'autopilot')}return {asset,dep,pos,q,price,pnlPct,qty,basis}}
+function autopilotTriggered(rule,o){const t=Number(rule.threshold);if(!Number.isFinite(t))return false;if(rule.trigger==='PRICE_BELOW')return o.price<=t;if(rule.trigger==='PRICE_ABOVE')return o.price>=t;if(rule.trigger==='PNL_BELOW')return o.pnlPct!=null&&o.pnlPct<=t;if(rule.trigger==='PNL_ABOVE')return o.pnlPct!=null&&o.pnlPct>=t;return false}
+function autopilotRisk(rule,o,s){
+  if(s.killed)return 'Kill switch active';if(!s.enabled)return 'Autopilot monitoring is off';if(localStorage.getItem(TRADE_RECOVERY_KEY))return 'Incomplete SELL recovery checkpoint exists';if(readReceiptLog().some(x=>!['CONFIRMED','FAILED'].includes(x.status)))return 'Pending transaction receipt exists';
+  const pnl=autopilotTodayPnl();if(s.dailyLossUsd>0&&pnl<=-Math.abs(s.dailyLossUsd))return `Daily realized-loss stop reached (${money(pnl)})`;
+  if(rule.lastFired&&Date.now()-new Date(rule.lastFired).getTime()<s.cooldownMinutes*60000)return 'Rule cooldown active';
+  if(rule.side==='BUY'){const size=Math.min(Number(rule.size)||0,s.maxTradeUsd,5);if(!(size>=.1))return 'BUY size below minimum';if(autopilotTodaySpend()+size>s.dailyBudgetUsd+1e-9)return `Daily BUY budget would be exceeded (${money(autopilotTodaySpend())} used)`;}
+  if(rule.side==='SELL'){if(!o.pos||o.qty<=0)return 'No Trading TBA position to sell';const pct=Number(rule.size);if(!(pct>=1&&pct<=100))return 'SELL size must be 1–100%';}
+  return null;
+}
+async function autopilotEvaluate(source='manual'){
+  if(autopilotBusy)return;autopilotBusy=true;try{let s=autopilotLoad();if(s.killed)throw Error('Kill switch is active');if(!s.enabled&&source!=='manual')return;if(!terminalState.catalog?.length)await ensureTradeCatalog();if(!terminalState.positions.length){try{await discoverPortfolio()}catch(e){console.warn('Autopilot portfolio refresh',e)}}else{try{await refreshTerminalPrices(false)}catch{}}
+    if(s.candidate&&['QUEUED','PREPARING','PREPARED'].includes(s.candidate.status)){autopilotAudit('Evaluation skipped: an existing candidate is still active','BLOCK');$('autoMonitorLog').textContent='Candidate already active. Dismiss or complete it before another rule can queue.';return}
+    const rules=(s.rules||[]).filter(r=>r.enabled!==false);let queued=null;const lines=[];
+    for(const rule of rules){try{const o=await autopilotObserved(rule);const trig=autopilotTriggered(rule,o);const risk=autopilotRisk(rule,o,s);lines.push(`${rule.symbol} ${rule.side}: price ${money(o.price)}${o.pnlPct==null?'':` · P&L ${o.pnlPct.toFixed(2)}%`} · ${trig?'TRIGGERED':'no trigger'}${risk?' · BLOCK '+risk:''}`);if(trig&&!risk&&!queued){const now=new Date().toISOString();const c={id:'cand-'+Date.now()+'-'+rule.id,ruleId:rule.id,createdAt:now,status:'QUEUED',side:rule.side,symbol:rule.symbol,token:o.dep.contractAddress,price:o.price,pnlPct:o.pnlPct,reason:`${autopilotRuleText(rule)} triggered`,sizeUsd:rule.side==='BUY'?Math.min(Number(rule.size),s.maxTradeUsd,5):null,sellPct:rule.side==='SELL'?Number(rule.size):null};s.candidate=c;const rr=s.rules.find(x=>x.id===rule.id);if(rr)rr.lastFired=now;s.lastEvaluation=now;autopilotSave(s);autopilotAudit(`Queued ${c.side} ${c.symbol}: ${c.reason}`,'QUEUE',{candidateId:c.id});queued=c;break}}catch(e){lines.push(`${rule.symbol}: ERROR ${e.message}`);autopilotAudit(`${rule.symbol} evaluation error: ${e.message}`,'ERROR')}}
+    s=autopilotLoad();s.lastEvaluation=new Date().toISOString();autopilotSave(s);$('autoMonitorLog').textContent=`Evaluation ${new Date().toLocaleTimeString()} · ${source}\n`+(lines.join('\n')||'No enabled rules.');autopilotRender();
+    if(queued&&s.autoPrepare&&document.visibilityState==='visible'&&account){try{await autopilotPrepareCandidate(true)}catch(e){autopilotAudit(`Auto-prepare stopped: ${e.message}`,'BLOCK');$('autoMonitorLog').textContent+='\nAuto-prepare stopped: '+e.message;autopilotRender()}}
+  }finally{autopilotBusy=false}}
+async function autopilotPrepareCandidate(fromAuto=false){
+  let s=autopilotLoad(),c=s.candidate;if(!c)throw Error('No queued candidate');if(s.killed)throw Error('Kill switch active');if(localStorage.getItem(TRADE_RECOVERY_KEY))throw Error('Resolve the incomplete SELL checkpoint first');
+  c.status='PREPARING';autopilotSave(s);autopilotRender();try{await ensureTradeCatalog();if(!account){if(fromAuto)throw Error('Wallet is not connected; candidate remains queued for manual preparation');await connect()}
+    populateTradeAssets();$('tradeSide').value=c.side;$('tradeSide').onchange();$('tradeAsset').value=c.token;tradeReset();$('tradeSlippage').value=String(s.slippage);if(c.side==='BUY'){$('tradeUsd').value=Number(c.sizeUsd).toFixed(2);const ethRef=snapshotEthUsd();if(ethRef)$('tradeEthUsd').value=Number(ethRef).toFixed(2)}else{const picked=selectedTradeAsset();const dec=await tokenDecimals(picked.token);const bal=await erc20Balance(picked.token,TRADING);const amt=bal*BigInt(Math.round(Number(c.sellPct)*100))/10000n;if(amt<=0n)throw Error('Calculated SELL amount is zero');$('tradeTokenAmount').value=unitsToDecimal(amt,dec,dec);$('tradeSellProceeds').value='WETH'}
+    tradeReset();await quoteTrade();await buildTradePlan();await simulateNextTradeStep();s=autopilotLoad();if(s.candidate?.id===c.id){s.candidate.status='PREPARED';s.candidate.preparedAt=new Date().toISOString();autopilotSave(s)}autopilotAudit(`Prepared + simulated ${c.side} ${c.symbol}; waiting for owner wallet signature`,'READY',{candidateId:c.id});autopilotRender();setSticky(`Autopilot ready · ${c.side} ${c.symbol} · open wallet to sign`);if(!fromAuto)openTabById('tradePane');
+  }catch(e){s=autopilotLoad();if(s.candidate?.id===c.id){s.candidate.status='QUEUED';s.candidate.lastPrepareError=e.message;autopilotSave(s)}autopilotRender();throw e}}
+function autopilotDismiss(reason='Dismissed by operator'){const s=autopilotLoad();if(s.candidate)autopilotAudit(`${reason}: ${s.candidate.side} ${s.candidate.symbol}`,'DISMISS',{candidateId:s.candidate.id});s.candidate=null;autopilotSave(s);autopilotRender()}
+function autopilotOnConfirmedTrade(entry){const s=autopilotLoad(),c=s.candidate;if(!c)return;if(c.symbol===entry.symbol&&c.side===entry.side){autopilotAudit(`Candidate completed on-chain: ${entry.side} ${entry.symbol} · ${entry.primaryTx}`,'CONFIRMED',{candidateId:c.id});s.candidate=null;autopilotSave(s);autopilotRender()}}
+async function autopilotAfterStepConfirmed(step){const s=autopilotLoad(),c=s.candidate;if(!c||!s.autoPrepare||c.status!=='PREPARED')return;if(!tradeState.quote||tradeState.quote.picked?.symbol!==c.symbol||tradeState.quote.side!==c.side)return;const next=tradeState.steps.find(x=>!x.optional&&['PENDING','WAITING'].includes(x.status));if(!next)return;await simulateNextTradeStep();autopilotAudit(`Next ${c.side} ${c.symbol} step simulated automatically after ${step.type} confirmation; waiting for owner signature`,'READY',{candidateId:c.id});setSticky(`Autopilot next step ready · ${next.label}`)}
+function autopilotKill(){const s=autopilotLoad();s.enabled=false;s.killed=true;s.candidate=null;autopilotSave(s);if(autopilotTimer){clearInterval(autopilotTimer);autopilotTimer=null}tradeReset();if(typeof clearPreparedWalletHandoff==='function')clearPreparedWalletHandoff();autopilotAudit('KILL SWITCH activated. Monitoring stopped and queued candidate cleared.','KILL');autopilotRender();$('autoMonitorLog').textContent='KILL SWITCH ACTIVE. Monitoring and candidate preparation are stopped.'}
+function autopilotResetKill(){const s=autopilotLoad();s.killed=false;s.enabled=false;autopilotSave(s);autopilotAudit('Kill switch reset; monitoring remains OFF until explicitly enabled.','INFO');autopilotRender()}
+
+if($('autoRuleSide'))$('autoRuleSide').onchange=autopilotSetRuleSizeLabel;
+if($('autoSave'))$('autoSave').onclick=()=>{try{let s=autopilotLoad();if(s.killed){autopilotResetKill();s=autopilotLoad();$('autoEnabled').checked=false}$('autoMonitorLog').textContent='Settings saved. Monitoring '+($('autoEnabled').checked?'armed while Rustee is open.':'off.');autopilotReadSettings();autopilotAudit('Autopilot settings saved; monitoring '+($('autoEnabled').checked?'ARMED':'OFF'),'INFO');autopilotRender()}catch(e){$('autoMonitorLog').textContent='ERROR: '+e.message}};
+if($('autoEvaluate'))$('autoEvaluate').onclick=()=>autopilotEvaluate('manual').catch(e=>$('autoMonitorLog').textContent='ERROR: '+e.message);
+if($('autoKill'))$('autoKill').onclick=autopilotKill;
+if($('autoAddRule'))$('autoAddRule').onclick=()=>{try{const symbol=String($('autoRuleSymbol').value||'').trim().toUpperCase(),side=$('autoRuleSide').value,trigger=$('autoRuleTrigger').value,threshold=Number($('autoRuleThreshold').value),size=Number($('autoRuleSize').value),label=String($('autoRuleLabel').value||'').trim();if(!/^[A-Z0-9.\-]{1,12}$/.test(symbol))throw Error('Enter a valid ticker');if(!Number.isFinite(threshold))throw Error('Enter a trigger value');if(side==='BUY'&&!(size>=.1&&size<=5))throw Error('BUY rule size must be $0.10–$5');if(side==='SELL'&&!(size>=1&&size<=100))throw Error('SELL rule size must be 1–100%');const s=autopilotLoad();s.rules.push({id:'rule-'+Date.now(),symbol,side,trigger,threshold,size,label,enabled:true,lastFired:null});autopilotSave(s);autopilotAudit(`Rule added: ${side} ${symbol}`,'INFO');$('autoRuleSymbol').value='';$('autoRuleThreshold').value='';$('autoRuleLabel').value='';autopilotRender()}catch(e){$('autoMonitorLog').textContent='ERROR: '+e.message}};
+if($('autoRules'))$('autoRules').addEventListener('click',e=>{const t=e.target.closest?.('[data-auto-toggle]'),d=e.target.closest?.('[data-auto-delete]');const s=autopilotLoad();if(t){const r=s.rules.find(x=>x.id===t.dataset.autoToggle);if(r){r.enabled=r.enabled===false?true:false;autopilotSave(s);autopilotAudit(`Rule ${r.enabled?'enabled':'disabled'}: ${r.symbol}`,'INFO');autopilotRender()}}if(d){const r=s.rules.find(x=>x.id===d.dataset.autoDelete);s.rules=s.rules.filter(x=>x.id!==d.dataset.autoDelete);autopilotSave(s);if(r)autopilotAudit(`Rule deleted: ${r.symbol}`,'INFO');autopilotRender()}});
+if($('autoPrepareCandidate'))$('autoPrepareCandidate').onclick=()=>autopilotPrepareCandidate(false).catch(e=>{$('autoMonitorLog').textContent='PREPARE ERROR: '+e.message;autopilotAudit(`Prepare error: ${e.message}`,'ERROR')});
+if($('autoOpenTrade'))$('autoOpenTrade').onclick=()=>openTabById('tradePane');
+if($('autoDismiss'))$('autoDismiss').onclick=()=>autopilotDismiss();
+if($('autoClearAudit'))$('autoClearAudit').onclick=()=>{localStorage.removeItem(AUTOPILOT_AUDIT_KEY);autopilotRenderAudit()};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){autopilotSchedule();const s=autopilotLoad();if(s.enabled&&!s.killed)autopilotEvaluate('resume').catch(()=>{})}});
+autopilotSetRuleSizeLabel();autopilotRender();
+// -----------------------------------------------------------------------------
+
+
+// --- v3.3 Strategy Lab + Paper Twin -------------------------------------------
+const STRATEGY_KEY='rustee-strategy-lab-v33';
+const STRATEGY_HISTORY_KEY='rustee-strategy-history-v33';
+let strategyRecorderTimer=null;
+function strategyDefaults(){return {version:3,recorderEnabled:false,recorderSeconds:60,startingCapital:1000,strategies:[],lastResult:null,tournament:[]}}
+function strategyLoad(){try{return {...strategyDefaults(),...JSON.parse(localStorage.getItem(STRATEGY_KEY)||'{}')}}catch{return strategyDefaults()}}
+function strategySave(s){localStorage.setItem(STRATEGY_KEY,JSON.stringify(s));return s}
+function strategyHistoryLoad(){try{const d=JSON.parse(localStorage.getItem(STRATEGY_HISTORY_KEY)||'{}');return d&&typeof d==='object'?d:{}}catch{return {}}}
+function strategyHistorySave(d){localStorage.setItem(STRATEGY_HISTORY_KEY,JSON.stringify(d));return d}
+function strategyId(){return 'strat-'+Date.now()+'-'+Math.random().toString(16).slice(2,8)}
+function strategyNormalizePoint(p){const t=Date.parse(p?.t||p?.timestamp||p?.time||p?.date||'');const price=Number(p?.price??p?.close??p?.lastPrice??p?.markPrice);if(!Number.isFinite(t)||!(price>0))return null;return {t:new Date(t).toISOString(),price}}
+function strategyRecordObservation(symbol,price,source='manual',when=new Date().toISOString()){
+  symbol=String(symbol||'').trim().toUpperCase();price=Number(price);if(!/^[A-Z0-9.\-]{1,12}$/.test(symbol)||!(price>0))return false;
+  const h=strategyHistoryLoad(),arr=Array.isArray(h[symbol])?h[symbol]:[];const t=new Date(when).toISOString();
+  const last=arr[arr.length-1];if(last&&Math.abs(new Date(last.t).getTime()-new Date(t).getTime())<1000&&Math.abs(Number(last.price)-price)<1e-12)return false;
+  arr.push({t,price,source});arr.sort((a,b)=>new Date(a.t)-new Date(b.t));
+  if(arr.length>20000)arr.splice(0,arr.length-20000);h[symbol]=arr;strategyHistorySave(h);return true
+}
+function strategyAllSampleCount(){const h=strategyHistoryLoad();return Object.values(h).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0)}
+function strategyPriceFromSnapshot(symbol){const row=staticData.prices?.quotesBySymbol?.[symbol];if(!row)return null;for(const f of ['price','lastPrice','markPrice','ask','bid']){const v=Number(row[f]);if(v>0)return v}return null}
+async function strategyCaptureCurrentPrices(){
+  const s=strategyLoad();if(!terminalState.catalog?.length)try{await ensureTradeCatalog()}catch{};if(!staticData.prices)try{await primeStaticData()}catch{}
+  const syms=[...new Set((s.strategies||[]).map(x=>String(x.symbol||'').toUpperCase()).filter(Boolean))];if(!syms.length)throw Error('Save at least one strategy ticker first');
+  let captured=0,errors=[];for(const sym of syms){let price=strategyPriceFromSnapshot(sym);try{if(terminalState.catalog?.length){const a=terminalState.catalog.find(x=>x.tokenSymbol===sym);if(a){const q=await fetchQuoteForAsset(a);const p=autopilotPriceFromQuote(a,q);if(p>0)price=p}}}catch(e){errors.push(sym+': '+e.message)}if(price>0&&strategyRecordObservation(sym,price,'recorder'))captured++}
+  $('stratDataLog').textContent=`Captured ${captured}/${syms.length} strategy ticker prices at ${new Date().toLocaleTimeString()}.`+(errors.length?'\n'+errors.join('\n'):'');strategyRender();strategyPaperRefreshAll();return captured
+}
+function strategyRecorderSchedule(){if(strategyRecorderTimer){clearInterval(strategyRecorderTimer);strategyRecorderTimer=null}const s=strategyLoad();if(!s.recorderEnabled)return;const ms=Math.max(60,Number(s.recorderSeconds)||60)*1000;strategyRecorderTimer=setInterval(()=>{if(document.visibilityState==='visible')strategyCaptureCurrentPrices().catch(()=>{})},ms)}
+function strategyFormRead(){
+  const name=String($('stratName').value||'').trim(),symbol=String($('stratSymbol').value||'').trim().toUpperCase(),entryTrigger=$('stratEntryTrigger').value,entryThreshold=Number($('stratEntryThreshold').value),entryUsd=Number($('stratEntryUsd').value),takeProfit=Number($('stratTakeProfit').value),stopLoss=Number($('stratStopLoss').value),maxHoldHours=Number($('stratMaxHold').value),slippagePct=Number($('stratSlippage').value),feePct=Number($('stratFee').value);
+  if(!name)throw Error('Enter a strategy name');if(!/^[A-Z0-9.\-]{1,12}$/.test(symbol))throw Error('Enter a valid ticker');if(!(entryThreshold>0))throw Error('Entry price must be positive');if(!(entryUsd>=.1&&entryUsd<=5))throw Error('Entry capital must be $0.10–$5 to match Rustee supervised trading limits');if(!(takeProfit>.0&&takeProfit<=100))throw Error('Take profit must be 0–100%');if(!(stopLoss>.0&&stopLoss<=100))throw Error('Stop loss must be 0–100%');if(!(maxHoldHours>=0&&maxHoldHours<=8760))throw Error('Max hold must be 0–8760 hours');if(!(slippagePct>=0&&slippagePct<=10))throw Error('Slippage must be 0–10%');if(!(feePct>=0&&feePct<=10))throw Error('Fee must be 0–10%');
+  return {id:strategyId(),name,symbol,entryTrigger,entryThreshold,entryUsd,takeProfit,stopLoss,maxHoldHours,slippagePct,feePct,stage:'DRAFT',createdAt:new Date().toISOString(),paperStart:null,lastBacktest:null,autopilotRuleIds:[]}
+}
+function strategyClearForm(){for(const id of ['stratName','stratSymbol','stratEntryThreshold'])$(id).value='';$('stratEntryTrigger').value='PRICE_BELOW';$('stratEntryUsd').value='1.00';$('stratTakeProfit').value='5';$('stratStopLoss').value='3';$('stratMaxHold').value='0';$('stratSlippage').value='0.25';$('stratFee').value='0.05'}
+function strategyEntryHit(st,p){return st.entryTrigger==='PRICE_ABOVE'?p>=st.entryThreshold:p<=st.entryThreshold}
+function strategyBacktest(st,points,startingCapital=1000){
+  const clean=(points||[]).map(strategyNormalizePoint).filter(Boolean).sort((a,b)=>new Date(a.t)-new Date(b.t));
+  if(clean.length<2)throw Error(`Need at least 2 valid ${st.symbol} price samples; have ${clean.length}`);
+  const slip=Number(st.slippagePct||0)/100,fee=Number(st.feePct||0)/100;let cash=Number(startingCapital),qty=0,entryPx=0,entryCost=0,entryTime=null,armed=true;const trades=[],equity=[];let peak=cash,maxDd=0,exposureMs=0,lastT=new Date(clean[0].t).getTime();
+  for(let i=0;i<clean.length;i++){
+    const pt=clean[i],t=new Date(pt.t).getTime(),p=Number(pt.price);if(qty>0)exposureMs+=Math.max(0,t-lastT);lastT=t;
+    if(qty<=0){if(!strategyEntryHit(st,p))armed=true;if(armed&&strategyEntryHit(st,p)){const budget=Math.min(Number(st.entryUsd),cash);if(budget>0){const exec=p*(1+slip),gross=budget/(1+fee),q=gross/exec;if(q>0){qty=q;entryPx=exec;entryCost=budget;entryTime=t;cash-=budget;armed=false}}}}
+    else{
+      const rawRet=(p-entryPx)/entryPx*100;let reason=null;if(rawRet>=Number(st.takeProfit))reason='TAKE_PROFIT';else if(rawRet<=-Number(st.stopLoss))reason='STOP_LOSS';else if(Number(st.maxHoldHours)>0&&(t-entryTime)>=Number(st.maxHoldHours)*3600000)reason='MAX_HOLD';
+      if(reason){const exec=p*(1-slip),proceeds=qty*exec*(1-fee),pnl=proceeds-entryCost;cash+=proceeds;trades.push({entryTime:new Date(entryTime).toISOString(),exitTime:pt.t,entryPrice:entryPx,exitPrice:exec,qty,pnl,returnPct:entryCost?pnl/entryCost*100:0,reason});qty=0;entryPx=0;entryCost=0;entryTime=null}}
+    const eq=cash+(qty>0?qty*p:0);peak=Math.max(peak,eq);const dd=peak>0?(peak-eq)/peak*100:0;maxDd=Math.max(maxDd,dd);equity.push({t:pt.t,equity:eq})
+  }
+  const last=clean[clean.length-1],endingEquity=cash+(qty>0?qty*last.price:0),totalReturn=(endingEquity-startingCapital)/startingCapital*100;const wins=trades.filter(x=>x.pnl>0),losses=trades.filter(x=>x.pnl<0),grossWin=wins.reduce((n,x)=>n+x.pnl,0),grossLoss=Math.abs(losses.reduce((n,x)=>n+x.pnl,0));
+  return {strategyId:st.id,strategyName:st.name,symbol:st.symbol,sampleCount:clean.length,startAt:clean[0].t,endAt:last.t,startingCapital:Number(startingCapital),endingEquity,totalReturn,maxDrawdown:maxDd,trades,wins:wins.length,losses:losses.length,winRate:trades.length?wins.length/trades.length*100:0,avgWin:wins.length?grossWin/wins.length:0,avgLoss:losses.length?losses.reduce((n,x)=>n+x.pnl,0)/losses.length:0,profitFactor:grossLoss?grossWin/grossLoss:(grossWin>0?Infinity:0),openPosition:qty>0?{qty,entryPrice:entryPx,entryCost,entryTime:new Date(entryTime).toISOString(),markPrice:last.price,unrealized:qty*last.price-entryCost}:null,exposurePct:(new Date(last.t)-new Date(clean[0].t))>0?exposureMs/(new Date(last.t)-new Date(clean[0].t))*100:0,equity}
+}
+function strategyHistoryFor(st,from=null){const h=strategyHistoryLoad(),arr=Array.isArray(h[st.symbol])?h[st.symbol]:[];return from?arr.filter(p=>new Date(p.t).getTime()>=new Date(from).getTime()):arr}
+function strategyResultHtml(r,title='Backtest'){
+  const pf=Number.isFinite(r.profitFactor)?r.profitFactor.toFixed(2):(r.profitFactor===Infinity?'∞':'0.00');const retClass=r.totalReturn>0?'paperGood':r.totalReturn<0?'paperBad':'paperNeutral';
+  const rows=r.trades.slice().reverse().map(x=>`<tr><td>${new Date(x.entryTime).toLocaleString()}</td><td>${new Date(x.exitTime).toLocaleString()}</td><td>${money(x.entryPrice)}</td><td>${money(x.exitPrice)}</td><td class="${x.pnl>=0?'paperGood':'paperBad'}">${money(x.pnl)}</td><td>${Number(x.returnPct).toFixed(2)}%</td><td>${escapeHtml(x.reason)}</td></tr>`).join('');
+  return `<div class="receipt"><div class="receiptHead"><b>${escapeHtml(title)} · ${escapeHtml(r.strategyName)} · ${escapeHtml(r.symbol)}</b><b class="${retClass}">${Number(r.totalReturn).toFixed(2)}%</b></div><div class="receiptMeta">${r.sampleCount} samples · ${new Date(r.startAt).toLocaleString()} → ${new Date(r.endAt).toLocaleString()}</div></div><div class="strategyResultGrid"><div class="strategyResult"><small>Ending equity</small><strong>${money(r.endingEquity)}</strong></div><div class="strategyResult"><small>Max drawdown</small><strong>${Number(r.maxDrawdown).toFixed(2)}%</strong></div><div class="strategyResult"><small>Closed trades</small><strong>${r.trades.length}</strong></div><div class="strategyResult"><small>Win rate</small><strong>${Number(r.winRate).toFixed(1)}%</strong></div><div class="strategyResult"><small>Profit factor</small><strong>${pf}</strong></div><div class="strategyResult"><small>Average win</small><strong>${money(r.avgWin)}</strong></div><div class="strategyResult"><small>Average loss</small><strong>${money(r.avgLoss)}</strong></div><div class="strategyResult"><small>Exposure</small><strong>${Number(r.exposurePct).toFixed(1)}%</strong></div><div class="strategyResult"><small>Open position</small><strong>${r.openPosition?'YES':'NO'}</strong></div><div class="strategyResult"><small>Assumptions</small><strong>${Number(r.startingCapital).toLocaleString()} USD</strong></div></div>${r.openPosition?`<div class="callout">Open paper position · entry ${money(r.openPosition.entryPrice)} · mark ${money(r.openPosition.markPrice)} · unrealized ${money(r.openPosition.unrealized)}</div>`:''}<div class="strategyTableWrap"><table><thead><tr><th>Entry</th><th>Exit</th><th>Entry px</th><th>Exit px</th><th>P&amp;L</th><th>Return</th><th>Reason</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No closed trades in this replay.</td></tr>'}</tbody></table></div>`
+}
+function strategyRun(id,mode='backtest'){
+  const s=strategyLoad(),st=s.strategies.find(x=>x.id===id);if(!st)throw Error('Strategy not found');const from=mode==='paper'?st.paperStart:null,pts=strategyHistoryFor(st,from),r=strategyBacktest(st,pts,Number(s.startingCapital)||1000);if(mode==='backtest'){st.lastBacktest={...r,equity:undefined,ranAt:new Date().toISOString()};s.lastResult={id:st.id,mode:'backtest'};strategySave(s)}$('stratResult').innerHTML=strategyResultHtml(r,mode==='paper'?'Paper Twin':'Backtest');strategyRender();return r
+}
+function strategyPaperRefreshAll(){const s=strategyLoad();for(const st of s.strategies.filter(x=>x.stage==='PAPER'&&x.paperStart)){try{const r=strategyBacktest(st,strategyHistoryFor(st,st.paperStart),Number(s.startingCapital)||1000);st.paperSnapshot={...r,equity:undefined,updatedAt:new Date().toISOString()}}catch{}}strategySave(s);strategyRender()}
+function strategyStartPaper(id){const s=strategyLoad(),st=s.strategies.find(x=>x.id===id);if(!st)throw Error('Strategy not found');st.stage='PAPER';st.paperStart=new Date().toISOString();st.paperSnapshot=null;strategySave(s);strategyRecordObservation(st.symbol,strategyPriceFromSnapshot(st.symbol)||0,'paper-start');strategyRender();$('stratResult').innerHTML='<div class="callout">Paper Twin started. Capture/import at least two future price samples for '+escapeHtml(st.symbol)+' to produce a replay.</div>'}
+function strategyStopPaper(id){const s=strategyLoad(),st=s.strategies.find(x=>x.id===id);if(!st)return;st.stage='DRAFT';st.paperStart=null;st.paperSnapshot=null;strategySave(s);strategyRender()}
+function strategyPromote(id){
+  const s=strategyLoad(),st=s.strategies.find(x=>x.id===id);if(!st)throw Error('Strategy not found');if(st.stage!=='PAPER')throw Error('Run this strategy in Paper stage before promotion');if(!st.lastBacktest||Number(st.lastBacktest.sampleCount)<10)throw Error('Promotion gate: run a backtest with at least 10 price samples first');
+  let a=autopilotLoad();const tag=`strategy:${st.id}`;a.rules=(a.rules||[]).filter(r=>r.strategyTag!==tag);const now=Date.now();const add=(side,trigger,threshold,size,label,i)=>a.rules.push({id:`rule-${now}-${i}`,symbol:st.symbol,side,trigger,threshold,size,label,enabled:true,lastFired:null,strategyTag:tag});
+  add('BUY',st.entryTrigger,st.entryThreshold,st.entryUsd,`${st.name} · entry`,1);add('SELL','PNL_ABOVE',Number(st.takeProfit),100,`${st.name} · take profit`,2);add('SELL','PNL_BELOW',-Math.abs(Number(st.stopLoss)),100,`${st.name} · stop loss`,3);autopilotSave(a);st.stage='ARMED';st.autopilotRuleIds=a.rules.filter(r=>r.strategyTag===tag).map(r=>r.id);strategySave(s);autopilotAudit(`Strategy promoted: ${st.name} (${st.symbol}) · supervised rules created`,'INFO',{strategyId:st.id});strategyRender();if(typeof autopilotRender==='function')autopilotRender();$('stratResult').innerHTML='<div class="callout"><b>Promoted to supervised Autopilot.</b><br>Created entry, take-profit and stop-loss rules. Max-hold and backtest fee/slippage assumptions are <b>not</b> execution rules. Review the Autopilot tab before enabling monitoring.</div>'
+}
+function strategyDemote(id){const s=strategyLoad(),st=s.strategies.find(x=>x.id===id);if(!st)return;let a=autopilotLoad(),ids=new Set(st.autopilotRuleIds||[]);a.rules=(a.rules||[]).filter(r=>!ids.has(r.id)&&r.strategyTag!==`strategy:${st.id}`);autopilotSave(a);st.stage='DRAFT';st.autopilotRuleIds=[];st.paperStart=null;strategySave(s);autopilotAudit(`Strategy demoted: ${st.name}; generated Autopilot rules removed`,'INFO',{strategyId:st.id});strategyRender();if(typeof autopilotRender==='function')autopilotRender()}
+function strategyDelete(id){const s=strategyLoad(),st=s.strategies.find(x=>x.id===id);if(!st)return;if(st.stage==='ARMED')strategyDemote(id);const s2=strategyLoad();s2.strategies=s2.strategies.filter(x=>x.id!==id);strategySave(s2);strategyRender()}
+function strategyRunTournament(){const s=strategyLoad(),rows=[];for(const st of s.strategies){try{const r=strategyBacktest(st,strategyHistoryFor(st),Number(s.startingCapital)||1000);st.lastBacktest={...r,equity:undefined,ranAt:new Date().toISOString()};rows.push({id:st.id,name:st.name,symbol:st.symbol,returnPct:r.totalReturn,drawdown:r.maxDrawdown,trades:r.trades.length,winRate:r.winRate,samples:r.sampleCount})}catch(e){rows.push({id:st.id,name:st.name,symbol:st.symbol,error:e.message,samples:strategyHistoryFor(st).length})}}rows.sort((a,b)=>(Number(b.returnPct)||-1e99)-(Number(a.returnPct)||-1e99));s.tournament=rows;s.lastTournamentAt=new Date().toISOString();strategySave(s);strategyRenderTournament(rows);strategyRender()}
+function strategyRenderTournament(rows=(strategyLoad().tournament||[])){if(!rows.length){$('stratTournament').innerHTML='<div class="emptyState">No tournament result yet.</div>';return}$('stratTournament').innerHTML='<div class="strategyTableWrap"><table><thead><tr><th>Rank</th><th>Strategy</th><th>Symbol</th><th>Return</th><th>Max DD</th><th>Trades</th><th>Win rate</th><th>Samples</th></tr></thead><tbody>'+rows.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.symbol)}</td><td class="${r.error?'paperNeutral':r.returnPct>=0?'paperGood':'paperBad'}">${r.error?escapeHtml(r.error):Number(r.returnPct).toFixed(2)+'%'}</td><td>${r.error?'—':Number(r.drawdown).toFixed(2)+'%'}</td><td>${r.error?'—':r.trades}</td><td>${r.error?'—':Number(r.winRate).toFixed(1)+'%'}</td><td>${r.samples||0}</td></tr>`).join('')+'</tbody></table></div>'}
+function strategyRender(){
+  const s=strategyLoad(),h=strategyHistoryLoad();$('stratCount').textContent=String(s.strategies.length);$('stratSamples').textContent=String(strategyAllSampleCount());$('stratPaperCount').textContent=String(s.strategies.filter(x=>x.stage==='PAPER').length);const best=s.strategies.map(x=>Number(x.lastBacktest?.totalReturn)).filter(Number.isFinite).sort((a,b)=>b-a)[0];$('stratBestReturn').textContent=Number.isFinite(best)?best.toFixed(2)+'%':'—';$('stratRecorderEnabled').checked=!!s.recorderEnabled;$('stratRecorderSeconds').value=s.recorderSeconds;$('stratStartingCapital').value=s.startingCapital;
+  const badges=Object.entries(h).sort().map(([sym,a])=>`<span class="strategyDataBadge">${escapeHtml(sym)} · ${Array.isArray(a)?a.length:0} samples</span>`).join('');$('stratDataSummary').innerHTML=badges||'<span class="strategyDataBadge">No local history yet</span>';
+  $('stratList').innerHTML=s.strategies.map(st=>{const samples=(h[st.symbol]||[]).length,bt=st.lastBacktest,paper=st.paperSnapshot;return `<div class="strategyRow"><div><b>${escapeHtml(st.name)}</b> · ${escapeHtml(st.symbol)} <span class="strategyStage ${escapeHtml(st.stage)}">${escapeHtml(st.stage)}</span><div class="strategyMeta">Entry ${st.entryTrigger==='PRICE_ABOVE'?'≥':'≤'} ${money(st.entryThreshold)} · ${money(st.entryUsd)} · TP +${Number(st.takeProfit).toFixed(1)}% · SL −${Number(st.stopLoss).toFixed(1)}%${Number(st.maxHoldHours)>0?` · max ${st.maxHoldHours}h`:''}<br>${samples} samples${bt?` · last backtest ${Number(bt.totalReturn).toFixed(2)}% / DD ${Number(bt.maxDrawdown).toFixed(2)}%`:''}${paper?` · paper ${Number(paper.totalReturn).toFixed(2)}%`:''}</div></div><div class="strategyButtons"><button data-strat-backtest="${st.id}">Backtest</button>${st.stage==='DRAFT'?`<button data-strat-paper="${st.id}">Start Paper</button>`:''}${st.stage==='PAPER'?`<button data-strat-paper-result="${st.id}">View Paper</button><button data-strat-promote="${st.id}">Promote</button><button data-strat-stop-paper="${st.id}">Stop Paper</button>`:''}${st.stage==='ARMED'?`<button data-open-tab="autopilotPane">Autopilot</button><button data-strat-demote="${st.id}">Demote</button>`:''}<button data-strat-delete="${st.id}">Delete</button></div></div>`}).join('')||'<div class="emptyState">No strategies saved.</div>';strategyRenderTournament(s.tournament||[]);strategyRecorderSchedule()
+}
+function strategyExport(){const payload={schema:'rustee-strategy-history-v33',exportedAt:new Date().toISOString(),history:strategyHistoryLoad(),strategies:strategyLoad().strategies};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-strategy-lab-backup.json';a.click();URL.revokeObjectURL(a.href)}
+function strategyParseCsv(text){const lines=text.split(/\r?\n/).filter(x=>x.trim());if(lines.length<2)throw Error('CSV needs a header and rows');const head=lines[0].split(',').map(x=>x.trim().toLowerCase());const si=head.findIndex(x=>['symbol','ticker'].includes(x)),ti=head.findIndex(x=>['timestamp','time','date','datetime'].includes(x)),pi=head.findIndex(x=>['price','close','lastprice','markprice'].includes(x));if(si<0||ti<0||pi<0)throw Error('CSV headers must include symbol/ticker, timestamp/time/date, and price/close');return lines.slice(1).map(line=>{const c=line.split(',');return {symbol:c[si],t:c[ti],price:c[pi]}})}
+function strategyImportRows(rows){const h=strategyHistoryLoad();let added=0,bad=0;for(const row of rows){const sym=String(row?.symbol||row?.ticker||'').trim().toUpperCase(),pt=strategyNormalizePoint(row);if(!/^[A-Z0-9.\-]{1,12}$/.test(sym)||!pt){bad++;continue}const arr=Array.isArray(h[sym])?h[sym]:[];if(!arr.some(x=>x.t===pt.t&&Math.abs(Number(x.price)-pt.price)<1e-12)){arr.push({...pt,source:'import'});added++}h[sym]=arr}for(const a of Object.values(h))if(Array.isArray(a))a.sort((x,y)=>new Date(x.t)-new Date(y.t));strategyHistorySave(h);$('stratDataLog').textContent=`Import complete: ${added} samples added; ${bad} invalid rows skipped.`;strategyRender();strategyPaperRefreshAll()}
+async function strategyImportFile(file){const text=await file.text(),name=String(file.name||'').toLowerCase();if(name.endsWith('.csv'))return strategyImportRows(strategyParseCsv(text));const j=JSON.parse(text);let rows=[];if(Array.isArray(j))rows=j;else if(j?.history&&typeof j.history==='object')for(const [symbol,arr] of Object.entries(j.history))for(const p of (arr||[]))rows.push({symbol,...p});else if(j?.bySymbol&&typeof j.bySymbol==='object')for(const [symbol,arr] of Object.entries(j.bySymbol))for(const p of (arr||[]))rows.push({symbol,...p});else throw Error('JSON must be an array of rows, or contain history/bySymbol maps');return strategyImportRows(rows)}
+
+if($('stratSave'))$('stratSave').onclick=()=>{try{const st=strategyFormRead(),s=strategyLoad();s.strategies.push(st);strategySave(s);strategyClearForm();strategyRender();$('stratDataLog').textContent=`Saved ${st.name}. Add/import ${st.symbol} history, then Backtest.`}catch(e){$('stratDataLog').textContent='ERROR: '+e.message}};
+if($('stratResetForm'))$('stratResetForm').onclick=strategyClearForm;
+if($('stratCapture'))$('stratCapture').onclick=()=>strategyCaptureCurrentPrices().catch(e=>$('stratDataLog').textContent='ERROR: '+e.message);
+if($('stratRecorderEnabled'))$('stratRecorderEnabled').onchange=()=>{const s=strategyLoad();s.recorderEnabled=$('stratRecorderEnabled').checked;s.recorderSeconds=Math.max(60,Number($('stratRecorderSeconds').value)||60);strategySave(s);strategyRecorderSchedule();$('stratDataLog').textContent=s.recorderEnabled?'Recorder armed while Rustee is open.':'Recorder stopped.'};
+if($('stratRecorderSeconds'))$('stratRecorderSeconds').onchange=()=>{const s=strategyLoad();s.recorderSeconds=Math.max(60,Number($('stratRecorderSeconds').value)||60);strategySave(s);strategyRecorderSchedule()};
+if($('stratStartingCapital'))$('stratStartingCapital').onchange=()=>{const s=strategyLoad();s.startingCapital=Math.max(1,Number($('stratStartingCapital').value)||1000);strategySave(s);strategyRender()};
+if($('stratExportData'))$('stratExportData').onclick=strategyExport;
+if($('stratImportButton'))$('stratImportButton').onclick=()=>$('stratImportFile').click();
+if($('stratImportFile'))$('stratImportFile').onchange=e=>{const f=e.target.files?.[0];if(f)strategyImportFile(f).catch(err=>$('stratDataLog').textContent='IMPORT ERROR: '+err.message);e.target.value=''};
+if($('stratRunAll'))$('stratRunAll').onclick=()=>{try{strategyRunTournament()}catch(e){$('stratDataLog').textContent='ERROR: '+e.message}};
+if($('stratList'))$('stratList').addEventListener('click',e=>{try{const b=e.target.closest('button');if(!b)return;const get=k=>b.dataset[k];if(get('stratBacktest'))strategyRun(get('stratBacktest'),'backtest');else if(get('stratPaper'))strategyStartPaper(get('stratPaper'));else if(get('stratPaperResult'))strategyRun(get('stratPaperResult'),'paper');else if(get('stratPromote'))strategyPromote(get('stratPromote'));else if(get('stratStopPaper'))strategyStopPaper(get('stratStopPaper'));else if(get('stratDemote'))strategyDemote(get('stratDemote'));else if(get('stratDelete'))strategyDelete(get('stratDelete'))}catch(err){$('stratDataLog').textContent='ERROR: '+err.message}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){strategyRecorderSchedule();strategyPaperRefreshAll()}});
+strategyRender();
+// -----------------------------------------------------------------------------
 
 </script>
 </body></html>

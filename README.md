@@ -1,4 +1,12 @@
-# Rustee Broker v3.1 Operator Edition
+## v3.3 Strategy Lab + Paper Twin
+
+See `STRATEGY_LAB_3_3_0.md`. This release adds local data recording/import, deterministic backtesting, paper twins, strategy tournament ranking and explicit promotion into the existing supervised Autopilot. Real transaction broadcast remains owner-signed.
+
+## v3.2 Supervised Autopilot
+
+See `AUTOPILOT_3_2_0.md`. This release adds rule monitoring, risk gates, candidate queueing and automatic pre-signature preparation. Autonomous transaction broadcast remains disabled; real trades still stop at the owner wallet signature boundary.
+
+# Rustee Broker v3.1.2 Operator Edition
 
 One deployable GitHub Pages project for the stable Rustee Broker #1 operator console. This branch is **not** the Broker Factory.
 
@@ -38,8 +46,9 @@ The workflow refreshes same-origin Robinhood snapshots, regenerates the integrit
 
 - No private key or seed phrase input exists.
 - Owner writes require the expected owner wallet on Robinhood Chain 4663.
-- Trade and metadata writes require fresh `eth_estimateGas` and `eth_call` simulation before a wallet signature.
-- The security pre-sign gate restricts transaction destinations; the Broker NFT is allowed only after it is resolved from the ERC-6551 TBA and matches the expected Rustee Broker #1 contract.
+- Trade, move, converter, allowance, and metadata writes require fresh `eth_estimateGas` + `eth_call` simulation before signing.
+- On mobile wallet browsers, the simulation also arms the exact transaction. The final **Open wallet to sign** tap calls `eth_sendTransaction` immediately so the injected wallet receives a fresh user-gesture handoff.
+- Destination/owner/chain checks are completed during simulation for prepared writes; the Broker NFT is allowed only after it is resolved from the ERC-6551 TBA and matches the expected Rustee Broker #1 contract.
 - `freezeMetadata()` remains optional, double-confirmed, and irreversible.
 
 ## Key addresses
@@ -59,4 +68,5 @@ The workflow refreshes same-origin Robinhood snapshots, regenerates the integrit
 - `docs/METADATA_INSTALL_GUIDE.md` — metadata write/freeze guide.
 - `AIO_ARCHITECTURE.md` — module map and execution boundaries.
 - `OPERATOR_3_1_0.md` — v3.1 additions, guarantees, and non-factory scope.
+- `WALLET_HANDOFF_3_1_2.md` — mobile signing hotfix and validation notes.
 - `archive/` — untouched rollback copies of both uploaded apps.

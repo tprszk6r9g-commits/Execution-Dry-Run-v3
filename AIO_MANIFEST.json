@@ -1,19 +1,21 @@
 {
   "name": "Rustee Broker Operator Edition",
-  "version": "3.1.0",
+  "version": "3.1.2",
   "executionCore": "2.8.12",
   "chainId": 4663,
   "brokerNft": "0x4523467C4DDC6D775C7EaD4Dce7656DCe54e7F60",
   "scope": "stable Rustee Broker #1 operator console; not factory",
   "files": {
-    "index.html": "9654798d4e6bb9d53f297c039127830d0a36c73cf18ef7ca1930e51a49283bdc",
+    "index.html": "e401587e39ecabdc440ebe6882c421a3f94306bef2bfe51790f5f891ab3fac3e",
     "assets/rustee-broker-384.webp": "3bad628c662448681974836859e9089658c9f9e4a2b166c6e7edccc3903f6167",
     "assets/rustee-broker-192.png": "5204486753510a81f722efd27057a2b48dc25acd8e526740ae8df4088910b5c1",
     "assets/rustee-broker-512.png": "9448ec6d2510c118588b2bf374ca1f301704cb219aea28d2e9c378a0af6955d9",
     "assets/tokenURI_utf8.txt": "de5d433e7228ad359948eefbf5486ffe8c9306f3a72c8d5c28d3c64ee98896a3",
     "manifest.webmanifest": "7e04be3ca33c56e9d754b86d953a2cc28efa89eee79074a1acbfe59c6d585785",
-    "sw.js": "5c7b0b20940ea23d652c0f92a083b04baf6d3d15b0286ff102825ef3b5d818ad",
+    "sw.js": "6e43e8510975984ba072b38977b932df4186694b53f470eff1c9eacabbb0ab25",
     "archive/Execution-Dry-Run-v2.8.12-stable.html": "b7fb7cf4d7d38c8d0ad49cd9eff02521ee615a6b96dabb2bded3839e02ad0cf9",
     "archive/RusteeBroker1-metadata-installer.html": "cb24a9b78683e641b23de4d87c3e2b16f84a1d195880d7d1748a4cc6695b8a92"
-  }
+  },
+  "operatorVersion": "3.3.0",
+  "release": "Strategy Lab + Paper Twin"
 }

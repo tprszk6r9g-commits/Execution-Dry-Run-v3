@@ -1,7 +1,7 @@
 {
   "name": "Rustee Broker #1",
   "short_name": "Rustee Broker",
-  "description": "Rustee Broker #1 Operator Edition for Robinhood Chain",
+  "description": "Rustee Broker #1 v3.3 Strategy Lab + Supervised Autopilot for Robinhood Chain",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
