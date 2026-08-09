@@ -1,5 +1,50 @@
 # Rustee Broker
 
+## Current Release — v3.6B.2 NFT-Following Metadata Authority
+
+v3.6B.2 fixes the metadata-authority mismatch that appears after Rustee Broker #1 is transferred to a different wallet.
+
+The existing NFT contract uses a separate `owner()` role for `setTokenURI()` and `freezeMetadata()`, while Rustee's TBA authority follows `ownerOf(#1)`. v3.6B.2 adds `RusteeMetadataController`, which becomes the NFT contract's one-time metadata administrator and dynamically checks `ownerOf(#1)` for every future metadata action.
+
+### Result after activation
+
+`Broker NFT transfer → ownerOf(#1) changes → metadata authority changes automatically`
+
+The Broker NFT address, token ID, four ERC-6551 TBAs, TBA assets, and existing metadata are not replaced.
+
+### Added
+
+- `src/RusteeMetadataController.sol`
+- `test/RusteeMetadataController.t.sol`
+- `script/DeployRusteeMetadataController.s.sol`
+- Metadata Authority Migration panel in **NFT + Identity**
+- automatic controller detection from the live NFT contract `owner()`
+- Metadata Studio legacy direct-admin mode before migration
+- Metadata Studio NFT-following controller mode after migration
+- two-step migration:
+  1. current NFT-contract metadata admin calls `transferOwnership(controller)`
+  2. current Broker NFT holder calls `controller.acceptNFTAdministration()`
+- current NFT holder can replace/recover the controller later
+- no changes to Broker NFT ownership or TBA addresses
+
+### Test qualification
+
+- Full Rustee Foundry suite: **23/23 PASS**
+- Metadata Controller suite: **7/7 PASS**
+- Randomized NFT-transfer authority property: **5,000 fuzz runs PASS**
+- Controller runtime bytecode: **4,096 bytes**
+- JavaScript syntax: PASS
+- CSP hash regenerated for the updated dashboard
+
+### Important
+
+The controller must be deployed before the migration panel can activate it. Deployment does not by itself change NFT metadata authority. The old admin and current NFT holder must complete the two explicit migration transactions in the dashboard.
+
+Do **not** freeze metadata during migration.
+
+---
+
+
 ## Current Release — v3.6B.1 Registry Hardening & Deployment Qualification
 
 ### Current-release features

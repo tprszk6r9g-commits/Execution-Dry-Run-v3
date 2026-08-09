@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-yd9Pek7jjE/lUCs1Wfh/OjCINe6YeoGhHQFAQrwCues='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-XVp4Job8XcvdvBBmJQ/OY0y5WjwfKvVauPzsPd/AYog='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
 <title>Rustee Broker v3.5.2 TBA Migration Manager · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
@@ -376,7 +376,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 
 <div id="nftPane" class="tabpane">
   <div class="card">
-    <span class="badge">v3.4.1 · NFT ROOT AUTHORITY · OWNERSHIP HARDENED</span>
+    <span class="badge">v3.6B.2 · NFT ROOT AUTHORITY · METADATA FOLLOWS NFT</span>
     <h2>Rustee Broker NFT + Identity</h2>
     <p>Rustee now resolves the Broker NFT from the Trading TBA, resolves the current ERC-721 holder with <code>ownerOf(tokenId)</code>, separately reads the NFT contract metadata administrator with <code>owner()</code>, and cross-checks all four TBA owners. No personal owner wallet address is trusted from hardcoded dashboard configuration.</p>
     <div class="nftHero">
@@ -390,6 +390,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
           <div class="nftMetaCell"><small>Token ID</small><strong id="aioNftTokenId">—</strong></div>
           <div class="nftMetaCell"><small>Current NFT ownerOf()</small><strong id="aioNftTokenOwner">—</strong></div>
           <div class="nftMetaCell"><small>Metadata admin owner()</small><strong id="aioNftAdmin">—</strong></div>
+          <div class="nftMetaCell"><small>Metadata authority mode</small><strong id="aioNftMetadataMode">—</strong></div>
           <div class="nftMetaCell"><small>TBA ownership binding</small><strong id="aioNftTbaBinding">—</strong></div>
           <div class="nftMetaCell"><small>Metadata state</small><strong id="aioNftFrozen">—</strong></div>
           <div class="nftMetaCell"><small>Current tokenURI</small><strong id="aioNftUriLen">—</strong></div>
@@ -446,6 +447,25 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
     <div class="transferSummary" style="margin-top:12px"><h3>Transfer model</h3><pre id="transferModelLog">Run the readiness test to build a migration report.</pre></div>
   </div>
 
+
+  <div class="card">
+    <span class="badge">v3.6B.2 · NFT-FOLLOWING METADATA AUTHORITY</span>
+    <h2>Metadata Authority Migration</h2>
+    <p>One-time migration from the NFT contract's separate admin wallet to a <code>RusteeMetadataController</code>. After activation, every metadata write re-checks <code>ownerOf(#1)</code>, so metadata authority automatically follows Rustee Broker #1 when the NFT is transferred.</p>
+    <div class="riskBoundary"><b>Two-wallet migration:</b> Step 1 is signed by the current NFT-contract metadata admin. Step 2 is signed by the current Broker NFT holder. The Broker NFT and all ERC-6551 TBAs remain unchanged.</div>
+    <label>Deployed RusteeMetadataController address</label>
+    <input id="metaControllerCandidate" placeholder="0x…" spellcheck="false" autocapitalize="off">
+    <div class="actions">
+      <button id="metaControllerVerify">Verify controller</button>
+      <button id="metaControllerPrepare1" disabled>Prepare Step 1 · old admin handoff</button>
+      <button id="metaControllerExecute1" disabled>Open old admin wallet for Step 1</button>
+      <button id="metaControllerPrepare2" disabled>Prepare Step 2 · NFT holder accept</button>
+      <button id="metaControllerExecute2" disabled>Open NFT-holder wallet for Step 2</button>
+      <button id="metaControllerFinalVerify">Verify NFT-following authority</button>
+    </div>
+    <pre id="metaControllerMigrationLog">Deploy the controller first, paste its address here, then verify it before any ownership handoff.</pre>
+  </div>
+
   <div class="card warn">
     <span class="badge">METADATA STUDIO · OWNER-SIGNED ON-CHAIN UPDATE</span>
     <h2>Metadata Studio</h2>
@@ -484,7 +504,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
         <h3>3 · Authority + write preflight</h3>
         <div class="nftMetaGrid">
           <div class="nftMetaCell"><small>Contract code</small><strong id="aioMetaCode">—</strong></div>
-          <div class="nftMetaCell"><small>Metadata admin = wallet</small><strong id="aioMetaOwner">—</strong></div>
+          <div class="nftMetaCell"><small>Metadata authority = wallet</small><strong id="aioMetaOwner">—</strong></div>
           <div class="nftMetaCell"><small>metadataFrozen()</small><strong id="aioMetaFrozen">—</strong></div>
           <div class="nftMetaCell"><small>NFT / TBA binding</small><strong id="aioMetaBinding">—</strong></div>
         </div>
@@ -1866,6 +1886,18 @@ function decodeAddressResult(raw,label='address'){
   if(!/^0x[0-9a-fA-F]{40}$/.test(a)||/^0x0{40}$/i.test(a))throw Error(`Invalid ${label}`);
   return a;
 }
+async function detectMetadataController(admin,nft,tokenId){
+  try{
+    const code=await fallbackRpc('eth_getCode',[admin,'latest']);if(!code||code==='0x')return null;
+    const [boundNftRaw,boundIdRaw]=await Promise.all([
+      fallbackRpc('eth_call',[{to:admin,data:'0x'+META_CTRL_SEL_BROKER_NFT},'latest']),
+      fallbackRpc('eth_call',[{to:admin,data:'0x'+META_CTRL_SEL_TOKEN_ID},'latest'])
+    ]);
+    const boundNft=decodeAddressResult(boundNftRaw,'metadata controller brokerNFT'),boundId=BigInt(boundIdRaw||'0x0');
+    if(boundNft.toLowerCase()!==nft.toLowerCase()||boundId!==BigInt(tokenId))return null;
+    return {address:admin,boundNft,boundId};
+  }catch{return null}
+}
 async function resolveAuthorityState(force=false){
   if(AUTHORITY_STATE&&!force&&Date.now()-AUTHORITY_STATE.time<15000)return AUTHORITY_STATE;
   const nft=await resolveBrokerNFT(force),tokenId=BROKER_TOKEN_ID;
@@ -1882,27 +1914,33 @@ async function resolveAuthorityState(force=false){
   const tbaOwners={VAULT:decodeAddressResult(vaultRaw,'Vault owner'),TRADING:decodeAddressResult(tradingRaw,'Trading owner'),REWARDS:decodeAddressResult(rewardsRaw,'Rewards owner'),IDENTITY:decodeAddressResult(identityRaw,'Identity owner')};
   const tbaBindingOk=Object.values(tbaOwners).every(a=>a.toLowerCase()===tokenOwner.toLowerCase());
   if(!tbaBindingOk)throw Error('SECURITY: one or more ERC-6551 account owners do not match the current Broker NFT owner');
-  OWNER=tokenOwner;NFT_ADMIN=admin;
-  AUTHORITY_STATE={time:Date.now(),nft,tokenId,tokenOwner,admin,tbaOwners,tbaBindingOk,adminFollowsToken:admin.toLowerCase()===tokenOwner.toLowerCase()};
+  const metadataController=await detectMetadataController(admin,nft,tokenId);
+  const directAdmin=admin.toLowerCase()===tokenOwner.toLowerCase();
+  OWNER=tokenOwner;NFT_ADMIN=admin;METADATA_CONTROLLER=metadataController?.address||null;METADATA_SIGNER=metadataController?tokenOwner:admin;
+  AUTHORITY_STATE={time:Date.now(),nft,tokenId,tokenOwner,admin,metadataController:metadataController?.address||null,metadataMode:metadataController?'NFT_FOLLOWING_CONTROLLER':'DIRECT_ADMIN',metadataSigner:METADATA_SIGNER,tbaOwners,tbaBindingOk,adminFollowsToken:!!metadataController||directAdmin};
   try{renderWalletConnectionState()}catch{}
   try{renderHardBoundAddresses()}catch{}
   return AUTHORITY_STATE;
 }
 function connectedAuthorityRole(){
   if(!account)return 'Disconnected';
-  const a=account.toLowerCase(),isOwner=!!OWNER&&a===OWNER.toLowerCase(),isAdmin=!!NFT_ADMIN&&a===NFT_ADMIN.toLowerCase();
+  const a=account.toLowerCase(),isOwner=!!OWNER&&a===OWNER.toLowerCase(),isAdmin=!!NFT_ADMIN&&a===NFT_ADMIN.toLowerCase(),isMetadataAuthority=!!METADATA_SIGNER&&a===METADATA_SIGNER.toLowerCase();
+  if(isOwner&&METADATA_CONTROLLER)return 'NFT OWNER + METADATA AUTHORITY';
   if(isOwner&&isAdmin)return 'NFT OWNER + METADATA ADMIN';
+  if(isMetadataAuthority)return 'METADATA AUTHORITY';
   if(isOwner)return 'NFT OWNER';
   if(isAdmin)return 'METADATA ADMIN';
   return 'VIEW ONLY';
 }
 function expectedSignerForTxSync(tx){
   const to=String(tx?.to||'').toLowerCase(),sel=String(tx?.data||'0x').slice(0,10).toLowerCase();
-  const nft=(NFT||'').toLowerCase();
-  const metadataTx=!!nft&&to===nft&&(sel==='0x'+AIO_SEL_SET_TOKEN_URI||sel==='0x'+AIO_SEL_FREEZE);
-  const expected=metadataTx?NFT_ADMIN:OWNER;
+  const nft=(NFT||'').toLowerCase(),ctrl=(METADATA_CONTROLLER||'').toLowerCase();
+  const directMetadata=!!nft&&to===nft&&(sel==='0x'+AIO_SEL_SET_TOKEN_URI||sel==='0x'+AIO_SEL_FREEZE);
+  const controllerMetadata=!!ctrl&&to===ctrl&&(sel==='0x'+AIO_SEL_SET_TOKEN_URI||sel==='0x'+AIO_SEL_FREEZE||sel==='0x'+META_CTRL_SEL_ACCEPT);
+  const adminHandoff=!!nft&&to===nft&&sel==='0x'+AIO_SEL_TRANSFER_OWNERSHIP;
+  const expected=adminHandoff?NFT_ADMIN:(controllerMetadata?OWNER:(directMetadata?NFT_ADMIN:OWNER));
   if(!expected)throw Error('SECURITY: transaction authority is unresolved; refresh NFT authority and simulate again');
-  return {expected:expected.toLowerCase(),role:metadataTx?'metadata administrator':'Broker NFT owner',metadataTx};
+  return {expected:expected.toLowerCase(),role:adminHandoff?'current NFT-contract metadata admin':controllerMetadata?'current Broker NFT owner':directMetadata?'metadata administrator':'Broker NFT owner',metadataTx:directMetadata||controllerMetadata};
 }
 async function ownerOfTBA(addr){
   const raw=await rpc('eth_call',[{to:addr,data:'0x'+SEL_OWNER},'latest']);
@@ -5094,7 +5132,7 @@ async function transferReadinessTest(){
   if(isContract)warnings.push('Proposed owner has contract bytecode. ERC-721 ownership is possible, but wallet/Rabby signing compatibility cannot be proven by this read-only test.');
   warnings.push('Strategy Lab, Autopilot rules, local cost basis, receipts, and preferences are browser-local. Export a Rustee backup separately if those should move to another device/browser.');
   $('transferReadinessLog').textContent=`${verdict}\nCurrent owner: ${state.tokenOwner}\nProposed owner: ${proposed}\nBroker NFT: ${state.nft} #${state.tokenId}\nAll four TBA token() bindings: ${allTokenBindings?'PASS':'FAIL'}\nAll four live owner() values match current ownerOf(): ${liveOwnersOk?'PASS':'FAIL'}\nDangerous self/TBA destination: ${dangerous?'YES — BLOCK':'NO'}\nSame as current owner: ${sameOwner?'YES':'NO'}\nProposed address bytecode: ${isContract?'CONTRACT':'NO CODE / EOA'}\nMetadata admin: ${state.admin}\nMetadata admin currently equals NFT owner: ${adminFollows}\n\n${warnings.map(x=>'⚠ '+x).join('\n')}`;
-  $('transferModelLog').textContent=`TRANSFER MODEL — READ ONLY\n\nBefore transfer\n  Broker NFT #${state.tokenId} ownerOf() → ${state.tokenOwner}\n  Vault owner()    → ${state.tbaOwners.VAULT}\n  Trading owner()  → ${state.tbaOwners.TRADING}\n  Rewards owner()  → ${state.tbaOwners.REWARDS}\n  Identity owner() → ${state.tbaOwners.IDENTITY}\n\nExpected after ERC-721 transfer\n  Broker NFT #${state.tokenId} ownerOf() → ${proposed}\n  Vault/Trading/Rewards/Identity owner() → dynamically resolve new ownerOf(#${state.tokenId})\n  TBA addresses → unchanged\n  Assets held by TBAs → remain at the same TBA addresses\n  Registry authority → intended to follow current Broker NFT owner\n  Metadata admin owner() → ${adminFollows?'expected to be the same role only while contract owner tracks token owner':'remains a separate contract-admin role'}\n  Browser strategies/state → does not move on-chain\n\n${verdict==='READY'?'READINESS PASS — architecture is consistent with ownership migration. This panel still does not transfer the NFT.':'READINESS BLOCKED — do not transfer until failed checks are resolved.'}`;
+  $('transferModelLog').textContent=`TRANSFER MODEL — READ ONLY\n\nBefore transfer\n  Broker NFT #${state.tokenId} ownerOf() → ${state.tokenOwner}\n  Vault owner()    → ${state.tbaOwners.VAULT}\n  Trading owner()  → ${state.tbaOwners.TRADING}\n  Rewards owner()  → ${state.tbaOwners.REWARDS}\n  Identity owner() → ${state.tbaOwners.IDENTITY}\n\nExpected after ERC-721 transfer\n  Broker NFT #${state.tokenId} ownerOf() → ${proposed}\n  Vault/Trading/Rewards/Identity owner() → dynamically resolve new ownerOf(#${state.tokenId})\n  TBA addresses → unchanged\n  Assets held by TBAs → remain at the same TBA addresses\n  Registry authority → intended to follow current Broker NFT owner\n  Metadata admin owner() → ${adminFollows?'expected to be the same role only while contract owner tracks token owner':'is controlled by RusteeMetadataController and dynamically follows ownerOf()'}\n  Browser strategies/state → does not move on-chain\n\n${verdict==='READY'?'READINESS PASS — architecture is consistent with ownership migration. This panel still does not transfer the NFT.':'READINESS BLOCKED — do not transfer until failed checks are resolved.'}`;
   return {verdict,currentOwner:state.tokenOwner,proposedOwner:proposed,allTokenBindings,liveOwnersOk,adminFollows,isContract,dangerous,sameOwner};
 }
 if($('transferReadinessRun'))$('transferReadinessRun').onclick=()=>transferReadinessTest().catch(e=>{$('transferReadinessLog').textContent='ERROR: '+e.message});
@@ -5107,6 +5145,12 @@ const AIO_SEL_SET_TOKEN_URI='e0df5b6f';
 const AIO_SEL_METADATA_FROZEN='fb3cc6c2';
 const AIO_SEL_TOKEN_URI='c87b56dd';
 const AIO_SEL_FREEZE='d111515d';
+const AIO_SEL_TRANSFER_OWNERSHIP='f2fde38b';
+const META_CTRL_SEL_BROKER_NFT='14f1789e';
+const META_CTRL_SEL_TOKEN_ID='17d70f7c';
+const META_CTRL_SEL_ACCEPT='98602204';
+const META_CTRL_SEL_IS_ADMIN='e3e9cb01';
+let METADATA_CONTROLLER=null,METADATA_SIGNER=null,metadataControllerMigrationPrepared=null;
 const AIO_TOKEN_URI=document.getElementById('AIO_TOKEN_URI')?.textContent||'';
 let aioMetadataSimulation=null,aioMetadataVerified=false,aioLastProposalUri=null,aioFreezePrepared=null;
 let metadataStudioCurrent=null,metadataStudioImage='';
@@ -5142,33 +5186,80 @@ async function aioNftContext(force=false){const nft=await resolveBrokerNFT(force
 async function aioReadNftState(){
   const {nft,tokenId}=await aioNftContext(true),auth=await resolveAuthorityState(true);
   const [code,frozenRaw,uriRaw]=await Promise.all([fallbackRpc('eth_getCode',[nft,'latest']),fallbackRpc('eth_call',[{to:nft,data:'0x'+AIO_SEL_METADATA_FROZEN},'latest']),fallbackRpc('eth_call',[{to:nft,data:'0x'+AIO_SEL_TOKEN_URI+word(tokenId)},'latest'])]);
-  const frozen=BigInt(frozenRaw||'0x0')!==0n,uri=aioDecodeAbiString(uriRaw);return {cid:CHAIN,nft,tokenId,code,tokenOwner:auth.tokenOwner,admin:auth.admin,tbaOwners:auth.tbaOwners,tbaBindingOk:auth.tbaBindingOk,adminFollowsToken:auth.adminFollowsToken,frozen,uri}
+  const frozen=BigInt(frozenRaw||'0x0')!==0n,uri=aioDecodeAbiString(uriRaw);return {cid:CHAIN,nft,tokenId,code,tokenOwner:auth.tokenOwner,admin:auth.admin,metadataController:auth.metadataController,metadataMode:auth.metadataMode,metadataSigner:auth.metadataSigner,tbaOwners:auth.tbaOwners,tbaBindingOk:auth.tbaBindingOk,adminFollowsToken:auth.adminFollowsToken,frozen,uri}
 }
 async function metadataStudioLoadCurrent(){const s=await aioReadNftState(),meta=metadataParseTokenUri(s.uri);metadataStudioCurrent={uri:s.uri,meta};metadataStudioImage=String(meta.image||'');metadataPopulateForm(meta);$('metaStudioCurrentBytes').textContent=s.uri.length.toLocaleString()+' chars';$('metaStudioJsonState').textContent='CURRENT LOADED ✓';$('metaStudioDiff').textContent='Current on-chain metadata loaded. Edit fields or apply the capability preset, then Preview + diff.';$('metaStudioJsonPreview').textContent=JSON.stringify(meta,null,2);$('metaStudioEditLog').textContent=`Loaded tokenURI from ${s.nft} #${s.tokenId}.\nArtwork: ${metadataStudioImage?'present and retained by default':'missing'}\nMetadata frozen: ${s.frozen}`;return meta}
 async function aioRefreshNftState(){
-  try{const s=await aioReadNftState();$('aioNftContract').textContent=s.nft;$('aioNftTokenId').textContent='#'+s.tokenId.toString();$('aioNftTokenOwner').textContent=s.tokenOwner;$('aioNftAdmin').textContent=s.admin;$('aioNftTbaBinding').textContent=s.tbaBindingOk?'ALL 4 MATCH ✓':'MISMATCH ✕';$('aioNftTbaBinding').className=s.tbaBindingOk?'metaPass':'metaFail';$('aioNftFrozen').textContent=s.frozen?'FROZEN':'Writable';$('aioNftFrozen').className=s.frozen?'metaFail':'metaPass';$('aioNftUriLen').textContent=s.uri.length.toLocaleString()+' chars';$('aioConnectedRole').textContent=connectedAuthorityRole();$('aioNftIdentityLog').textContent=`IDENTITY READ ✓\nChain: ${CHAIN}\nBroker NFT: ${s.nft}\nToken ID: #${s.tokenId}\nERC-721 ownerOf(): ${s.tokenOwner}\nMetadata admin owner(): ${s.admin}\nAdmin follows token holder: ${s.adminFollowsToken}\nVault owner(): ${s.tbaOwners.VAULT}\nTrading owner(): ${s.tbaOwners.TRADING}\nRewards owner(): ${s.tbaOwners.REWARDS}\nIdentity owner(): ${s.tbaOwners.IDENTITY}\nAll TBA owners match NFT holder: ${s.tbaBindingOk}\nmetadataFrozen(): ${s.frozen}\nCurrent tokenURI: ${s.uri.length.toLocaleString()} chars`;renderWalletConnectionState();return s}catch(e){$('aioNftIdentityLog').textContent='NFT IDENTITY READ FAILED\n'+(e?.message||e);throw e}
+  try{const s=await aioReadNftState();$('aioNftContract').textContent=s.nft;$('aioNftTokenId').textContent='#'+s.tokenId.toString();$('aioNftTokenOwner').textContent=s.tokenOwner;$('aioNftAdmin').textContent=s.admin;$('aioNftMetadataMode').textContent=s.metadataController?'FOLLOWS ownerOf() ✓':'DIRECT ADMIN';$('aioNftMetadataMode').className=s.metadataController?'metaPass':'';$('aioNftTbaBinding').textContent=s.tbaBindingOk?'ALL 4 MATCH ✓':'MISMATCH ✕';$('aioNftTbaBinding').className=s.tbaBindingOk?'metaPass':'metaFail';$('aioNftFrozen').textContent=s.frozen?'FROZEN':'Writable';$('aioNftFrozen').className=s.frozen?'metaFail':'metaPass';$('aioNftUriLen').textContent=s.uri.length.toLocaleString()+' chars';$('aioConnectedRole').textContent=connectedAuthorityRole();$('aioNftIdentityLog').textContent=`IDENTITY READ ✓\nChain: ${CHAIN}\nBroker NFT: ${s.nft}\nToken ID: #${s.tokenId}\nERC-721 ownerOf(): ${s.tokenOwner}\nMetadata admin owner(): ${s.admin}\nMetadata mode: ${s.metadataMode}\nMetadata signer: ${s.metadataSigner}\nAdmin follows token holder: ${s.adminFollowsToken}\nVault owner(): ${s.tbaOwners.VAULT}\nTrading owner(): ${s.tbaOwners.TRADING}\nRewards owner(): ${s.tbaOwners.REWARDS}\nIdentity owner(): ${s.tbaOwners.IDENTITY}\nAll TBA owners match NFT holder: ${s.tbaBindingOk}\nmetadataFrozen(): ${s.frozen}\nCurrent tokenURI: ${s.uri.length.toLocaleString()} chars`;renderWalletConnectionState();return s}catch(e){$('aioNftIdentityLog').textContent='NFT IDENTITY READ FAILED\n'+(e?.message||e);throw e}
 }
 async function aioMetadataPreflight(){
-  const proposal=metadataBuildProposal();if(!account)await connect();const s=await aioReadNftState();const walletChain=Number(BigInt(await injectedWalletProvider().request({method:'eth_chainId'})));const chainOk=walletChain===CHAIN,codeOk=!!s.code&&s.code!=='0x',adminOk=!!account&&s.admin.toLowerCase()===account.toLowerCase(),bindingOk=s.nft.toLowerCase()===AIO_EXPECTED_NFT.toLowerCase()&&s.tokenId===1n&&s.tbaBindingOk,writable=!s.frozen;
+  const proposal=metadataBuildProposal();if(!account)await connect();const s=await aioReadNftState();const walletChain=Number(BigInt(await injectedWalletProvider().request({method:'eth_chainId'})));const chainOk=walletChain===CHAIN,codeOk=!!s.code&&s.code!=='0x',adminOk=!!account&&s.metadataSigner.toLowerCase()===account.toLowerCase(),bindingOk=s.nft.toLowerCase()===AIO_EXPECTED_NFT.toLowerCase()&&s.tokenId===1n&&s.tbaBindingOk,writable=!s.frozen;
   aioMetaStatus('aioMetaCode',codeOk?'PASS':'NO CODE',codeOk?'metaPass':'metaFail');aioMetaStatus('aioMetaOwner',adminOk?'PASS':'MISMATCH',adminOk?'metaPass':'metaFail');aioMetaStatus('aioMetaFrozen',s.frozen?'TRUE · LOCKED':'false · writable',s.frozen?'metaFail':'metaPass');aioMetaStatus('aioMetaBinding',bindingOk?'PASS · Broker #1 + 4 TBAs':'MISMATCH',bindingOk?'metaPass':'metaFail');
-  const pass=chainOk&&codeOk&&adminOk&&bindingOk&&writable&&proposal.uri.startsWith('data:application/json');$('aioMetaPreflightLog').textContent=`${pass?'PASS':'BLOCKED'}\nWallet chain: ${walletChain}\nNFT: ${s.nft}\nToken: #${s.tokenId}\nCurrent NFT holder: ${s.tokenOwner}\nMetadata admin: ${s.admin}\nConnected: ${account}\nConnected role: ${connectedAuthorityRole()}\nmetadataFrozen(): ${s.frozen}\nTBA ownership binding: ${s.tbaBindingOk}\nProposed tokenURI: ${proposal.uri.length.toLocaleString()} chars`+(pass?'\n\nAll metadata write gates are clear.':'\n\nNo write can proceed until every gate passes.');aioMetadataSimulation=null;aioMetadataVerified=false;$('aioMetaSimulate').disabled=!pass;$('aioMetaExecute').disabled=true;$('aioMetaFreezePrepare').disabled=true;$('aioMetaFreeze').disabled=true;if(!pass)throw Error('Metadata preflight blocked. Review the failed gate(s).');return {...s,proposal}
+  const pass=chainOk&&codeOk&&adminOk&&bindingOk&&writable&&proposal.uri.startsWith('data:application/json');$('aioMetaPreflightLog').textContent=`${pass?'PASS':'BLOCKED'}\nWallet chain: ${walletChain}\nNFT: ${s.nft}\nToken: #${s.tokenId}\nCurrent NFT holder: ${s.tokenOwner}\nMetadata admin owner(): ${s.admin}\nMetadata mode: ${s.metadataMode}\nRequired signer: ${s.metadataSigner}\nConnected: ${account}\nConnected role: ${connectedAuthorityRole()}\nmetadataFrozen(): ${s.frozen}\nTBA ownership binding: ${s.tbaBindingOk}\nProposed tokenURI: ${proposal.uri.length.toLocaleString()} chars`+(pass?'\n\nAll metadata write gates are clear.':'\n\nNo write can proceed until every gate passes.');aioMetadataSimulation=null;aioMetadataVerified=false;$('aioMetaSimulate').disabled=!pass;$('aioMetaExecute').disabled=true;$('aioMetaFreezePrepare').disabled=true;$('aioMetaFreeze').disabled=true;if(!pass)throw Error('Metadata preflight blocked. Review the failed gate(s).');return {...s,proposal}
 }
 async function aioMetadataSimulate(){
-  const s=await aioMetadataPreflight(),uri=s.proposal.uri,data=aioSetTokenUriCalldata(uri),tx={from:s.admin,to:s.nft,data};const gas=BigInt(await rpc('eth_estimateGas',[tx])),call=await rpc('eth_call',[tx,'latest']);await armPreparedWalletHandoff(tx,'Rustee Broker #1 metadata update',120000);aioMetadataSimulation={time:Date.now(),nft:s.nft,tokenId:s.tokenId,from:s.admin,data,gas,proposedUri:uri};aioLastProposalUri=uri;aioMetaStatus('aioMetaBytes',((data.length-2)/2).toLocaleString()+' bytes');aioMetaStatus('aioMetaGas',gas.toLocaleString()+' gas','metaPass');$('aioMetaSimLog').textContent=`PASS — exact metadata transaction simulated.\nSigner role: metadata administrator\nFrom: ${s.admin}\nTo: ${s.nft}\nToken: #${s.tokenId}\nSelector: 0x${AIO_SEL_SET_TOKEN_URI}\nCalldata: ${((data.length-2)/2).toLocaleString()} bytes\nEstimated gas: ${gas.toLocaleString()}\neth_call: ${call||'0x'}\n\nREADY — final tap opens the prepared wallet request. Simulation expires in 120 seconds.`;$('aioMetaExecute').disabled=false
+  const s=await aioMetadataPreflight(),uri=s.proposal.uri,data=aioSetTokenUriCalldata(uri),target=s.metadataController||s.nft,tx={from:s.metadataSigner,to:target,data};
+  const gas=BigInt(await rpc('eth_estimateGas',[tx])),call=await rpc('eth_call',[tx,'latest']);await armPreparedWalletHandoff(tx,'Rustee Broker #1 metadata update',120000);
+  aioMetadataSimulation={time:Date.now(),nft:s.nft,tokenId:s.tokenId,from:s.metadataSigner,target,data,gas,proposedUri:uri};aioLastProposalUri=uri;
+  aioMetaStatus('aioMetaBytes',((data.length-2)/2).toLocaleString()+' bytes');aioMetaStatus('aioMetaGas',gas.toLocaleString()+' gas','metaPass');
+  $('aioMetaSimLog').textContent=`PASS — exact metadata transaction simulated.
+Authority mode: ${s.metadataMode}
+Signer: ${s.metadataSigner}
+Target: ${target}
+Underlying NFT: ${s.nft}
+Token: #${s.tokenId}
+Selector: 0x${AIO_SEL_SET_TOKEN_URI}
+Calldata: ${((data.length-2)/2).toLocaleString()} bytes
+Estimated gas: ${gas.toLocaleString()}
+eth_call: ${call||'0x'}
+
+READY — final tap opens the prepared wallet request. Simulation expires in 120 seconds.`;$('aioMetaExecute').disabled=false
 }
 async function aioMetadataExecute(){
-  const s=aioMetadataSimulation;if(!s)throw Error('Run metadata simulation first.');if(Date.now()-s.time>120000){aioMetadataSimulation=null;$('aioMetaExecute').disabled=true;throw Error('Metadata simulation expired. Simulate again.')}const tx={from:s.from,to:s.nft,data:s.data,gas:hexQty(s.gas*120n/100n)};const hash=await secureSendTransaction(tx,'Rustee Broker #1 metadata update');$('aioMetaExecute').disabled=true;$('aioMetaExecLog').textContent='SUBMITTED\n'+hash+'\nWaiting for receipt…';const receipt=await waitReceipt(hash);$('aioMetaExecLog').textContent=`CONFIRMED ✓\nTransaction: ${hash}\nBlock: ${Number(BigInt(receipt.blockNumber))}\nGas used: ${Number(BigInt(receipt.gasUsed)).toLocaleString()}\n\nRe-read and verify the proposal next.`;await aioRefreshNftState();await metadataStudioLoadCurrent()
+  const s=aioMetadataSimulation;if(!s)throw Error('Run metadata simulation first.');if(Date.now()-s.time>120000){aioMetadataSimulation=null;$('aioMetaExecute').disabled=true;throw Error('Metadata simulation expired. Simulate again.')}const tx={from:s.from,to:s.target||s.nft,data:s.data,gas:hexQty(s.gas*120n/100n)};const hash=await secureSendTransaction(tx,'Rustee Broker #1 metadata update');$('aioMetaExecute').disabled=true;$('aioMetaExecLog').textContent='SUBMITTED\n'+hash+'\nWaiting for receipt…';const receipt=await waitReceipt(hash);$('aioMetaExecLog').textContent=`CONFIRMED ✓\nTransaction: ${hash}\nBlock: ${Number(BigInt(receipt.blockNumber))}\nGas used: ${Number(BigInt(receipt.gasUsed)).toLocaleString()}\n\nRe-read and verify the proposal next.`;await aioRefreshNftState();await metadataStudioLoadCurrent()
 }
 async function aioMetadataVerify(){
   if(!aioLastProposalUri)throw Error('Build and simulate a metadata proposal first.');const s=await aioReadNftState(),match=s.uri===aioLastProposalUri;aioMetadataVerified=match;$('aioMetaFreezePrepare').disabled=!match||s.frozen;$('aioMetaFreeze').disabled=true;$('aioMetaVerifyLog').textContent=`${match?'MATCH ✓':'MISMATCH ✕'}\nOn-chain length: ${s.uri.length.toLocaleString()}\nExpected proposal length: ${aioLastProposalUri.length.toLocaleString()}\nMetadata frozen: ${s.frozen}\n`+(match?'The on-chain tokenURI is byte-for-byte identical to the last proposal. Metadata remains writable until you separately prepare and sign freezeMetadata().':'Do NOT freeze. The current tokenURI differs from the proposal.');if(!match)throw Error('On-chain tokenURI does not match the last proposal.');return true
 }
 async function aioPrepareFreeze(){
-  if(!aioMetadataVerified)throw Error('Byte-for-byte proposal verification must pass before freeze can be prepared.');const s=await aioReadNftState();if(s.frozen)throw Error('Metadata is already frozen.');if(!account)await connect();if(account.toLowerCase()!==s.admin.toLowerCase())throw Error('Freeze requires the metadata administrator wallet.');if(!confirm('Prepare IRREVERSIBLE freezeMetadata()? This preparation does not send a transaction.'))return;const tx={from:s.admin,to:s.nft,data:'0x'+AIO_SEL_FREEZE},gas=BigInt(await rpc('eth_estimateGas',[tx]));await rpc('eth_call',[tx,'latest']);await armPreparedWalletHandoff(tx,'Rustee Broker #1 freezeMetadata',120000);aioFreezePrepared={time:Date.now(),tx,gas};$('aioMetaFreeze').disabled=false;$('aioMetaFreezeLog').textContent=`FREEZE PREPARED — NO TRANSACTION SENT\nSigner: ${s.admin}\nEstimated gas: ${gas}\nExpires in 120 seconds.\n\nOnly tap Open wallet to freeze forever if permanent immutability is intended.`
+  if(!aioMetadataVerified)throw Error('Byte-for-byte proposal verification must pass before freeze can be prepared.');const s=await aioReadNftState();if(s.frozen)throw Error('Metadata is already frozen.');if(!account)await connect();if(account.toLowerCase()!==s.metadataSigner.toLowerCase())throw Error('Freeze requires the current metadata authority wallet.');if(!confirm('Prepare IRREVERSIBLE freezeMetadata()? This preparation does not send a transaction.'))return;
+  const target=s.metadataController||s.nft,tx={from:s.metadataSigner,to:target,data:'0x'+AIO_SEL_FREEZE},gas=BigInt(await rpc('eth_estimateGas',[tx]));await rpc('eth_call',[tx,'latest']);await armPreparedWalletHandoff(tx,'Rustee Broker #1 freezeMetadata',120000);aioFreezePrepared={time:Date.now(),tx,gas};$('aioMetaFreeze').disabled=false;$('aioMetaFreezeLog').textContent=`FREEZE PREPARED — NO TRANSACTION SENT
+Authority mode: ${s.metadataMode}
+Signer: ${s.metadataSigner}
+Target: ${target}
+Estimated gas: ${gas}
+Expires in 120 seconds.
+
+Only tap Open wallet to freeze forever if permanent immutability is intended.`
 }
 async function aioMetadataFreeze(){
   const x=aioFreezePrepared;if(!x)throw Error('Prepare the irreversible freeze first.');if(Date.now()-x.time>120000){aioFreezePrepared=null;$('aioMetaFreeze').disabled=true;throw Error('Freeze preparation expired. Prepare again.')}const hash=await secureSendTransaction({...x.tx,gas:hexQty(x.gas*120n/100n)},'Rustee Broker #1 freezeMetadata');$('aioMetaFreeze').disabled=true;$('aioMetaFreezePrepare').disabled=true;$('aioMetaFreezeLog').textContent='SUBMITTED\n'+hash+'\nWaiting for receipt…';const receipt=await waitReceipt(hash);$('aioMetaFreezeLog').textContent=`FROZEN ✓\nTransaction: ${hash}\nBlock: ${Number(BigInt(receipt.blockNumber))}\nMetadata is permanently immutable.`;aioFreezePrepared=null;await aioRefreshNftState()
 }
+async function verifyMetadataControllerCandidate(){
+  const candidate=$('metaControllerCandidate').value.trim();if(!/^0x[0-9a-fA-F]{40}$/.test(candidate)||/^0x0{40}$/i.test(candidate))throw Error('Enter a valid deployed controller address.');
+  const s=await aioReadNftState(),code=await fallbackRpc('eth_getCode',[candidate,'latest']);if(!code||code==='0x')throw Error('Controller address has no deployed bytecode.');
+  const [nftRaw,idRaw]=await Promise.all([fallbackRpc('eth_call',[{to:candidate,data:'0x'+META_CTRL_SEL_BROKER_NFT},'latest']),fallbackRpc('eth_call',[{to:candidate,data:'0x'+META_CTRL_SEL_TOKEN_ID},'latest'])]);
+  const boundNft=decodeAddressResult(nftRaw,'controller brokerNFT'),boundId=BigInt(idRaw||'0x0');
+  if(boundNft.toLowerCase()!==s.nft.toLowerCase()||boundId!==s.tokenId)throw Error('Controller is not bound to Rustee Broker #1.');
+  $('metaControllerPrepare1').disabled=false;$('metaControllerMigrationLog').textContent=`CONTROLLER VERIFIED ✓\nController: ${candidate}\nBroker NFT: ${boundNft}\nToken ID: #${boundId}\nCurrent NFT-contract admin: ${s.admin}\nCurrent NFT holder: ${s.tokenOwner}\n\nStep 1 must be signed by ${s.admin}.`;
+  return {candidate,s}
+}
+async function prepareMetadataControllerStep1(){
+  clearPreparedWalletHandoff();const {candidate,s}=await verifyMetadataControllerCandidate();if(s.metadataController)throw Error('NFT-following metadata controller is already active.');if(!account)await connect();if(account.toLowerCase()!==s.admin.toLowerCase())throw Error('Connect the CURRENT NFT-contract metadata admin wallet for Step 1.');
+  const tx={from:s.admin,to:s.nft,data:'0x'+AIO_SEL_TRANSFER_OWNERSHIP+addrWord(candidate)},gas=BigInt(await rpc('eth_estimateGas',[{from:s.admin,to:s.nft,data:'0x'+AIO_SEL_TRANSFER_OWNERSHIP+addrWord(candidate)}]));await rpc('eth_call',[{from:s.admin,to:s.nft,data:'0x'+AIO_SEL_TRANSFER_OWNERSHIP+addrWord(candidate)},'latest']);await armPreparedWalletHandoff(tx,'Metadata authority migration Step 1',120000);metadataControllerMigrationPrepared={step:1,time:Date.now(),tx,gas,candidate};$('metaControllerExecute1').disabled=false;$('metaControllerMigrationLog').textContent=`STEP 1 SIMULATION PASS ✓\nFrom old metadata admin: ${s.admin}\nNFT contract: ${s.nft}\nPending admin: ${candidate}\nEstimated gas: ${gas}\n\nOpen the old-admin wallet to sign.`
+}
+async function executeMetadataControllerStep1(){const x=metadataControllerMigrationPrepared;if(!x||x.step!==1)throw Error('Prepare Step 1 first.');const hash=await secureSendTransaction({...x.tx,gas:hexQty(x.gas*120n/100n)},'Metadata authority migration Step 1');await waitReceipt(hash);metadataControllerMigrationPrepared=null;$('metaControllerExecute1').disabled=true;$('metaControllerPrepare2').disabled=false;$('metaControllerMigrationLog').textContent=`STEP 1 CONFIRMED ✓\nTx: ${hash}\n\nNow connect the CURRENT Broker NFT holder and prepare Step 2.`}
+async function prepareMetadataControllerStep2(){
+  clearPreparedWalletHandoff();const candidate=$('metaControllerCandidate').value.trim(),s=await aioReadNftState();if(!account)await connect();if(account.toLowerCase()!==s.tokenOwner.toLowerCase())throw Error('Connect the CURRENT Broker NFT holder for Step 2.');
+  const tx0={from:s.tokenOwner,to:candidate,data:'0x'+META_CTRL_SEL_ACCEPT},gas=BigInt(await rpc('eth_estimateGas',[tx0]));await rpc('eth_call',[tx0,'latest']);await armPreparedWalletHandoff(tx0,'Metadata authority migration Step 2',120000);metadataControllerMigrationPrepared={step:2,time:Date.now(),tx:tx0,gas,candidate};$('metaControllerExecute2').disabled=false;$('metaControllerMigrationLog').textContent=`STEP 2 SIMULATION PASS ✓\nNFT holder: ${s.tokenOwner}\nController: ${candidate}\nAction: accept NFT-contract administration\nEstimated gas: ${gas}\n\nOpen the NFT-holder wallet to sign.`
+}
+async function executeMetadataControllerStep2(){const x=metadataControllerMigrationPrepared;if(!x||x.step!==2)throw Error('Prepare Step 2 first.');const hash=await secureSendTransaction({...x.tx,gas:hexQty(x.gas*120n/100n)},'Metadata authority migration Step 2');await waitReceipt(hash);metadataControllerMigrationPrepared=null;$('metaControllerExecute2').disabled=true;AUTHORITY_STATE=null;await verifyMetadataControllerActivation();$('metaControllerMigrationLog').textContent+=`\nActivation tx: ${hash}`}
+async function verifyMetadataControllerActivation(){
+  AUTHORITY_STATE=null;const s=await aioReadNftState(),candidate=$('metaControllerCandidate').value.trim();const ok=!!s.metadataController&&(!candidate||s.metadataController.toLowerCase()===candidate.toLowerCase())&&s.metadataSigner.toLowerCase()===s.tokenOwner.toLowerCase();
+  if(!ok)throw Error('Controller is not yet the active NFT metadata administrator.');$('metaControllerMigrationLog').textContent=`NFT-FOLLOWING METADATA AUTHORITY ACTIVE ✓\nNFT contract owner(): ${s.admin}\nController: ${s.metadataController}\nDynamic authority: ownerOf(#${s.tokenId}) → ${s.tokenOwner}\nMetadata signer: ${s.metadataSigner}\n\nFuture Broker NFT transfers automatically move metadata authority to the new ownerOf().`;await aioRefreshNftState();return true
+}
 function aioBind(id,fn){const el=$(id);if(el)el.addEventListener('click',()=>fn().catch(e=>alert(e?.message||e)))}
+aioBind('metaControllerVerify',verifyMetadataControllerCandidate);aioBind('metaControllerPrepare1',prepareMetadataControllerStep1);aioBind('metaControllerExecute1',executeMetadataControllerStep1);aioBind('metaControllerPrepare2',prepareMetadataControllerStep2);aioBind('metaControllerExecute2',executeMetadataControllerStep2);aioBind('metaControllerFinalVerify',verifyMetadataControllerActivation);
 aioBind('aioNftConnect',async()=>{await connect();await aioRefreshNftState()});aioBind('aioNftSwitch',async()=>{await switchChain();await aioRefreshNftState()});aioBind('aioNftRefresh',aioRefreshNftState);aioBind('metaStudioLoadCurrent',metadataStudioLoadCurrent);aioBind('metaStudioRecommended',async()=>{if(!metadataStudioCurrent)await metadataStudioLoadCurrent();const meta=metadataRecommended(metadataStudioImage);metadataPopulateForm(meta);metadataBuildProposal();$('metaStudioEditLog').textContent='Applied the v3.4.1 capability preset while preserving the current artwork. Review the diff before simulation.'});aioBind('metaStudioPreview',async()=>{metadataBuildProposal();$('metaStudioEditLog').textContent='Proposal built locally. No transaction has been created yet.'});aioBind('aioMetaPreflight',aioMetadataPreflight);aioBind('aioMetaSimulate',aioMetadataSimulate);aioBind('aioMetaExecute',aioMetadataExecute);aioBind('aioMetaVerify',aioMetadataVerify);aioBind('aioMetaFreezePrepare',aioPrepareFreeze);aioBind('aioMetaFreeze',aioMetadataFreeze);
 setTimeout(()=>{resolveAuthorityState(true).then(()=>aioRefreshNftState()).then(()=>metadataStudioLoadCurrent()).catch(e=>{console.warn('Initial NFT/metadata read',e);try{$('aioNftIdentityLog').textContent='Read-only startup check unavailable: '+(e?.message||e)}catch{}})},0);
 // -----------------------------------------------------------------------------
