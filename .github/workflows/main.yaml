@@ -1,4 +1,4 @@
-name: Rustee Broker AIO · refresh snapshots + verify + deploy
+name: Rustee Broker v3.4.1 · refresh snapshots + verify + deploy
 
 on:
   push:
@@ -62,6 +62,9 @@ jobs:
           assert "AIO_SEL_SET_TOKEN_URI='e0df5b6f'" in html
           assert "AIO_SEL_METADATA_FROZEN='fb3cc6c2'" in html
           assert "AIO_SEL_FREEZE='d111515d'" in html
+          assert "SEL_OWNER_OF='6352211e'" in html, "ownerOf selector missing"
+          assert "Metadata Studio" in html
+          assert re.search(r"const\s+OWNER\s*=\s*[\'\"]0x", html) is None, "static owner wallet constant returned to dashboard"
           meta = json.loads(embedded.split(",", 1)[1])
           image = meta["image"]
           raw = base64.b64decode(image.split("base64,", 1)[1])
