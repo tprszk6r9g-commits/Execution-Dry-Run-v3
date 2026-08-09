@@ -3,8 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-oYVH2VGDn6PBJ0L/hrTg7GCraFxjebjtkRQtDgSF9S0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
-<title>Rustee Broker All-in-One v3.0.0 · Robinhood Chain</title>
+<meta name="theme-color" content="#031a15">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-uLzGcccLFHXNmHv+TbfbaGH8G3TEsC3AGideqHNP1is='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<title>Rustee Broker v3.1 Operator Edition · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -197,12 +202,23 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 @media(max-width:650px){.replayHero{grid-template-columns:1fr}}
 
 
-/* --- Rustee Broker AIO v3.0.0 --- */
+/* --- Rustee Broker v3.1 Operator Edition --- */
 .rusteeBrand{display:grid;grid-template-columns:190px 1fr;gap:18px;align-items:center;border:1px solid var(--line);border-radius:24px;padding:18px;background:radial-gradient(circle at 10% 0%,rgba(69,230,202,.14),transparent 38%),linear-gradient(145deg,#082d25,#041914);margin-bottom:14px}
 .rusteePortrait{width:100%;max-width:190px;aspect-ratio:1/1;border-radius:22px;object-fit:cover;border:1px solid #34796a;box-shadow:0 18px 50px rgba(0,0,0,.28)}
 .rusteeBrand h1{font-size:clamp(30px,7vw,54px);margin:5px 0 8px}.rusteeBrand p{margin:0 0 12px}.aioTag{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #36796b;color:var(--teal);font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
 .nftHero{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start}.nftArtCard{border:1px solid var(--line);border-radius:22px;padding:13px;background:#061d18}.nftArtCard img{display:block;width:100%;border-radius:16px;border:1px solid #2d665a}.nftMetaGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.nftMetaCell{border:1px solid var(--line);border-radius:15px;padding:12px;background:#051713;min-height:78px}.nftMetaCell small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.1em}.nftMetaCell strong{display:block;margin-top:6px;font-size:14px;word-break:break-all}.nftTbaGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.nftTba{border:1px solid var(--line);border-radius:15px;padding:12px;background:#051713}.nftTba b{display:block}.nftTba span{display:block;color:var(--muted);font:11px ui-monospace,monospace;word-break:break-all;margin-top:5px}.metadataSteps{display:grid;gap:10px}.metadataStep{border:1px solid var(--line);border-radius:17px;padding:14px;background:#051713}.metadataStep h3{margin:0 0 7px;font-size:18px}.metadataStep p{font-size:13px;margin:5px 0}.metaStatus{font-weight:800}.metaPass{color:var(--green)}.metaWarn{color:var(--orange)}.metaFail{color:var(--red)}
 @media(max-width:650px){.rusteeBrand,.nftHero{grid-template-columns:1fr}.rusteePortrait{max-width:170px;margin:auto}.nftMetaGrid,.nftTbaGrid{grid-template-columns:1fr}.rusteeBrand{text-align:center}}
+
+/* --- v3.1 Operator Edition additions --- */
+.operatorStatus{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}
+.operatorStatus>div{border:1px solid var(--line);border-radius:14px;padding:11px;background:#051713}
+.operatorStatus small{display:block;color:var(--muted);font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+.operatorStatus strong{display:block;margin-top:5px;font-size:15px;word-break:break-word}
+.tinyAction{padding:7px 9px;font-size:11px;margin-top:7px}
+.recoveryList{display:grid;gap:9px;margin-top:12px}.recoveryItem{border:1px solid var(--line);border-radius:15px;padding:12px;background:#051713}.recoveryItem b{display:block}.recoveryItem span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.allowanceRow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border-top:1px solid #1d4b42;padding:10px 0}.allowanceRow:first-child{border-top:0}.allowanceButtons{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.allowanceButtons button{padding:8px 10px;font-size:11px;margin:0}
+.operatorTableWrap{overflow:auto;border:1px solid var(--line);border-radius:18px;margin-top:14px}.operatorTable{width:100%;border-collapse:collapse;min-width:820px;font-size:12px}.operatorTable th,.operatorTable td{padding:11px 9px;text-align:left;border-bottom:1px solid #1d4b42}.operatorTable th{background:#08231d;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+@media(max-width:650px){.operatorStatus{grid-template-columns:1fr}.allowanceRow{grid-template-columns:1fr}.allowanceButtons{justify-content:flex-start}}
 
 </style>
 </head>
@@ -214,6 +230,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <button class="tabbtn" data-tab="overviewPane">Overview</button>
   <button class="tabbtn" data-tab="portfolioPane">Portfolio</button>
   <button class="tabbtn" data-tab="tradePane">Trade</button>
+  <button class="tabbtn" data-tab="convertPane">ETH ↔ WETH</button>
   <button class="tabbtn" data-tab="historyPane">History + P&amp;L</button>
   <button class="tabbtn" data-tab="accountsPane">Accounts</button>
   <button class="tabbtn" data-tab="transferPane">Move Assets</button>
@@ -228,14 +245,15 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <div class="rusteeBrand">
     <img class="rusteePortrait" src="assets/rustee-broker-384.webp" alt="Rustee Broker #1">
     <div>
-      <span class="aioTag">All-in-One v3.0.0</span>
+      <span class="aioTag">v3.1 Operator Edition</span>
       <h1>Rustee Broker #1</h1>
       <p>NFT-rooted broker command center for portfolio visibility, guarded trading, ERC-6551 account operations, on-chain identity, metadata administration, security evidence, and recovery.</p>
       <div class="quickDock">
-        <button class="primary" data-open-tab="tradePane">Trade</button>
-        <button data-open-tab="nftPane">NFT + Identity</button>
-        <button data-open-tab="portfolioPane">Portfolio</button>
-        <button data-open-tab="operationsPane">Operations</button>
+        <button class="primary" data-open-tab="tradePane">BUY / SELL</button>
+        <button id="cmdWrap" data-open-tab="convertPane">WRAP</button>
+        <button id="cmdUnwrap" data-open-tab="convertPane">UNWRAP</button>
+        <button data-open-tab="transferPane">MOVE</button>
+        <button id="cmdRecover" data-open-tab="operationsPane">RECOVER</button>
       </div>
     </div>
   </div>
@@ -268,6 +286,10 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
           <div class="commandMetric"><small>Positions</small><strong id="cmdPositions">—</strong></div>
           <div class="commandMetric"><small>Trading TBA NVDA</small><strong id="cmdTradingNvda">—</strong></div>
           <div class="commandMetric"><small>Vault ETH</small><strong id="cmdVaultEth">—</strong></div>
+          <div class="commandMetric"><small>Vault WETH</small><strong id="cmdVaultWeth">—</strong></div>
+          <div class="commandMetric"><small>Unrealized P&amp;L</small><strong id="cmdUnrealizedPnl">—</strong></div>
+          <div class="commandMetric"><small>Realized P&amp;L</small><strong id="cmdRealizedPnl">—</strong></div>
+          <div class="commandMetric"><small>Recovery state</small><strong id="cmdRecoveryState">Clear</strong></div>
         </div>
         <div class="quickDock">
           <button class="primary" data-open-tab="tradePane">Trade</button>
@@ -307,6 +329,12 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
     <div class="commandHero commandSection">
       <div class="commandCard"><h3>Account allocation</h3><div id="cmdAllocation" class="miniAlloc"><div class="emptyState">Load portfolio to calculate allocation.</div></div></div>
       <div class="commandCard"><h3>Recent activity</h3><div id="cmdRecentActivity" class="receiptList"><div class="emptyState">No activity loaded yet.</div></div></div>
+    </div>
+    <div class="commandSection commandCard">
+      <h3>Rustee local backup</h3>
+      <p class="sourceNote">Exports only Rustee browser state such as receipts, local ledger/cost basis, preferences, and recovery checkpoints. Private keys and seed phrases are never stored or exported.</p>
+      <div class="actions"><button id="exportRusteeBackup">Export backup</button><button id="restoreRusteeBackup">Restore backup</button><input id="restoreRusteeBackupFile" type="file" accept="application/json,.json" style="display:none"></div>
+      <pre id="backupLog">Backup tools ready.</pre>
     </div>
     <div class="commandSection commandCard">
       <h3>Live transaction receipts</h3>
@@ -543,6 +571,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
       <button class="primary" id="discoverPortfolio">Discover + value portfolio</button>
       <button id="refreshPortfolioPrices">Refresh prices</button>
       <label class="toggleline"><input type="checkbox" id="showZeroStocks">Show zero balances</label>
+      <input id="portfolioSearch" placeholder="Search ticker, name, or token address…" style="flex:1;min-width:220px">
     </div>
 
     <div>
@@ -644,7 +673,38 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
       <pre id="tradeExecLog">No live transaction has been prepared. Every step requires a fresh simulation and separate owner-wallet confirmation.</pre>
     </div>
 
+    <div class="card" style="margin:16px 0 0">
+      <h3>Confirmed Trade Verification</h3>
+      <p class="sourceNote">Populated only after the economic trade has confirmed on-chain. Rustee compares expected vs actual output, verifies custody, totals gas used across the plan, and records the local accounting entry.</p>
+      <pre id="tradeVerificationLog">No confirmed v3.1 trade verification yet.</pre>
+    </div>
+
     <div class="warnline">Phase 4.1 is an execution interface, not a recommendation engine. It never chooses which stock you should buy or sell. The operator selects the asset, direction, amount, and slippage.</div>
+  </div>
+</div>
+
+<div id="convertPane" class="tabpane">
+  <div class="card">
+    <span class="badge">v3.1 · VAULT CONVERTER</span>
+    <h2>Vault ETH ↔ WETH</h2>
+    <p>Wrap or unwrap assets already held by Rustee's Vault TBA. The conversion uses the deployed Vault execution method, WETH contract, a fresh simulation, and a separate owner-wallet signature. It is not a stock trade and does not use the stock router.</p>
+    <div class="heroMetrics">
+      <div class="heroMetric"><small>Vault ETH</small><strong id="convertVaultEth">—</strong></div>
+      <div class="heroMetric"><small>Vault WETH</small><strong id="convertVaultWeth">—</strong></div>
+      <div class="heroMetric"><small>Status</small><strong id="convertStatus">Idle</strong></div>
+    </div>
+    <div class="controlgrid">
+      <div class="field"><label>Direction</label><select id="convertDirection"><option value="WRAP">ETH → WETH</option><option value="UNWRAP">WETH → ETH</option></select></div>
+      <div class="field"><label>Amount</label><input id="convertAmount" inputmode="decimal" value="0.001"></div>
+    </div>
+    <div class="quickAmounts"><button data-convert-frac="0.25">25%</button><button data-convert-frac="0.5">50%</button><button data-convert-frac="0.75">75%</button><button data-convert-frac="1">MAX</button></div>
+    <div class="actions">
+      <button id="refreshConvertBalances">Refresh balances</button>
+      <button class="primary" id="simulateConvert">Simulate conversion</button>
+      <button id="executeConvert" disabled>Execute conversion</button>
+    </div>
+    <pre id="convertLog">No conversion prepared.</pre>
+    <div class="warnline">WRAP spends native ETH already inside the Vault and mints WETH back to the Vault. UNWRAP burns Vault WETH and returns native ETH to the Vault. No funds are sent to an external recipient.</div>
   </div>
 </div>
 
@@ -658,6 +718,8 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
       <div class="historyMetric"><small>Current stock value</small><strong id="histCurrentValue">—</strong></div>
       <div class="historyMetric"><small>Tracked cost basis</small><strong id="histCostBasis">—</strong></div>
       <div class="historyMetric"><small>Unrealized P&amp;L</small><strong id="histUnrealized">—</strong></div>
+      <div class="historyMetric"><small>Realized P&amp;L</small><strong id="histRealized">—</strong></div>
+      <div class="historyMetric"><small>Confirmed app trades</small><strong id="histAutoTrades">0</strong></div>
       <div class="historyMetric"><small>Transfer events</small><strong id="histEventCount">—</strong></div>
     </div>
 
@@ -679,7 +741,10 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
     <pre id="historyLog">Load the Portfolio first, then load history. Phase 2 analytics never signs or sends transactions.</pre>
 
     <h3>Cost-basis ledger</h3>
-    <p class="sourceNote">Because transfers between your own Rustee accounts are not purchases, Phase 2 does not invent a purchase price. Enter total USD cost basis for a position when known. It is stored only in this browser.</p>
+    <p class="sourceNote">Confirmed trades executed through this v3.1 terminal update the Trading TBA cost basis automatically. Positions acquired elsewhere can still use manual cost-basis entries. Local accounting is browser-side and can be exported in the Rustee backup.</p>
+
+    <h3 style="margin-top:22px">Confirmed operator trade ledger</h3>
+    <div class="operatorTableWrap"><table class="operatorTable"><thead><tr><th>Time</th><th>Side</th><th>Asset</th><th>Quantity</th><th>USD value</th><th>Realized P&amp;L</th><th>Tx</th></tr></thead><tbody id="operatorTradeRows"><tr><td colspan="7">No confirmed v3.1 app trades recorded.</td></tr></tbody></table></div>
     <div id="costBasisEditor"><div class="emptyState">No non-zero stock positions loaded.</div></div>
 
     <h3 style="margin-top:22px">On-chain transfer history</h3>
@@ -1067,6 +1132,23 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
           <button id="executeNextSweepStep" disabled>Execute next sweep step</button>
         </div>
         <div class="warnline">“One-tap sweep” means one plan, not one signature. Each on-chain transaction still gets an individual wallet confirmation.</div>
+      </div>
+    </div>
+
+    <div class="opsHero" style="margin-top:14px">
+      <div class="opsPanel">
+        <h3>Recovery Center</h3>
+        <p class="sourceNote">Checks local interrupted-sell state, stock tokens outside Trading custody, Vault WETH, pending receipts, and router allowance residue. Read-only until you explicitly choose an action.</p>
+        <div class="actions"><button class="primary" id="scanRecoveryCenter">Scan recovery state</button><button id="openSellRecovery">Open sell recovery</button></div>
+        <div id="recoveryCenterList" class="recoveryList"><div class="emptyState">Run a recovery scan.</div></div>
+        <pre id="recoveryCenterLog">Recovery Center idle.</pre>
+      </div>
+      <div class="opsPanel">
+        <h3>Router Allowance Manager</h3>
+        <p class="sourceNote">Scans Vault → SwapRouter02 allowances for canonical Stock Tokens. Each revoke must be simulated first, then separately owner-signed.</p>
+        <div class="actions"><button id="scanAllowances">Scan allowances</button></div>
+        <div id="allowanceManagerList"><div class="emptyState">No allowance scan yet.</div></div>
+        <pre id="allowanceManagerLog">Allowance Manager idle.</pre>
       </div>
     </div>
 
@@ -1853,6 +1935,7 @@ function assetTokenUsd(p){
 function renderTerminal(){
   const keys=['OWNER','VAULT','TRADING','REWARDS','IDENTITY'];
   const showZero=$('showZeroStocks').checked;
+  const query=String($('portfolioSearch')?.value||'').trim().toLowerCase();
   let combined=0,stockTotal=0,count=0;
   const accountHtml=[];
   for(const key of keys){
@@ -1860,6 +1943,9 @@ function renderTerminal(){
     const rows=[];
     for(const p of terminalState.positions){
       const bal=p.balances[key]||0n;
+      const depForSearch=tokenDeployment(p.asset);
+      const hay=[p.asset.tokenSymbol,p.asset.tokenName,depForSearch?.contractAddress,p.token].filter(Boolean).join(' ').toLowerCase();
+      if(query&&!hay.includes(query)) continue;
       if(bal===0n&&!showZero) continue;
       const amount=tokenAmountNumber(bal,p.decimals);
       const tokenUsd=assetTokenUsd(p);
@@ -1872,7 +1958,7 @@ function renderTerminal(){
         <img class="tokenLogo" src="${escapeHtml(a.logoUrl||'')}" alt="">
         <div><div class="holdingTitle">${escapeHtml(a.tokenSymbol)} ${halted?'<span class="statusChip warn">HALT</span>':''}</div>
         <div class="holdingMeta">${escapeHtml(a.tokenName||'Robinhood Stock Token')}<br>${escapeHtml(dep?.contractAddress||p.token)}</div></div>
-        <div class="holdingValue"><b>${value==null?'—':money(value)}</b><span>${amount.toLocaleString(undefined,{maximumFractionDigits:10})} tokens${tokenUsd==null?'':' · '+money(tokenUsd)+'/token'}</span></div>
+        <div class="holdingValue"><b>${value==null?'—':money(value)}</b><span>${amount.toLocaleString(undefined,{maximumFractionDigits:10})} tokens${tokenUsd==null?'':' · '+money(tokenUsd)+'/token'}</span>${bal>0n?`<button class="tinyAction portfolioTradeBtn" data-token="${escapeHtml(p.token)}">Trade</button>`:''}</div>
       </div>`);
     }
     accountHtml.push(`<div class="portfolioAccount">
@@ -1913,15 +1999,29 @@ async function discoverPortfolio(){
 $('discoverPortfolio').onclick=()=>discoverPortfolio().catch(e=>{$('terminalLog').textContent='ERROR: '+e.message;$('catalogStatus').textContent='Catalog: unavailable';$('catalogStatus').className='statusChip warn';});
 $('refreshPortfolioPrices').onclick=()=>refreshTerminalPrices(true).catch(e=>{$('terminalLog').textContent='ERROR: '+e.message;$('priceStatus').className='statusChip warn';});
 $('showZeroStocks').onchange=()=>{if(terminalState.positions.length)renderTerminal()};
+$('portfolioSearch').oninput=()=>{if(terminalState.positions.length)renderTerminal()};
+$('portfolioAccountCards').addEventListener('click',e=>{const b=e.target.closest?.('.portfolioTradeBtn');if(!b)return;openTabById('tradePane');populateTradeAssets();$('tradeAsset').value=b.dataset.token;tradeReset();});
 
 
 
 const COST_BASIS_KEY='rustee-cost-basis-v2';
+const OPERATOR_LEDGER_KEY='rustee-operator-ledger-v31';
+const LAST_TRADE_VERIFY_KEY='rustee-last-trade-verification-v31';
 let historyState={events:[],loadedAt:null};
 function loadCostBasis(){
   try{return JSON.parse(localStorage.getItem(COST_BASIS_KEY)||'{}')}catch{return {}}
 }
 function saveCostBasis(x){localStorage.setItem(COST_BASIS_KEY,JSON.stringify(x))}
+function loadOperatorLedger(){try{return JSON.parse(localStorage.getItem(OPERATOR_LEDGER_KEY)||'[]')}catch{return []}}
+function saveOperatorLedger(x){localStorage.setItem(OPERATOR_LEDGER_KEY,JSON.stringify(x.slice(0,500)))}
+function recordOperatorEntry(entry){const rows=loadOperatorLedger();if(entry.id&&rows.some(x=>x.id===entry.id))return rows.find(x=>x.id===entry.id);rows.unshift(entry);saveOperatorLedger(rows);renderOperatorTradeLedger();return entry}
+function operatorTradeEntries(){return loadOperatorLedger().filter(x=>x.kind==='TRADE')}
+function realizedPnlTotal(){return operatorTradeEntries().reduce((a,x)=>a+(Number(x.realizedPnlUsd)||0),0)}
+function renderOperatorTradeLedger(){
+  if(!$('operatorTradeRows'))return;
+  const rows=operatorTradeEntries();
+  $('operatorTradeRows').innerHTML=rows.map(x=>`<tr><td>${escapeHtml(new Date(x.time).toLocaleString())}</td><td class="${x.side==='BUY'?'txBuy':'txSell'}">${escapeHtml(x.side)}</td><td><b>${escapeHtml(x.symbol)}</b></td><td>${escapeHtml(String(x.quantity||'—'))}</td><td>${x.usdValue==null?'—':money(Number(x.usdValue))}</td><td class="${(Number(x.realizedPnlUsd)||0)>=0?'pnlPos':'pnlNeg'}">${x.side==='SELL'?(Number(x.realizedPnlUsd)>=0?'+':'')+money(Number(x.realizedPnlUsd)||0):'—'}</td><td>${x.primaryTx?`<a href="${BLOCKSCOUT}/tx/${escapeHtml(x.primaryTx)}" target="_blank" rel="noopener">${escapeHtml(short(x.primaryTx))} ↗</a>`:'—'}</td></tr>`).join('')||'<tr><td colspan="7">No confirmed v3.1 app trades recorded.</td></tr>';
+}
 function positionKey(accountKey,token){return accountKey+':'+token.toLowerCase()}
 function currentPositionUsd(accountKey,p){
   const bal=p.balances[accountKey]||0n, px=assetTokenUsd(p);
@@ -1963,7 +2063,12 @@ function renderHistoryMetrics(){
   $('histCostBasis').textContent=money(cost);
   $('histUnrealized').textContent=(pnl>=0?'+':'')+money(pnl);
   $('histUnrealized').className=pnl>=0?'pnlPos':'pnlNeg';
+  const realized=realizedPnlTotal();
+  $('histRealized').textContent=(realized>=0?'+':'')+money(realized);
+  $('histRealized').className=realized>=0?'pnlPos':'pnlNeg';
+  $('histAutoTrades').textContent=String(operatorTradeEntries().length);
   $('histEventCount').textContent=String(historyState.events.length);
+  renderOperatorTradeLedger();
 }
 async function blockscoutTokenTransfers(address){
   if(!staticData.history) await primeStaticData();
@@ -2027,7 +2132,7 @@ async function loadOnchainHistory(){
     $('healthHistory').className='healthGood';
     $('historyLog').textContent=`PASS — loaded ${historyState.events.length} canonical Stock Token transfer events across five Rustee addresses.
 History source reachable for ${sourceOk}/${keys.length} Rustee addresses.
-Cost basis remains local/manual unless explicitly entered.`;
+Cost basis is local; confirmed v3.1 app trades update it automatically while external positions remain manual.`;
   }finally{$('loadHistory').disabled=false}
 }
 function renderHistoryTable(){
@@ -2045,13 +2150,14 @@ function renderHistoryTable(){
 function exportLedgerJson(){
   const payload={
     project:'Rustee Broker Portfolio Terminal',
-    version:'2.1-phase2',
+    version:'3.1-operator',
     chainId:CHAIN,
     generatedAt:new Date().toISOString(),
     accounts:ACCOUNT_MAP,
     costBasisUsd:loadCostBasis(),
+    operatorTrades:operatorTradeEntries(),
     transferHistory:historyState.events,
-    note:'Cost basis values are user-entered local ledger data; transfer history is indexed on-chain data.'
+    note:'Confirmed v3.1 app trades can update Trading TBA cost basis automatically; external positions may still use manual local cost basis. Transfer history is indexed on-chain data.'
   };
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');
   a.href=URL.createObjectURL(blob);a.download='rustee-portfolio-ledger.json';a.click();URL.revokeObjectURL(a.href);
@@ -2449,7 +2555,9 @@ async function quoteTrade(recoveryMode=false){
   const outputDecimals=side==='BUY'?decimals:18;
   tradeState={quote:{
     time:Date.now(),side,picked,decimals,amountIn,tokenIn,tokenOut,inputSymbol,outputSymbol,
-    outputDecimals,bestFee:best.fee||null,bestRoute:best,quotedOut:best.amountOut,minOut,results,slippage:slip
+    outputDecimals,bestFee:best.fee||null,bestRoute:best,quotedOut:best.amountOut,minOut,results,slippage:slip,
+    usdTarget:side==='BUY'?Number($('tradeUsd').value):null,
+    ethUsdRef:side==='BUY'?Number($('tradeEthUsd').value):(snapshotEthUsd()||null)
   },steps:[],side,asset:picked};
 
   $('tradeBestFee').textContent=best.kind==='DIRECT'
@@ -2517,6 +2625,8 @@ async function resumeIncompleteSell(){
   const q=tradeState.quote;
   q.sellProceeds=$('tradeSellProceeds').value;
   q.vaultWethBefore=await erc20Balance(WETH,VAULT);
+  q.tradingTokenBefore=(await erc20Balance(q.picked.token,TRADING))+q.amountIn;
+  q.costBasisBefore=Number(loadCostBasis()[positionKey('TRADING',q.picked.token)]||0);
   q.actualWethReceived=null;
   const steps=[];
   if(c.status==='READY_FROM_OWNER'){
@@ -2557,6 +2667,8 @@ async function buildTradePlan(){
   if(!q) throw Error('Compare routes first');
   if(Date.now()-q.time>60000) throw Error('Quote expired. Compare routes again.');
   const steps=[];
+  q.tradingTokenBefore=await erc20Balance(q.picked.token,TRADING);
+  q.costBasisBefore=Number(loadCostBasis()[positionKey('TRADING',q.picked.token)]||0);
 
   if(q.side==='BUY'){
     const vaultBal=BigInt(await rpc('eth_getBalance',[VAULT,'latest']));
@@ -2678,9 +2790,16 @@ async function executeNextTradeStep(){
   $('tradeExecLog').textContent=`Submitted step ${idx+1}:\n${hash}\nWaiting for confirmation…`;
   try{
     const receipt=await waitReceipt(hash);
-    step.status='DONE';step.block=Number(BigInt(receipt.blockNumber));
+    step.status='DONE';step.block=Number(BigInt(receipt.blockNumber));step.gasUsed=receipt.gasUsed?BigInt(receipt.gasUsed):0n;step.effectiveGasPrice=receipt.effectiveGasPrice?BigInt(receipt.effectiveGasPrice):0n;
     saveTradeRecovery();
     let proceedsLine='';
+    if(step.type==='BUY_SWAP'){
+      const afterToken=await erc20Balance(tradeState.quote.picked.token,TRADING);
+      const beforeToken=tradeState.quote?.tradingTokenBefore??afterToken;
+      const received=afterToken>beforeToken?afterToken-beforeToken:0n;
+      if(tradeState.quote)tradeState.quote.actualTokenReceived=received;
+      proceedsLine=`Actual buy receipt: ${unitsToDecimal(received,tradeState.quote.decimals,12)} ${tradeState.quote.picked.symbol} received by Trading TBA.\n`;
+    }
     if(step.type==='SELL_SWAP'){
       const afterWeth=await erc20Balance(WETH,VAULT);
       const beforeWeth=tradeState.quote?.vaultWethBefore??afterWeth;
@@ -2705,10 +2824,12 @@ async function executeNextTradeStep(){
     try{await refreshAllAccounts()}catch{}
     const remainingRequired=tradeState.steps.some(x=>!x.optional&&!['DONE','SKIPPED'].includes(x.status));
     if(!remainingRequired){
+      try{await finalizeConfirmedTrade()}catch(err){console.warn('Trade accounting/verification',err);$('tradeVerificationLog').textContent='Trade confirmed, but local accounting verification needs review: '+err.message}
       clearTradeRecovery();
       tradeState.quote=null;
       try{await discoverPortfolio()}catch{}
       try{await loadOnchainHistory()}catch{}
+      renderCommandAccounting();
     }
   }catch(e){
     step.status='FAILED';step.error=e.message;
@@ -2719,6 +2840,65 @@ async function executeNextTradeStep(){
     saveTradeRecovery({lastError:e.message});renderTradePlan();throw e;
   }
 }
+
+async function finalizeConfirmedTrade(){
+  const q=tradeState.quote;if(!q)return null;
+  const primary=tradeState.steps.find(x=>x.type===(q.side==='BUY'?'BUY_SWAP':'SELL_SWAP'));
+  if(!primary?.txHash)return null;
+  if(operatorTradeEntries().some(x=>x.id===primary.txHash))return null;
+  const basis=loadCostBasis(),pk=positionKey('TRADING',q.picked.token),currentBasis=Number(basis[pk]||q.costBasisBefore||0);
+  let qtyUnits,usdValue=null,basisRemoved=0,realized=0;
+  if(q.side==='BUY'){
+    qtyUnits=q.actualTokenReceived||0n;
+    usdValue=Number(q.usdTarget||0)||(q.ethUsdRef?Number(unitsToDecimal(q.amountIn,18,18))*Number(q.ethUsdRef):null);
+    if(usdValue!=null&&Number.isFinite(usdValue))basis[pk]=currentBasis+usdValue;
+  }else{
+    qtyUnits=q.amountIn;
+    const proceeds=q.actualWethReceived||0n;
+    usdValue=q.ethUsdRef?Number(unitsToDecimal(proceeds,18,18))*Number(q.ethUsdRef):null;
+    const denom=q.tradingTokenBefore||q.amountIn;
+    const ratio=denom>0n?Math.min(1,Number(q.amountIn*1000000n/denom)/1000000):1;
+    basisRemoved=Math.min(currentBasis,currentBasis*ratio);
+    basis[pk]=Math.max(0,currentBasis-basisRemoved);
+    realized=usdValue==null?0:usdValue-basisRemoved;
+  }
+  saveCostBasis(basis);
+  const gasUsed=tradeState.steps.reduce((a,x)=>a+(x.gasUsed||0n),0n);
+  const txs=tradeState.steps.filter(x=>x.txHash).map(x=>x.txHash);
+  const quantity=unitsToDecimal(qtyUnits,q.decimals,12);
+  const entry={id:primary.txHash,kind:'TRADE',time:new Date().toISOString(),side:q.side,symbol:q.picked.symbol,token:q.picked.token,quantity,quantityUnits:qtyUnits.toString(),usdValue,realizedPnlUsd:q.side==='SELL'&&usdValue!=null?realized:null,basisRemovedUsd:q.side==='SELL'?basisRemoved:null,costBasisAfterUsd:Number(basis[pk]||0),ethUsdRef:q.ethUsdRef||null,primaryTx:primary.txHash,txs,gasUsed:gasUsed.toString(),proceeds:q.side==='SELL'?(q.sellProceeds||'WETH'):null};
+  recordOperatorEntry(entry);
+  const actualOut=q.side==='BUY'?(q.actualTokenReceived||0n):(q.actualWethReceived||0n);
+  const expected=q.quotedOut||0n;
+  const diffPct=expected>0n?Number((actualOut-expected)*1000000n/expected)/10000:null;
+  let custody='';
+  if(q.side==='BUY'){
+    const bal=await erc20Balance(q.picked.token,TRADING);custody=`Trading TBA ${q.picked.symbol}: ${unitsToDecimal(bal,q.decimals,12)} ✓`;
+  }else if((q.sellProceeds||'WETH')==='ETH'){
+    const bal=BigInt(await rpc('eth_getBalance',[VAULT,'latest']));custody=`Vault native ETH: ${fromWei(bal)} ✓`;
+  }else{
+    const bal=await erc20Balance(WETH,VAULT);custody=`Vault WETH: ${unitsToDecimal(bal,18,12)} ✓`;
+  }
+  const expectedText=unitsToDecimal(expected,q.side==='BUY'?q.decimals:18,12);
+  const actualText=unitsToDecimal(actualOut,q.side==='BUY'?q.decimals:18,12);
+  const verification=`${q.picked.symbol} ${q.side} COMPLETE ✓\n`+
+    `Actual quantity: ${quantity} ${q.picked.symbol}\n`+
+    `${q.side==='BUY'?`Spent: ${fromWei(q.amountIn)} ETH`:`Received: ${actualText} WETH`}\n`+
+    `Quoted output: ${expectedText} ${q.side==='BUY'?q.picked.symbol:'WETH'}\n`+
+    `Actual output: ${actualText} ${q.side==='BUY'?q.picked.symbol:'WETH'}\n`+
+    `Execution difference: ${diffPct==null?'—':(diffPct>=0?'+':'')+diffPct.toFixed(3)+'%'}\n`+
+    `Gas used across confirmed steps: ${gasUsed.toString()}\n`+
+    `Custody verified: ${custody}\n`+
+    `Cost basis after: ${money(Number(basis[pk]||0))}\n`+
+    (q.side==='SELL'&&usdValue!=null?`Estimated USD proceeds @ ${Number(q.ethUsdRef).toFixed(2)} ETH/USD: ${money(usdValue)}\nRealized P&L: ${(realized>=0?'+':'')+money(realized)}\n`:'USD realized P&L unavailable without an ETH/USD reference snapshot.\n')+
+    `Primary tx: ${primary.txHash}`;
+  localStorage.setItem(LAST_TRADE_VERIFY_KEY,verification);
+  $('tradeVerificationLog').textContent=verification;
+  renderCostBasisEditor();renderHistoryMetrics();
+  return entry;
+}
+function restoreLastTradeVerification(){try{const x=localStorage.getItem(LAST_TRADE_VERIFY_KEY);if(x&&$('tradeVerificationLog'))$('tradeVerificationLog').textContent=x}catch{}}
+
 async function tradeUseFraction(frac){
   await ensureTradeCatalog();
   const p=selectedTradeAsset();
@@ -2794,12 +2974,14 @@ async function refreshCommandCenter(){
       $('healthWallet').className=account?'healthGood':'healthWarn';
 
       try{
-        const [v,n]=await Promise.all([
+        const [v,n,w]=await Promise.all([
           withTimeout(rpc('eth_getBalance',[VAULT,'latest']),3500,'Vault balance'),
-          withTimeout(erc20Balance(NVDA,TRADING),3500,'Trading NVDA balance')
+          withTimeout(erc20Balance(NVDA,TRADING),3500,'Trading NVDA balance'),
+          withTimeout(erc20Balance(WETH,VAULT),3500,'Vault WETH balance')
         ]);
         $('cmdVaultEth').textContent=fromWei(BigInt(v));
         $('cmdTradingNvda').textContent=unitsToDecimal(n,18,8);
+        $('cmdVaultWeth').textContent=unitsToDecimal(w,18,8);
       }catch{}
 
       try{
@@ -2808,6 +2990,7 @@ async function refreshCommandCenter(){
         renderTerminal();
       }catch{}
       renderCommandAllocation();
+      renderCommandAccounting();
 
       try{
         if(!historyState.events.length)await withTimeout(loadOnchainHistory(),6000,'history refresh');
@@ -2835,12 +3018,67 @@ async function refreshCommandCenter(){
   finally{commandRefreshPromise=null}
 }
 function openTabById(id){const btn=[...document.querySelectorAll('.tabbtn')].find(x=>x.dataset.tab===id);if(btn)btn.click()}
-document.querySelectorAll('[data-open-tab]').forEach(b=>b.onclick=()=>openTabById(b.dataset.openTab));
+document.querySelectorAll('[data-open-tab]').forEach(b=>b.onclick=()=>{openTabById(b.dataset.openTab);if(b.id==='cmdWrap'){$('convertDirection').value='WRAP';resetConvert()}if(b.id==='cmdUnwrap'){$('convertDirection').value='UNWRAP';resetConvert()}if(b.id==='cmdRecover')setTimeout(()=>scanRecoveryCenter().catch(()=>{}),0)});
 $('refreshCommandCenter').onclick=()=>refreshCommandCenter().catch(e=>{$('commandLog').textContent='ERROR: '+e.message;setSticky('Rustee ready')});
 $('refreshReceipts').onclick=()=>refreshRecordedReceipts();
 $('clearReceipts').onclick=()=>{if(confirm('Clear only the local receipt display? On-chain transactions are unaffected.')){localStorage.removeItem(RECEIPT_KEY);renderReceipts()}};
 window.__rusteeBoot='receipts';renderReceipts();
 
+
+
+// --- v3.1 Operator Edition: converter, accounting, backup, recovery, allowance manager ---
+let convertState=null;
+async function refreshConvertBalances(){
+  const [eth,weth]=await Promise.all([rpc('eth_getBalance',[VAULT,'latest']).then(BigInt),erc20Balance(WETH,VAULT)]);
+  $('convertVaultEth').textContent=fromWei(eth);$('convertVaultWeth').textContent=unitsToDecimal(weth,18,12);return {eth,weth};
+}
+function resetConvert(){convertState=null;$('executeConvert').disabled=true;$('convertStatus').textContent='Idle';$('convertLog').textContent='Conversion changed. Simulate again.'}
+async function useConvertFraction(frac){const b=await refreshConvertBalances();const src=$('convertDirection').value==='WRAP'?b.eth:b.weth;const amt=src*BigInt(Math.round(frac*10000))/10000n;$('convertAmount').value=unitsToDecimal(amt,18,18);resetConvert()}
+async function simulateConvert(){
+  await ensureOwnerAndChain();const b=await refreshConvertBalances();const direction=$('convertDirection').value;const amount=decimalToUnits($('convertAmount').value,18);if(amount<=0n)throw Error('Enter an amount greater than zero');
+  if(direction==='WRAP'&&amount>b.eth)throw Error('Amount exceeds Vault native ETH balance');if(direction==='UNWRAP'&&amount>b.weth)throw Error('Amount exceeds Vault WETH balance');
+  const inner=direction==='WRAP'?'0xd0e30db0':'0x2e1a7d4d'+word(amount);const value=direction==='WRAP'?amount:0n;const tx={from:OWNER,to:VAULT,data:genericExecuteCalldata(WETH,value,inner)};
+  const gas=BigInt(await rpc('eth_estimateGas',[tx]));const result=await rpc('eth_call',[tx,'latest']);convertState={direction,amount,before:b,tx,gas,time:Date.now()};$('convertStatus').textContent='READY';$('executeConvert').disabled=false;
+  $('convertLog').textContent=`PASS — ${direction==='WRAP'?'ETH → WETH':'WETH → ETH'} simulated.\nAmount: ${unitsToDecimal(amount,18,18)}\nEstimated gas: ${gas}\nVault: ${VAULT}\nWETH: ${WETH}\neth_call: ${result}`;
+}
+async function executeConvert(){
+  await ensureOwnerAndChain();const c=convertState;if(!c)throw Error('Simulate conversion first');if(Date.now()-c.time>60000){resetConvert();throw Error('Simulation expired. Simulate again.')}
+  if(!confirm(`REAL MAINNET VAULT CONVERSION\n\n${c.direction==='WRAP'?'ETH → WETH':'WETH → ETH'}\nAmount: ${unitsToDecimal(c.amount,18,18)}\n\nFunds remain inside Rustee Vault. Continue to wallet signature?`))return;
+  const hash=await secureSendTransaction({...c.tx,gas:hexQty(c.gas*120n/100n)},`Vault ${c.direction==='WRAP'?'ETH → WETH':'WETH → ETH'} · ${unitsToDecimal(c.amount,18,18)}`);recordReceipt({hash,status:'PENDING',type:'CONVERT_'+c.direction,label:`Vault ${c.direction}`,createdAt:new Date().toISOString()});$('executeConvert').disabled=true;$('convertStatus').textContent='PENDING';$('convertLog').textContent='Submitted:\n'+hash+'\nWaiting for confirmation…';
+  const receipt=await waitReceipt(hash);const after=await refreshConvertBalances();const expected=c.amount;const ok=c.direction==='WRAP'?(after.weth>=c.before.weth+expected&&after.eth<=c.before.eth-expected):(after.eth>=c.before.eth+expected&&after.weth<=c.before.weth-expected);
+  recordReceipt({hash,status:'CONFIRMED',type:'CONVERT_'+c.direction,label:`Vault ${c.direction}`,block:Number(BigInt(receipt.blockNumber)),createdAt:new Date().toISOString()});recordOperatorEntry({id:hash,kind:'CONVERSION',time:new Date().toISOString(),direction:c.direction,amount:unitsToDecimal(c.amount,18,18),tx:hash,gasUsed:receipt.gasUsed?BigInt(receipt.gasUsed).toString():'0'});
+  $('convertStatus').textContent=ok?'VERIFIED ✓':'CONFIRMED';$('convertLog').textContent=`CONFIRMED ${ok?'AND BALANCE-VERIFIED ✓':'✓'}\nTx: ${hash}\nBlock: ${Number(BigInt(receipt.blockNumber))}\nGas used: ${receipt.gasUsed?BigInt(receipt.gasUsed):'—'}\nVault ETH: ${fromWei(after.eth)}\nVault WETH: ${unitsToDecimal(after.weth,18,12)}`;convertState=null;renderCommandAccounting();
+}
+function renderCommandAccounting(){
+  try{const basis=loadCostBasis();let cur=0,cost=0;for(const key of ['OWNER','VAULT','TRADING','REWARDS','IDENTITY'])for(const p of terminalState.positions||[]){const bal=p.balances[key]||0n;if(bal===0n)continue;const v=currentPositionUsd(key,p);if(v!=null)cur+=v;cost+=Number(basis[positionKey(key,p.token)]||0)}const u=cur-cost;$('cmdUnrealizedPnl').textContent=(u>=0?'+':'')+money(u);$('cmdUnrealizedPnl').className=u>=0?'pnlPos':'pnlNeg';const r=realizedPnlTotal();$('cmdRealizedPnl').textContent=(r>=0?'+':'')+money(r);$('cmdRealizedPnl').className=r>=0?'pnlPos':'pnlNeg';const recovery=localStorage.getItem(TRADE_RECOVERY_KEY);const pending=readReceiptLog().some(x=>!['CONFIRMED','FAILED'].includes(x.status));$('cmdRecoveryState').textContent=recovery?'SELL CHECK':pending?'PENDING TX':'Clear ✓';$('cmdRecoveryState').className=recovery||pending?'healthWarn':'healthGood'}catch{}
+}
+function rusteeBackupPayload(){const storage={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('rustee-'))storage[k]=localStorage.getItem(k)}return {project:'Rustee Broker #1',version:'3.1-operator',chainId:CHAIN,exportedAt:new Date().toISOString(),storage,note:'Browser-side Rustee state only. No private keys or seed phrases are stored by this app.'}}
+function exportRusteeBackup(){const blob=new Blob([JSON.stringify(rusteeBackupPayload(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-broker-v3.1-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);$('backupLog').textContent='Backup exported. Rustee localStorage keys only; no wallet secrets.'}
+async function restoreRusteeBackupFile(file){const data=JSON.parse(await file.text());if(data?.project!=='Rustee Broker #1'||!data.storage||typeof data.storage!=='object')throw Error('Not a Rustee Broker backup');let restored=0;for(const [k,v] of Object.entries(data.storage)){if(!k.startsWith('rustee-')||typeof v!=='string')continue;localStorage.setItem(k,v);restored++}$('backupLog').textContent=`Restored ${restored} Rustee browser-state entries. Reloading local views…`;renderReceipts();renderOperatorTradeLedger();restoreLastTradeVerification();renderCostBasisEditor();renderHistoryMetrics();renderCommandAccounting()}
+
+let allowanceManagerState=new Map();
+async function readVaultRouterAllowance(token){const raw=await rpc('eth_call',[{to:token,data:'0x'+SEL_ALLOWANCE+addrWord(VAULT)+addrWord(ROUTER)},'latest']);return BigInt(raw||'0x0')}
+async function scanAllowanceManager(){
+  await ensureTradeCatalog();if(!terminalState.positions.length)try{await discoverPortfolio()}catch{};allowanceManagerState=new Map();const rows=[];for(const pos of terminalState.positions){try{const amount=await readVaultRouterAllowance(pos.token);if(amount>0n){allowanceManagerState.set(pos.token.toLowerCase(),{token:pos.token,symbol:pos.asset.tokenSymbol,amount,decimals:pos.decimals,ready:false});rows.push(allowanceManagerState.get(pos.token.toLowerCase()))}}catch{}}
+  $('allowanceManagerList').innerHTML=rows.map(x=>`<div class="allowanceRow"><div><b>${escapeHtml(x.symbol)}</b><span class="holdingMeta">Allowance: ${escapeHtml(unitsToDecimal(x.amount,x.decimals,12))}<br>${escapeHtml(x.token)}</span></div><div class="allowanceButtons"><button data-allowance-sim="${escapeHtml(x.token)}">Simulate</button><button data-allowance-revoke="${escapeHtml(x.token)}" disabled>Revoke</button></div></div>`).join('')||'<div class="emptyState">No non-zero canonical Vault → Router allowances detected ✓</div>';$('allowanceManagerLog').textContent=`Allowance scan complete. Non-zero allowances: ${rows.length}`;return rows
+}
+async function simulateAllowanceRevoke(token){await ensureOwnerAndChain();const x=allowanceManagerState.get(token.toLowerCase());if(!x)throw Error('Allowance is no longer in the active scan');const tx={from:OWNER,to:VAULT,data:genericExecuteCalldata(x.token,0n,approveCalldata(ROUTER,0n))};const gas=BigInt(await rpc('eth_estimateGas',[tx]));const result=await rpc('eth_call',[tx,'latest']);x.tx=tx;x.gas=gas;x.time=Date.now();x.ready=true;const b=document.querySelector(`[data-allowance-revoke="${x.token}"]`);if(b)b.disabled=false;$('allowanceManagerLog').textContent=`PASS — ${x.symbol} revoke simulated.\nEstimated gas: ${gas}\neth_call: ${result}`}
+async function executeAllowanceRevoke(token){await ensureOwnerAndChain();const x=allowanceManagerState.get(token.toLowerCase());if(!x?.ready)throw Error('Simulate this revoke first');if(Date.now()-x.time>60000){x.ready=false;throw Error('Revoke simulation expired. Simulate again.')}if(!confirm(`REVOKE VAULT ROUTER ALLOWANCE\n\n${x.symbol}\nSet SwapRouter02 allowance to zero?`))return;const hash=await secureSendTransaction({...x.tx,gas:hexQty(x.gas*120n/100n)},`Revoke Vault → Router allowance · ${x.symbol}`);recordReceipt({hash,status:'PENDING',type:'ALLOWANCE_REVOKE',label:`Revoke ${x.symbol} router allowance`,createdAt:new Date().toISOString()});const receipt=await waitReceipt(hash);const after=await readVaultRouterAllowance(x.token);recordReceipt({hash,status:'CONFIRMED',type:'ALLOWANCE_REVOKE',label:`Revoke ${x.symbol} router allowance`,block:Number(BigInt(receipt.blockNumber)),createdAt:new Date().toISOString()});$('allowanceManagerLog').textContent=`CONFIRMED ✓\n${x.symbol} allowance after: ${after.toString()}\nTx: ${hash}`;await scanAllowanceManager()}
+async function scanRecoveryCenter(){
+  $('recoveryCenterLog').textContent='Scanning Rustee recovery signals…';if(!terminalState.positions.length)try{await discoverPortfolio()}catch{};const items=[];let saved=null;try{saved=JSON.parse(localStorage.getItem(TRADE_RECOVERY_KEY)||'null')}catch{};items.push({level:saved?'WARN':'GOOD',title:'Interrupted sell checkpoint',detail:saved?`${saved.symbol||'Stock'} · ${saved.mode||'saved state'} · ${saved.updatedAt||''}`:'None stored'});
+  const ownerStocks=[],vaultStocks=[];for(const p of terminalState.positions||[]){if((p.balances.OWNER||0n)>0n)ownerStocks.push(p.asset.tokenSymbol);if((p.balances.VAULT||0n)>0n)vaultStocks.push(p.asset.tokenSymbol)}items.push({level:ownerStocks.length?'WARN':'GOOD',title:'Stock tokens in owner wallet',detail:ownerStocks.length?ownerStocks.join(', '):'None ✓'});items.push({level:vaultStocks.length?'WARN':'GOOD',title:'Stock tokens in Vault',detail:vaultStocks.length?vaultStocks.join(', '):'None ✓'});
+  let weth=0n;try{weth=await erc20Balance(WETH,VAULT)}catch{}items.push({level:weth>0n?'INFO':'GOOD',title:'Vault WETH',detail:unitsToDecimal(weth,18,12)+' WETH'});const pending=readReceiptLog().filter(x=>!['CONFIRMED','FAILED'].includes(x.status));items.push({level:pending.length?'WARN':'GOOD',title:'Pending local receipts',detail:pending.length?String(pending.length):'None ✓'});let allowances=[];try{allowances=await scanAllowanceManager()}catch{}items.push({level:allowances.length?'WARN':'GOOD',title:'Router allowance residue',detail:allowances.length?allowances.map(x=>x.symbol).join(', '):'None ✓'});
+  $('recoveryCenterList').innerHTML=items.map(x=>`<div class="recoveryItem"><b class="${x.level==='WARN'?'healthWarn':x.level==='GOOD'?'healthGood':''}">${escapeHtml(x.title)}</b><span>${escapeHtml(x.detail)}</span></div>`).join('');$('recoveryCenterLog').textContent=`Recovery scan complete. Attention items: ${items.filter(x=>x.level==='WARN').length}`;renderCommandAccounting();return items
+}
+
+$('refreshConvertBalances').onclick=()=>refreshConvertBalances().catch(e=>$('convertLog').textContent='ERROR: '+e.message);
+$('convertDirection').onchange=resetConvert;$('convertAmount').oninput=resetConvert;document.querySelectorAll('[data-convert-frac]').forEach(b=>b.onclick=()=>useConvertFraction(Number(b.dataset.convertFrac)).catch(e=>$('convertLog').textContent='ERROR: '+e.message));
+$('simulateConvert').onclick=()=>simulateConvert().catch(e=>$('convertLog').textContent='ERROR: '+e.message);$('executeConvert').onclick=()=>executeConvert().catch(e=>$('convertLog').textContent='ERROR: '+e.message);
+$('exportRusteeBackup').onclick=exportRusteeBackup;$('restoreRusteeBackup').onclick=()=>$('restoreRusteeBackupFile').click();$('restoreRusteeBackupFile').onchange=()=>{const f=$('restoreRusteeBackupFile').files?.[0];if(f)restoreRusteeBackupFile(f).catch(e=>$('backupLog').textContent='ERROR: '+e.message)};
+$('scanRecoveryCenter').onclick=()=>scanRecoveryCenter().catch(e=>$('recoveryCenterLog').textContent='ERROR: '+e.message);$('openSellRecovery').onclick=()=>openTabById('tradePane');$('scanAllowances').onclick=()=>scanAllowanceManager().catch(e=>$('allowanceManagerLog').textContent='ERROR: '+e.message);
+$('allowanceManagerList').addEventListener('click',e=>{const sb=e.target.closest?.('[data-allowance-sim]'),rb=e.target.closest?.('[data-allowance-revoke]');if(sb)simulateAllowanceRevoke(sb.dataset.allowanceSim).catch(err=>$('allowanceManagerLog').textContent='ERROR: '+err.message);if(rb)executeAllowanceRevoke(rb.dataset.allowanceRevoke).catch(err=>$('allowanceManagerLog').textContent='ERROR: '+err.message)});
+restoreLastTradeVerification();renderOperatorTradeLedger();renderCommandAccounting();refreshConvertBalances().catch(()=>{});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(e=>console.warn('PWA service worker unavailable',e)))}
 
 // --- Phase 6 read-only Registry policy/security helpers ---
 const KRC=[0x0000000000000001n,0x0000000000008082n,0x800000000000808an,0x8000000080008000n,0x000000000000808bn,0x0000000080000001n,0x8000000080008081n,0x8000000000008009n,0x000000000000008an,0x0000000000000088n,0x0000000080008009n,0x000000008000000an,0x000000008000808bn,0x800000000000008bn,0x8000000000008089n,0x8000000000008003n,0x8000000000008002n,0x8000000000000080n,0x000000000000800an,0x800000008000000an,0x8000000080008081n,0x8000000000008080n,0x0000000080000001n,0x8000000080008008n],
@@ -3432,7 +3670,7 @@ async function verifyPublishedIntegrity(force=false){
       fetchJson('data/integrity.json?v='+Date.now(),5000),
       5500,'integrity manifest'
     );
-    const targets=['index.html','data/robinhood-assets.json','data/robinhood-prices.json','data/rustee-history.json'];
+    const targets=['index.html','manifest.webmanifest','sw.js','data/robinhood-assets.json','data/robinhood-prices.json','data/rustee-history.json'];
     const results=[];
     for(const path of targets){
       try{
@@ -3689,7 +3927,7 @@ setTimeout(()=>restoreWalletConnection().catch(e=>reportStartupFailure('restoreW
 window.__rusteeBoot='complete';
 __bootSay('Boot complete \u2713 — provider: '+(activeWalletName()||'none detected'));
 
-// --- Rustee Broker AIO v3.0.0 · NFT + metadata controller ---
+// --- Rustee Broker v3.1 Operator Edition · NFT + metadata controller ---
 const AIO_EXPECTED_NFT='0x4523467C4DDC6D775C7EaD4Dce7656DCe54e7F60';
 const AIO_SEL_SET_TOKEN_URI='e0df5b6f';
 const AIO_SEL_METADATA_FROZEN='fb3cc6c2';

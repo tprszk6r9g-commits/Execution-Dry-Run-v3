@@ -1,13 +1,16 @@
-# Rustee Broker All-in-One v3.0.0
+# Rustee Broker v3.1 Operator Edition
 
-One deployable GitHub Pages project for the complete Rustee Broker system.
+One deployable GitHub Pages project for the stable Rustee Broker #1 operator console. This branch is **not** the Broker Factory.
 
 ## What is unified
 
 - **Rustee Command Center** — wallet/provider state, system health, portfolio summary, recent activity.
 - **NFT + Identity** — Rustee Broker #1 artwork, runtime ERC-6551 binding, four TBA identities, fully on-chain metadata administration.
 - **Portfolio Terminal** — canonical Robinhood Stock Token discovery, balances, valuations, allocation view.
-- **Trading** — guarded BUY and SELL workflows with fresh quotes, simulations, owner-wallet confirmations, recovery for interrupted sells, and optional **WETH → native ETH** unwrap of sell proceeds in the Vault.
+- **Trading** — guarded BUY and SELL workflows with fresh quotes, simulations, owner-wallet confirmations, recovery for interrupted sells, optional **WETH → native ETH** sell proceeds, confirmed-trade verification, and automatic local operator accounting.
+- **Vault Converter** — dedicated ETH ↔ WETH wrapping/unwrapping inside the Vault with simulation, owner signing, receipts, and balance verification.
+- **Recovery Center + Allowance Manager** — interrupted-sell/custody checks and simulated owner-signed Vault→Router allowance revocation.
+- **Local Backup + PWA** — export/restore Rustee browser state and an installable app shell for iPhone/desktop.
 - **History + P&L** — transaction history, local cost basis, realized/unrealized calculations, ledger export.
 - **Account Center / Move Assets / Operations** — ETH/ERC-20 movement, TBA recovery and sweeps.
 - **Policy + Security / Production Gate / Evidence + Replay** — existing v2.8.x safety and production-readiness layers.
@@ -55,4 +58,5 @@ The workflow refreshes same-origin Robinhood snapshots, regenerates the integrit
 - `assets/tokenURI_utf8.txt` — exact metadata payload embedded in the AIO.
 - `docs/METADATA_INSTALL_GUIDE.md` — metadata write/freeze guide.
 - `AIO_ARCHITECTURE.md` — module map and execution boundaries.
+- `OPERATOR_3_1_0.md` — v3.1 additions, guarantees, and non-factory scope.
 - `archive/` — untouched rollback copies of both uploaded apps.

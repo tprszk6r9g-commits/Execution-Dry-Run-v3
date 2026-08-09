@@ -1,0 +1,22 @@
+{
+  "name": "Rustee Broker #1",
+  "short_name": "Rustee Broker",
+  "description": "Rustee Broker #1 Operator Edition for Robinhood Chain",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#031a15",
+  "theme_color": "#031a15",
+  "icons": [
+    {
+      "src": "assets/rustee-broker-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/rustee-broker-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
