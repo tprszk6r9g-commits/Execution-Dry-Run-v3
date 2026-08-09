@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-q0LLC2xqT/TNxtPnt4KM9wYwd3pkD0hkQwduz/IOCbo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
-<title>Rustee Broker v3.5.2 TBA Migration Manager · Robinhood Chain</title>
+<title>Rustee Broker v3.7.6.2 · iOS Touch Hotfix · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -238,6 +238,18 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 
 /* v3.5 Rotating TBA Manager */
 .tbaHero{display:grid;grid-template-columns:1.08fr .92fr;gap:12px}.tbaCard{border:1px solid var(--line);border-radius:20px;padding:17px;background:#061d18}.tbaCard h3{margin:0 0 10px;font-size:20px}.tbaMetrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0}.tbaMetric{border:1px solid var(--line);border-radius:14px;padding:11px;background:#051713}.tbaMetric small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.07em}.tbaMetric strong{display:block;margin-top:6px;font-size:16px;word-break:break-all}.tbaRow{display:grid;grid-template-columns:1fr auto;gap:10px;padding:12px 0;border-top:1px solid #1d4b42}.tbaRow:first-child{border-top:0}.tbaMeta{font-size:11px;color:var(--muted);line-height:1.5}.tbaStatus{display:inline-block;padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:10px}.tbaActive{color:var(--green);border-color:#2d7659}.tbaRetired{color:var(--muted)}.tbaReady{color:var(--orange);border-color:#8d6734}.tbaBoundary{border-left:6px solid var(--teal);background:#06241e;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.5}.tbaWarn{border-left-color:var(--orange);background:#251a08}.tbaActions{display:flex;flex-wrap:wrap;gap:8px}.tbaActions button{margin:0}.tbaAddress{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;word-break:break-all}@media(max-width:650px){.tbaHero{grid-template-columns:1fr}.tbaMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.tbaRow{grid-template-columns:1fr}}
+
+/* v3.7.6.2 iOS/Rabby touch + scroll hotfix */
+html,body{min-height:100%;height:auto!important;overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior-y:auto;touch-action:pan-y;}
+main{min-height:100%;height:auto!important;overflow:visible!important;touch-action:pan-y;}
+.tabs{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch;}
+button,input,select,a,.tabbtn{pointer-events:auto!important;touch-action:manipulation;}
+.stickyStatus,.footer{pointer-events:none!important;}
+@media(max-width:650px){
+  .tabs{overflow-x:auto!important;overflow-y:hidden!important;position:sticky;top:0;}
+  .footer{position:relative!important;bottom:auto!important;margin-top:18px;}
+  .stickyStatus{position:fixed;right:14px;bottom:72px;max-width:min(320px,calc(100vw - 28px));}
+}
 </style>
 </head>
 <body><main>
