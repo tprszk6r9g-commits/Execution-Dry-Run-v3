@@ -1,4 +1,4 @@
-name: Refresh Robinhood prices + deploy Pages
+name: Rustee Broker AIO · refresh snapshots + verify + deploy
 
 on:
   push:
@@ -45,6 +45,41 @@ jobs:
 
       - name: Regenerate frontend integrity manifest
         run: python scripts/update_integrity.py
+
+      - name: Verify AIO metadata payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64, json, pathlib, re
+          html = pathlib.Path("index.html").read_text()
+          m = re.search(r'id="AIO_TOKEN_URI" type="text/plain">(.*?)</script>', html, re.S)
+          assert m, "AIO_TOKEN_URI block missing"
+          embedded = m.group(1)
+          source = pathlib.Path("assets/tokenURI_utf8.txt").read_text().rstrip("\r\n")
+          assert embedded.rstrip("\r\n") == source, "embedded tokenURI differs from source asset"
+          assert "0x4523467C4DDC6D775C7EaD4Dce7656DCe54e7F60" in html
+          assert "AIO_SEL_SET_TOKEN_URI='e0df5b6f'" in html
+          assert "AIO_SEL_METADATA_FROZEN='fb3cc6c2'" in html
+          assert "AIO_SEL_FREEZE='d111515d'" in html
+          meta = json.loads(embedded.split(",", 1)[1])
+          image = meta["image"]
+          raw = base64.b64decode(image.split("base64,", 1)[1])
+          assert len(raw) > 1000, "embedded image unexpectedly small"
+          print(f"AIO metadata PASS: {len(embedded):,} chars; image {len(raw):,} bytes")
+          PY
+
+      - name: Static secret scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -rniE "(private[_-]?key|mnemonic|secret)[\"' ]*[:=][\"' ]*[^\"' ]" \
+             index.html tools/ scripts/ src/ 2>/dev/null; then
+            echo "Possible key material detected"
+            exit 1
+          fi
+          echo "No key material detected"
+
 
       - name: Verify snapshots
         run: |
