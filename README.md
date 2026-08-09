@@ -1,3 +1,45 @@
+# Rustee Broker v3.7.6.1 — Qualification + Primary TBA Promotion
+
+## Current release
+
+v3.7.6.1 is a frontend/state-management minor release built on the already deployed and verified Generation 10 stack. It does **not** deploy or replace any smart contract.
+
+### What passed
+
+The v3.7.6 execution-rehearsal preflight is designed to pass only when all of the following are simultaneously true:
+
+- Generation 10 is the expected engine-authorized ERC-6551 TBA.
+- The exact v3.7.5 token/pair/venue/selector permission gate verifies on-chain.
+- The requested rehearsal amount is at or below the hard `0.0001` token-unit cap.
+- Generation 10 has enough configured Token-In for the requested rehearsal.
+- Generation 10 -> Adapter ERC-20 allowance is exactly zero at the safe-start checkpoint.
+- TBA engine path is paused.
+- Rustee Trading Engine is paused.
+- Production Runner is paused.
+- Restricted Adapter is paused.
+
+A PASS is now persisted locally as a qualification receipt.
+
+### Primary TBA promotion
+
+After a fresh PASS, Engine Setup exposes **Make Generation 10 primary TBA**. This changes Rustee's local active-TBA selection so portfolio, balances, TBA Manager and recovery-facing app paths resolve to Generation 10 after reload.
+
+This is deliberately **not** an autonomous-trading activation. Promotion does not unpause the TBA engine path, Trading Engine, Runner or Adapter, does not grant an allowance, and does not execute a trade.
+
+Generation 10 is already a real ERC-6551 account on-chain. “Primary TBA” in v3.7.6.1 means the app's canonical/selected TBA. Autonomous production status still requires the separate controlled live execution rehearsal to pass.
+
+## Upgrade from v3.7.6
+
+Replace only these root files:
+
+- `index.html`
+- `sw.js`
+- `README.md` (documentation only)
+
+No Solidity deployment is required.
+
+---
+
 # Rustee Broker v3.7.5 — Rehearsal Permission Gate
 
 ## Current release
