@@ -16,19 +16,52 @@ import urllib.request
 from pathlib import Path
 
 BLOCKSCOUT = "https://robinhoodchain.blockscout.com"
+RPC = "https://rpc.mainnet.chain.robinhood.com"
+TRADING_TBA = "0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654"
+SEL_TOKEN = "fc0c546a"
+SEL_OWNER_OF = "6352211e"
 OUT = Path("data/rustee-history.json")
 TIMEOUT = 15
 RETRIES = 3
 MAX_PAGES = 40
 
 ADDRESSES = {
-    "OWNER": "0x8fC320c8582f812695b6f62b2b5d13B14475B955",
     "VAULT": "0x8ad8bd35d33dd7b4d0de81f809f5b7f92623956d",
     "TRADING": "0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654",
     "REWARDS": "0xfd0d881d73ec1476f5da0ab78283149ea21c3b32",
     "IDENTITY": "0x496d7d47ae69d65d714413f0dc78c712ed92158d",
 }
 
+
+
+
+def rpc_call(method: str, params: list) -> str:
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode("utf-8")
+    req = urllib.request.Request(RPC, data=body, headers={"Content-Type": "application/json", "Accept": "application/json", "User-Agent": "Rustee-History-Snapshot/3.4.1"})
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+        payload = json.loads(r.read().decode("utf-8"))
+    if payload.get("error"):
+        raise RuntimeError(payload["error"].get("message") or str(payload["error"]))
+    return str(payload.get("result") or "0x")
+
+
+def resolve_current_owner() -> tuple[str, str, int]:
+    raw = rpc_call("eth_call", [{"to": TRADING_TBA, "data": "0x" + SEL_TOKEN}, "latest"]).removeprefix("0x")
+    if len(raw) < 192:
+        raise RuntimeError("Trading TBA token() returned short data")
+    chain_id = int(raw[0:64], 16)
+    nft = "0x" + raw[64 + 24:128]
+    token_id = int(raw[128:192], 16)
+    if chain_id != 4663:
+        raise RuntimeError(f"Trading TBA bound to unexpected chain {chain_id}")
+    calldata = "0x" + SEL_OWNER_OF + token_id.to_bytes(32, "big").hex()
+    owner_raw = rpc_call("eth_call", [{"to": nft, "data": calldata}, "latest"]).removeprefix("0x")
+    if len(owner_raw) < 64:
+        raise RuntimeError("ownerOf() returned short data")
+    owner = "0x" + owner_raw[-40:]
+    if int(owner, 16) == 0:
+        raise RuntimeError("ownerOf() returned zero address")
+    return owner, nft, token_id
 
 def utc_now() -> str:
     return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -84,7 +117,15 @@ def main() -> int:
     generated = utc_now()
     by_address: dict[str, list[dict]] = {}
     failures: dict[str, str] = {}
-    for label, address in ADDRESSES.items():
+    addresses = dict(ADDRESSES)
+    try:
+        owner, nft, token_id = resolve_current_owner()
+        addresses = {"OWNER": owner, **addresses}
+        print(f"[history] resolved Broker NFT {nft} #{token_id} ownerOf() = {owner}")
+    except Exception as exc:
+        failures["OWNER_RESOLUTION"] = str(exc)
+        print(f"[history] WARNING owner resolution failed: {exc}")
+    for label, address in addresses.items():
         try:
             rows = fetch_address(address)
             by_address[address.lower()] = rows
@@ -107,7 +148,7 @@ def main() -> int:
         "failures": failures,
     }
     write_atomic(payload)
-    print(f"[history] wrote {OUT}; addresses={len(by_address)}/{len(ADDRESSES)}")
+    print(f"[history] wrote {OUT}; addresses={len(by_address)}/{len(addresses)}")
     return 0
 
 
