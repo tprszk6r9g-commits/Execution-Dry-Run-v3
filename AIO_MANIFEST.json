@@ -1,0 +1,14 @@
+{
+  "name": "Rustee Broker All-in-One",
+  "version": "3.0.0",
+  "executionCore": "2.8.12",
+  "chainId": 4663,
+  "brokerNft": "0x4523467C4DDC6D775C7EaD4Dce7656DCe54e7F60",
+  "files": {
+    "index.html": "43eb2f23e2a1ac9b4ad6d29f62190432c4b90eaab052c6cc0f49c118c932d817",
+    "assets/rustee-broker-384.webp": "3bad628c662448681974836859e9089658c9f9e4a2b166c6e7edccc3903f6167",
+    "assets/tokenURI_utf8.txt": "de5d433e7228ad359948eefbf5486ffe8c9306f3a72c8d5c28d3c64ee98896a3",
+    "archive/Execution-Dry-Run-v2.8.12-stable.html": "b7fb7cf4d7d38c8d0ad49cd9eff02521ee615a6b96dabb2bded3839e02ad0cf9",
+    "archive/RusteeBroker1-metadata-installer.html": "cb24a9b78683e641b23de4d87c3e2b16f84a1d195880d7d1748a4cc6695b8a92"
+  }
+}

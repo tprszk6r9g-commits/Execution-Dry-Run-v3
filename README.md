@@ -1,33 +1,58 @@
-# Rustee Portfolio Terminal v2.8.3 — Stability + Wallet Handoff
+# Rustee Broker All-in-One v3.0.0
 
-# Rustee Portfolio Terminal v2.8.1 — Security Hardened
+One deployable GitHub Pages project for the complete Rustee Broker system.
 
-# Rustee Portfolio Terminal v2.8 — Phase 8 Evidence + Replay
+## What is unified
 
-# Rustee Portfolio Terminal v2.7.1 — Spend/Custody Remediation
+- **Rustee Command Center** — wallet/provider state, system health, portfolio summary, recent activity.
+- **NFT + Identity** — Rustee Broker #1 artwork, runtime ERC-6551 binding, four TBA identities, fully on-chain metadata administration.
+- **Portfolio Terminal** — canonical Robinhood Stock Token discovery, balances, valuations, allocation view.
+- **Trading** — guarded BUY and SELL workflows with fresh quotes, simulations, owner-wallet confirmations, recovery for interrupted sells, and optional **WETH → native ETH** unwrap of sell proceeds in the Vault.
+- **History + P&L** — transaction history, local cost basis, realized/unrealized calculations, ledger export.
+- **Account Center / Move Assets / Operations** — ETH/ERC-20 movement, TBA recovery and sweeps.
+- **Policy + Security / Production Gate / Evidence + Replay** — existing v2.8.x safety and production-readiness layers.
+- **Contracts + tests** — `src/`, `test/`, and `foundry.toml` from the execution project.
+- **Snapshots + automation** — Robinhood asset/price/history builders and Pages deployment workflow.
+- **Metadata source** — Rustee WebP assets, exact tokenURI payloads, tokenURI builder, and installer guide.
 
-# Rustee Portfolio Terminal v2.7 — Phase 7 Production Readiness Gate
+## Stable core provenance
 
-Adds a hard GO/NO-GO evidence layer for the autonomous production architecture.
+The execution layer comes from the uploaded `Execution-Dry-Run-v3-main (6).zip`, including the v2.8.12 interrupted-sell recovery patch. The NFT/metadata layer comes from `RusteeBroker1-main (2).zip`.
 
-The terminal now aggregates:
-- live deployed binding checks;
-- archive-evidence milestone;
-- Registry V2 fork-test milestone;
-- Data Streams verifier presence;
-- signed-report replay evidence input;
-- independent oracle audit evidence input;
-- independent adapter audit evidence input;
-- Registry V2 production deployment evidence.
+The original uploaded root HTML files are preserved unchanged in `archive/` for rollback.
 
-Even if every evidence field is present, the terminal does not unlock autonomous writes.
-It changes the verdict only to `EVIDENCE READY`, meaning final human/auditor review can begin.
+## Deploy
 
-No Registry setter, deployment, funding, approval, unpause, or autonomous-trade control is
-included in Phase 7.
+1. Upload the **contents of this folder** to the root of a GitHub repository.
+2. Keep `.github/workflows/main.yaml`, `index.html`, `assets/`, `data/`, `scripts/`, `src/`, and `test/` in their existing paths.
+3. In GitHub: **Settings → Pages → Source → GitHub Actions**.
+4. Run the workflow or push to `main`.
+5. Open the GitHub Pages URL in Rabby/MetaMask or another browser with an injected EVM wallet.
 
+The workflow refreshes same-origin Robinhood snapshots, regenerates the integrity manifest, checks the AIO metadata payload, and deploys the site.
 
-See `REMEDIATION_2_7_1.md` for the high-priority spend ceiling and custody/allowance fixes.
+## Safety model
 
+- No private key or seed phrase input exists.
+- Owner writes require the expected owner wallet on Robinhood Chain 4663.
+- Trade and metadata writes require fresh `eth_estimateGas` and `eth_call` simulation before a wallet signature.
+- The security pre-sign gate restricts transaction destinations; the Broker NFT is allowed only after it is resolved from the ERC-6551 TBA and matches the expected Rustee Broker #1 contract.
+- `freezeMetadata()` remains optional, double-confirmed, and irreversible.
 
-See `SECURITY_HARDENING_2_8_1.md` and `GITHUB_SECURITY_CHECKLIST.md`.
+## Key addresses
+
+- Broker NFT #1: `0x4523467C4DDC6D775C7EaD4Dce7656DCe54e7F60`
+- Vault TBA: `0x8ad8bd35d33dd7b4d0de81f809f5b7f92623956d`
+- Trading TBA: `0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654`
+- Rewards TBA: `0xfd0d881d73ec1476f5da0ab78283149ea21c3b32`
+- Identity TBA: `0x496d7d47ae69d65d714413f0dc78c712ed92158d`
+- WETH: `0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73`
+
+## Important files
+
+- `index.html` — complete AIO frontend.
+- `wallet-diagnostic.html` — injected-wallet diagnostics.
+- `assets/tokenURI_utf8.txt` — exact metadata payload embedded in the AIO.
+- `docs/METADATA_INSTALL_GUIDE.md` — metadata write/freeze guide.
+- `AIO_ARCHITECTURE.md` — module map and execution boundaries.
+- `archive/` — untouched rollback copies of both uploaded apps.
