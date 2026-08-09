@@ -9,6 +9,8 @@ from pathlib import Path
 
 TARGETS = [
     Path("index.html"),
+    Path("manifest.webmanifest"),
+    Path("sw.js"),
     Path("data/robinhood-assets.json"),
     Path("data/robinhood-prices.json"),
     Path("data/rustee-history.json"),
