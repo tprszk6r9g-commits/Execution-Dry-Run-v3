@@ -1,5 +1,7 @@
 # Rustee Broker — On-Chain Metadata Installer
 
+> **v3.4.1 update:** the current dashboard supersedes the fixed bundled installer with **Metadata Studio**. It can load current on-chain metadata, edit traits while preserving artwork, resolve trading authority dynamically with `ownerOf(tokenId)`, resolve metadata administrator authority separately with `owner()`, simulate the exact proposed `setTokenURI`, and verify it after confirmation. The historical details below remain useful provenance.
+
 A single-page tool that writes fully on-chain metadata to **Rustee Broker #1**
 via `setTokenURI(string)`.
 

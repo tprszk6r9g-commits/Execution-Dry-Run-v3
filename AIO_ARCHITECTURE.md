@@ -17,7 +17,7 @@ The existing v2.8.12 execution core remains the transaction engine. It covers qu
 
 ## 4. Identity + metadata plane
 
-The NFT tab adds the former standalone metadata installer directly to the terminal. The exact UTF-8 tokenURI is bundled as a non-executable text payload. Preflight requires the expected chain, contract bytecode, contract owner, ERC-6551 binding, unfrozen metadata, gas estimation, and a successful `eth_call`.
+The NFT tab now contains the v3.4.1 Metadata Studio. Rustee resolves the Broker NFT from the Trading TBA, reads current trading authority from ERC-721 `ownerOf(tokenId)`, reads metadata authority separately from NFT `owner()`, verifies all four TBA owners against the NFT holder, loads the current tokenURI, and can build an edited proposal. Metadata writes require unfrozen state, the live metadata administrator, gas estimation, exact `eth_call`, and a prepared owner-signed wallet handoff.
 
 ## 5. Security boundary
 

@@ -1,3 +1,11 @@
+## v3.4.1 Metadata Studio + Ownership Hardening
+
+See `METADATA_STUDIO_3_4_1.md`. v3.4.1 adds an editable on-chain Metadata Studio, capability-oriented metadata, dynamic ERC-721 `ownerOf(tokenId)` trading authority, separate live metadata-admin `owner()` resolution, four-TBA ownership cross-checks, and removal of the operational hardcoded owner wallet. Metadata remains unfrozen unless the administrator separately prepares and signs the irreversible freeze flow.
+
+## v3.4 Portfolio Risk Engine + Limits Control Center
+
+See `PORTFOLIO_RISK_ENGINE_3_4_0.md`. v3.4 centralizes operator limits and applies them to manual BUYs, Supervised Autopilot and Strategy Lab without changing the owner-signature execution boundary.
+
 ## v3.3 Strategy Lab + Paper Twin
 
 See `STRATEGY_LAB_3_3_0.md`. This release adds local data recording/import, deterministic backtesting, paper twins, strategy tournament ranking and explicit promotion into the existing supervised Autopilot. Real transaction broadcast remains owner-signed.
@@ -13,7 +21,7 @@ One deployable GitHub Pages project for the stable Rustee Broker #1 operator con
 ## What is unified
 
 - **Rustee Command Center** — wallet/provider state, system health, portfolio summary, recent activity.
-- **NFT + Identity** — Rustee Broker #1 artwork, runtime ERC-6551 binding, four TBA identities, fully on-chain metadata administration.
+- **NFT + Identity / Metadata Studio** — runtime ERC-6551 binding, dynamic NFT-holder + metadata-admin authority, four-TBA owner cross-check, current metadata loader, editable capability traits, exact update simulation, verification, and separately prepared optional freeze.
 - **Portfolio Terminal** — canonical Robinhood Stock Token discovery, balances, valuations, allocation view.
 - **Trading** — guarded BUY and SELL workflows with fresh quotes, simulations, owner-wallet confirmations, recovery for interrupted sells, optional **WETH → native ETH** sell proceeds, confirmed-trade verification, and automatic local operator accounting.
 - **Vault Converter** — dedicated ETH ↔ WETH wrapping/unwrapping inside the Vault with simulation, owner signing, receipts, and balance verification.
@@ -45,11 +53,11 @@ The workflow refreshes same-origin Robinhood snapshots, regenerates the integrit
 ## Safety model
 
 - No private key or seed phrase input exists.
-- Owner writes require the expected owner wallet on Robinhood Chain 4663.
+- Trading/TBA writes require the current live `ownerOf(tokenId)` holder on Robinhood Chain 4663; metadata writes require the live NFT contract `owner()` administrator.
 - Trade, move, converter, allowance, and metadata writes require fresh `eth_estimateGas` + `eth_call` simulation before signing.
 - On mobile wallet browsers, the simulation also arms the exact transaction. The final **Open wallet to sign** tap calls `eth_sendTransaction` immediately so the injected wallet receives a fresh user-gesture handoff.
-- Destination/owner/chain checks are completed during simulation for prepared writes; the Broker NFT is allowed only after it is resolved from the ERC-6551 TBA and matches the expected Rustee Broker #1 contract.
-- `freezeMetadata()` remains optional, double-confirmed, and irreversible.
+- Destination/authority/chain checks are completed during simulation for prepared writes; the Broker NFT is resolved from the ERC-6551 TBA, the current ERC-721 holder is read with `ownerOf(tokenId)`, the metadata administrator is read separately with `owner()`, and all four TBA owners must match the current NFT holder.
+- `freezeMetadata()` remains optional and irreversible; v3.4.1 requires a separate simulated freeze preparation before the final wallet-signing tap.
 
 ## Key addresses
 
