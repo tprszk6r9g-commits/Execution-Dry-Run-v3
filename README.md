@@ -1,5 +1,25 @@
 # Rustee Broker
 
+## Current Release — v3.7.2 Website + Deployment Integration
+
+v3.7.2 adds an in-app guided deployment/verification center for the v3.7.1 Engine-Authorized ERC-6551 Trading TBA stack. It is designed for the iPhone/Rabby workflow and leaves both autonomous execution layers paused after configuration.
+
+### Website installer
+- deploy account implementation
+- predict exact ERC-6551 Trading TBA
+- deploy Capability Registry V2
+- deploy Rustee Trading Engine
+- create canonical ERC-6551 TBA
+- configure engine + registry
+- optionally configure runner + adapter
+- verify NFT/token/generation/account/engine/registry bindings
+- verify both engine pause states remain ON
+
+No existing TBA is replaced and no autonomous execution is activated.
+
+---
+
+
 ## Current Release — v3.6B.4 Verified Metadata Controller Security Gate
 
 v3.6B.4 fixes the Step-2 migration handoff after an in-app controller deployment.
