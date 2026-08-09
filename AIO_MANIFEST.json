@@ -1,26 +1,27 @@
 {
-  "name": "Rustee Broker Metadata Studio + Ownership Hardened Operator Edition",
-  "version": "3.4.1",
+  "name": "Rustee Broker Live Policy Controls + Metadata Studio",
+  "version": "3.4.2",
   "executionCore": "2.8.12",
   "chainId": 4663,
   "brokerNft": "0x4523467C4DDC6D775C7EaD4Dce7656DCe54e7F60",
-  "scope": "stable Rustee Broker #1 operator console; dynamic NFT owner authority; editable metadata; not factory",
+  "scope": "stable Rustee Broker #1 operator console; dynamic NFT-owner authority; editable metadata and signed Registry policy controls; not factory",
   "files": {
-    "index.html": "d1b570d1c078c6261112883031d0d71b75b8a2419099bfe1d82f51f93451ca6b",
+    "index.html": "68853f3cef747b35853394e7b9cca4c605e71e6e64e33b5670a2b41dc6d2cd6e",
     "assets/rustee-broker-384.webp": "3bad628c662448681974836859e9089658c9f9e4a2b166c6e7edccc3903f6167",
     "assets/rustee-broker-192.png": "5204486753510a81f722efd27057a2b48dc25acd8e526740ae8df4088910b5c1",
     "assets/rustee-broker-512.png": "9448ec6d2510c118588b2bf374ca1f301704cb219aea28d2e9c378a0af6955d9",
     "assets/tokenURI_utf8.txt": "cc900d661c5d5ec7721c3222f222d39e1a05327b364d465f6408949a0252c71a",
-    "manifest.webmanifest": "c3fd22e4a122c575dd59d4caf0aff52dc40714f5160ec377fa762844c08e84bf",
-    "sw.js": "88b205275b8d6a5460df4892702dc5572869450b9ecaceaf3fcb0500b665e434",
+    "manifest.webmanifest": "ea15d577b664a836ab082af3405a8cac7c6f7f27b3373cd70992159ac52fb09c",
+    "sw.js": "6d1a6b26bba5b7130558237c6f630f0d06a54e17ec1488ef2b9a1989cfbe9c35",
     "archive/Execution-Dry-Run-v2.8.12-stable.html": "b7fb7cf4d7d38c8d0ad49cd9eff02521ee615a6b96dabb2bded3839e02ad0cf9",
     "archive/RusteeBroker1-metadata-installer.html": "cb24a9b78683e641b23de4d87c3e2b16f84a1d195880d7d1748a4cc6695b8a92",
     "scripts/update_rustee_history.py": "5d586618e081766404a856bd8c2d24f6fb11d637c2d2fb3c27e20e1893a9a88d",
     "METADATA_STUDIO_3_4_1.md": "dfa97df96078f2fa68648071bf6d8ed87fbffa0cce8ae13d35d3d4854c6c5d33",
     "METADATA_STUDIO_VALIDATION_3_4_1.md": "b0e97fdd2edc4b95d01f8e83ba56d7a27934b0fd1435548ed5b9101bcc37c0d8",
-    "Rustee_Broker_v3.4.1_Release_Notes.md": "e49600cb25ab2570a065cd230ca18b32e22587cb21b1ab6a9a0f80f4ef5699bc",
-    "Rustee_Broker_v3.4.1_Validation.md": "56bc1c393cecbd2f0d3c9d8d75f34d9e62e09c5b7e1d4278ed20a990bf08ce71"
+    "LIVE_POLICY_CONTROLS_3_4_2.md": "ced5caf4dfadf2e79aebce1219aa4c0f7e19ecdd911f068184afc5e3634e620d",
+    "Rustee_Broker_v3.4.2_Release_Notes.md": "93bd8e5e68e1458e13738388bf17e149ac1ea789c8066007ac512535bae3a881",
+    "Rustee_Broker_v3.4.2_Validation.md": "01740abb1ca2a9e50963e0620da2d5f8eed8e5ed608adc72b7013d4cadece29f"
   },
-  "operatorVersion": "3.4.1",
-  "release": "Metadata Studio + Ownership Hardening"
+  "operatorVersion": "3.4.2",
+  "release": "Live Policy Controls"
 }

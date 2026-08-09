@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-Ni21JEU2c1+uL6N9+CHKApIII1LtbCm4QbuJwEXo7RY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
-<title>Rustee Broker v3.4.1 Metadata Studio + Ownership Hardening · Robinhood Chain</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-nHW3jczD9N2s09i/VQY8ifwj5dh4Zi4PnNoh2R3eU6o='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<title>Rustee Broker v3.4.2 Live Policy Controls · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -260,7 +260,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <div class="rusteeBrand">
     <img class="rusteePortrait" src="assets/rustee-broker-384.webp" alt="Rustee Broker #1">
     <div>
-      <span class="aioTag">v3.4.1 · Metadata Studio</span>
+      <span class="aioTag">v3.4.2 · Live Policy Controls</span>
       <h1>Rustee Broker #1</h1>
       <p>NFT-rooted broker command center for portfolio visibility, guarded trading, ERC-6551 account operations, on-chain identity, metadata administration, security evidence, and recovery.</p>
       <div class="quickDock">
@@ -659,12 +659,12 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
         <label class="autoSwitch"><input id="autoEnabled" type="checkbox"> Enable rule monitoring while Rustee is open</label>
         <label class="autoSwitch"><input id="autoPrepare" type="checkbox" checked> Auto-prepare + simulate a triggered candidate</label>
         <div class="autoInline">
-          <div><label>Maximum BUY candidate (USD)</label><input id="autoMaxTradeUsd" type="number" min="0.10" max="5" step="0.10" value="1.00" disabled></div>
+          <div><label>Maximum BUY candidate (USD)</label><input id="autoMaxTradeUsd" type="number" min="0.10" max="1000000" step="0.10" value="1.00" disabled></div>
           <div><label>Maximum BUY spend / day (USD)</label><input id="autoDailyBudgetUsd" type="number" min="0.10" max="100000" step="0.10" value="3.00" disabled></div>
           <div><label>Daily realized-loss stop (USD)</label><input id="autoDailyLossUsd" type="number" min="0" max="100000" step="0.10" value="1.00" disabled></div>
           <div><label>Rule cooldown (minutes)</label><input id="autoCooldownMinutes" type="number" min="1" max="1440" step="1" value="15" disabled></div>
           <div><label>Monitor interval (seconds)</label><input id="autoRefreshSeconds" type="number" min="60" max="3600" step="30" value="60" disabled></div>
-          <div><label>Maximum slippage</label><input id="autoSlippage" type="number" min="0.10" max="3" step="0.10" value="0.50" disabled></div>
+          <div><label>Maximum slippage</label><input id="autoSlippage" type="number" min="0.10" max="10" step="0.10" value="0.50" disabled></div>
         </div>
         <div class="actions">
           <button class="primary" id="autoSave">Save + arm settings</button>
@@ -737,7 +737,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
           <div><label>Ticker</label><input id="stratSymbol" placeholder="NVDA" autocapitalize="characters"></div>
           <div><label>Entry trigger</label><select id="stratEntryTrigger"><option value="PRICE_BELOW">Price at/below</option><option value="PRICE_ABOVE">Price at/above</option></select></div>
           <div><label>Entry price</label><input id="stratEntryThreshold" type="number" step="0.01" placeholder="100.00"></div>
-          <div><label>Entry capital (USD)</label><input id="stratEntryUsd" type="number" min="0.10" max="5" step="0.10" value="1.00"></div>
+          <div><label>Entry capital (USD)</label><input id="stratEntryUsd" type="number" min="0.10" max="1000000" step="0.10" value="1.00"></div>
           <div><label>Take profit (%)</label><input id="stratTakeProfit" type="number" min="0.1" max="100" step="0.1" value="5"></div>
           <div><label>Stop loss (%)</label><input id="stratStopLoss" type="number" min="0.1" max="100" step="0.1" value="3"></div>
           <div><label>Max hold (hours, 0 = off)</label><input id="stratMaxHold" type="number" min="0" max="8760" step="1" value="0"></div>
@@ -784,10 +784,10 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 
 <div id="riskPane" class="tabpane">
   <div class="card">
-    <span class="badge">v3.4 · PORTFOLIO RISK ENGINE</span>
+    <span class="badge">v3.4.2 · PORTFOLIO RISK + LIVE POLICY</span>
     <h2>Limits + Risk Control Center</h2>
-    <p>One source of truth for Rustee's operator-defined trading limits. Manual BUYs, supervised Autopilot BUYs, and Strategy Lab promotion all consume this profile. The current hard engine ceiling remains visible and cannot be bypassed from this tab.</p>
-    <div class="riskBoundary"><b>Effective-limit rule:</b> Rustee uses the lowest applicable ceiling. Operator limits can make trading stricter, never looser than the current hard execution ceiling. Read-only Registry values are treated as an additional conservative reference ceiling when they are available.</div>
+    <p>One source of truth for Rustee's operator limits plus an owner-signed editor for the deployed StockTokenRegistry trading policy. Manual BUYs, supervised Autopilot BUYs, and Strategy Lab promotion consume the effective profile.</p>
+    <div class="riskBoundary"><b>Effective-limit rule:</b> Rustee uses the lowest applicable limit among your operator profile, the live Registry policy when loaded, and the local native-input cap when a usable ETH/USD reference exists. The old operational <code>$5 / $10 / 1</code> dashboard hardcodes are removed in v3.4.2.</div>
 
     <div class="riskMetrics">
       <div class="riskMetric"><small>Effective max BUY</small><strong id="riskEffTrade">—</strong></div>
@@ -801,13 +801,14 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
       <div class="riskCard">
         <h3>Operator risk profile</h3>
         <div class="riskGrid">
-          <div><label>Maximum BUY / trade (USD)</label><input id="riskMaxTradeUsd" type="number" min="0.10" max="5" step="0.10"><div class="riskInputHint">Cannot exceed the current $5 engine ceiling in this build.</div></div>
-          <div><label>Maximum BUY spend / day (USD)</label><input id="riskDailyBudgetUsd" type="number" min="0.10" max="100000" step="0.10"></div>
+          <div><label>Maximum BUY / trade (USD)</label><input id="riskMaxTradeUsd" type="number" min="0.10" max="1000000" step="0.10"><div class="riskInputHint">Operator ceiling. The effective value may be lower if the Registry or native-input cap is lower.</div></div>
+          <div><label>Maximum BUY spend / day (USD)</label><input id="riskDailyBudgetUsd" type="number" min="0.10" max="10000000" step="0.10"></div>
           <div><label>Daily realized-loss stop (USD)</label><input id="riskDailyLossUsd" type="number" min="0" max="100000" step="0.10"></div>
           <div><label>Rolling 7-day realized-loss stop (USD)</label><input id="riskWeeklyLossUsd" type="number" min="0" max="100000" step="0.10"></div>
-          <div><label>Maximum trades / day</label><input id="riskMaxTradesDay" type="number" min="1" max="1000" step="1"></div>
+          <div><label>Maximum trades / day</label><input id="riskMaxTradesDay" type="number" min="1" max="100000" step="1"></div>
           <div><label>Autopilot rule cooldown (minutes)</label><input id="riskCooldownMinutes" type="number" min="1" max="10080" step="1"></div>
-          <div><label>Maximum slippage (%)</label><input id="riskMaxSlippage" type="number" min="0.10" max="3" step="0.10"></div>
+          <div><label>Maximum slippage (%)</label><input id="riskMaxSlippage" type="number" min="0.10" max="10" step="0.10"></div>
+          <div><label>Maximum native input per BUY (ETH)</label><input id="riskMaxInputEth" type="number" min="0.000001" max="100" step="0.0001"><div class="riskInputHint">Local supervised-route safety cap. Default remains 0.005 ETH, but it is no longer hardcoded.</div></div>
           <div><label>Maximum open Trading positions</label><input id="riskMaxOpenPositions" type="number" min="1" max="100" step="1"></div>
           <div><label>Maximum one-ticker share of deployed cap (%)</label><input id="riskMaxTickerPct" type="number" min="1" max="100" step="1"></div>
           <div><label>Maximum deployed stock capital (USD)</label><input id="riskMaxDeployedUsd" type="number" min="0.10" max="1000000" step="0.10"></div>
@@ -821,10 +822,11 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
       </div>
 
       <div class="riskCard">
-        <h3>Current hard + on-chain reference ceilings</h3>
+        <h3>Local + on-chain effective ceilings</h3>
         <table class="riskPolicy">
-          <tr><td>Current hard BUY ceiling</td><td id="riskHardTrade">$5.00</td></tr>
-          <tr><td>Current hard ETH input ceiling</td><td id="riskHardEth">0.005 ETH</td></tr>
+          <tr><td>Operator max trade</td><td id="riskHardTrade">—</td></tr>
+          <tr><td>Local native-input cap</td><td id="riskHardEth">—</td></tr>
+          <tr><td>Native-input USD equivalent</td><td id="riskInputUsdCap">Need ETH/USD</td></tr>
           <tr><td>Registry</td><td id="riskRegistry">—</td></tr>
           <tr><td>Registry max trade</td><td id="riskChainTrade">Not loaded</td></tr>
           <tr><td>Registry daily maximum</td><td id="riskChainDaily">Not loaded</td></tr>
@@ -834,9 +836,33 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
           <tr><td>Router spender allowlisted</td><td id="riskChainSpender">Not loaded</td></tr>
           <tr><td>Last policy read</td><td id="riskChainTime">—</td></tr>
         </table>
-        <div class="riskBoundary riskWarn" style="margin-top:12px"><b>Important:</b> the Registry shown here is a production-policy reference read by Rustee. The current supervised swap path is still protected by the dashboard's execution/risk checks and owner wallet signature. A Registry <i>paused</i> state is displayed but is not represented as blocking the existing supervised route unless that Registry is explicitly wired into that route.</div>
+        <div class="riskBoundary riskWarn" style="margin-top:12px"><b>Scope:</b> the Registry values can now be edited with an NFT-owner-signed <code>setTradingPolicy</code> call. The current supervised swap path still requires Rustee's local risk checks, simulation, and owner wallet signature. The included <code>DataStreamsPolicyGateV2</code> source is not redeployed or modified by this release; if that separate gate is later wired into production execution, its own compiled policy must be reviewed independently.</div>
         <div class="riskActions" style="margin-top:12px"><button class="primary" id="riskLoadChain">Refresh on-chain policy</button><button id="riskLivePreflight">Run live risk preflight</button></div>
       </div>
+    </div>
+
+    <div class="riskCard" style="margin-top:12px">
+      <span class="badge">v3.4.2 · OWNER-SIGNED REGISTRY ADMIN</span>
+      <h3>Live Registry Policy Controls</h3>
+      <p>Edit the deployed Registry's per-trade USD maximum, daily USD maximum, and trades/day directly from the dashboard. Rustee <b>preserves the current paused/unpaused state</b>; this control never changes trading state as a side effect of changing limits.</p>
+      <div class="riskBoundary"><b>Safe write sequence:</b> refresh current policy → validate NFT-owner authority → build exact <code>setTradingPolicy((uint128,uint128,uint32,bool))</code> calldata → estimate gas → exact <code>eth_call</code> → arm the wallet → <b>Open wallet to sign</b>. The final tap performs no refresh or asynchronous pre-check before the prepared Rabby request.</div>
+      <div class="riskGrid3" style="margin-top:12px">
+        <div><label>Registry max trade (USD)</label><input id="policyMaxTradeUsd" type="number" min="0.10" max="1000000" step="0.10"></div>
+        <div><label>Registry max daily (USD)</label><input id="policyMaxDailyUsd" type="number" min="0.10" max="10000000" step="0.10"></div>
+        <div><label>Registry trades / day</label><input id="policyMaxTradesDay" type="number" min="1" max="100000" step="1"></div>
+      </div>
+      <div class="riskGrid3" style="margin-top:10px">
+        <div class="riskEffective"><b>Current state</b><br><span id="policyCurrentState">Refresh policy</span></div>
+        <div class="riskEffective"><b>Policy signer</b><br><span id="policySigner">Current NFT owner</span></div>
+        <div class="riskEffective"><b>Selector</b><br><code id="policySelector">—</code></div>
+      </div>
+      <label class="autoSwitch" style="margin-top:10px"><input id="policySyncOperator" type="checkbox" checked> After confirmation, sync the operator max trade / daily budget / trades-day fields to the new Registry values</label>
+      <div class="riskActions" style="margin-top:12px">
+        <button id="policyLoadCurrent">Load current policy into editor</button>
+        <button class="primary" id="policyPrepare">Prepare + simulate policy update</button>
+        <button class="danger" id="policyExecute" disabled>Open wallet to sign policy update</button>
+      </div>
+      <pre id="policyControlLog">No policy update prepared. Changing these fields does not send a transaction.</pre>
     </div>
 
     <div class="riskHero" style="margin-top:12px">
@@ -879,7 +905,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 
         <div id="buySizing">
           <label>Approximate USD target</label>
-          <input id="tradeUsd" type="number" min="0.10" max="5" step="0.10" value="1.00">
+          <input id="tradeUsd" type="number" min="0.10" max="1000000" step="0.10" value="1.00">
           <div class="quickAmounts">
             <button data-usd="1">$1</button><button data-usd="2">$2</button><button data-usd="5">$5</button>
           </div>
@@ -900,7 +926,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
         </div>
 
         <label>Maximum slippage (%)</label>
-        <input id="tradeSlippage" type="number" min="0.10" max="3" step="0.10" value="0.50">
+        <input id="tradeSlippage" type="number" min="0.10" max="10" step="0.10" value="0.50">
         <div class="holdingMeta">The Limits + Risk profile is the upper bound for manual and Autopilot trade slippage.</div>
 
         <div class="actions" style="margin-top:14px">
@@ -1489,10 +1515,13 @@ const QUOTER='0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7';
 const SEL_OWNER='8da5cb5b', SEL_OWNER_OF='6352211e', SEL_BALANCE='70a08231', SEL_EXECUTE='51945447';
 const SEL_QUOTE='c6a5026a', SEL_EXACT_INPUT='04e45aaf';
 const USDG='0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
-// Manual owner-signed trade safety ceilings.
-// MAX_AMOUNT_IN_WEI is authoritative and independent of operator-entered price.
-const MAX_AMOUNT_IN_WEI=5_000_000_000_000_000n; // 0.005 ETH
-const MAX_TRADE_USD=5;
+// v3.4.2 configurable operator execution bounds. The operational values live in the
+// Limits + Risk profile and Registry policy; these are only parser/UI sanity bounds.
+const ABSOLUTE_MAX_TRADE_USD=1_000_000;
+const ABSOLUTE_MAX_DAILY_USD=10_000_000;
+const ABSOLUTE_MAX_TRADES_PER_DAY=100_000;
+const ABSOLUTE_MAX_INPUT_ETH=100;
+const DEFAULT_MAX_INPUT_ETH=0.005;
 const ETH_USD_TOLERANCE=0.25; // ±25% when a usable snapshot reference exists
 
 const SEL_QUOTE_PATH='cdca1753', SEL_EXACT_INPUT_PATH='b858183f';
@@ -1517,13 +1546,14 @@ function formatToken18(v,dec=8){let x=BigInt(v),a=x/10n**18n,b=(x%10n**18n).toSt
 function calcInputWei(){
   const usd=Number($('usdTarget').value),ethUsd=Number($('ethUsd').value);
   if(!(usd>0&&ethUsd>0)) throw Error('USD target and ETH/USD must be positive');
-  const riskMax=(typeof riskEffectiveLimits==='function'?riskEffectiveLimits().maxTradeUsd:MAX_TRADE_USD);if(usd>riskMax) throw Error(`USD target exceeds effective Rustee limit $${riskMax}`);
+  const riskMax=(typeof riskEffectiveLimits==='function'?riskEffectiveLimits().maxTradeUsd:ABSOLUTE_MAX_TRADE_USD);if(usd>riskMax) throw Error(`USD target exceeds effective Rustee limit $${riskMax}`);
   const ref=snapshotEthUsd();
   if(ref&&Math.abs(ethUsd-ref)/ref>ETH_USD_TOLERANCE)
     throw Error(`ETH/USD reference differs from snapshot by more than ${Math.round(ETH_USD_TOLERANCE*100)}%`);
   const eth=usd/ethUsd,wei=decimalToWei(eth.toFixed(18));
-  if(wei>MAX_AMOUNT_IN_WEI)
-    throw Error(`Computed input ${fromWei(wei)} ETH exceeds hard ceiling ${fromWei(MAX_AMOUNT_IN_WEI)} ETH`);
+  const inputCap=(typeof riskMaxInputWei==='function'?riskMaxInputWei():decimalToWei(String(DEFAULT_MAX_INPUT_ETH)));
+  if(wei>inputCap)
+    throw Error(`Computed input ${fromWei(wei)} ETH exceeds your local native-input cap ${fromWei(inputCap)} ETH`);
   $('ethInput').textContent=eth.toFixed(8)+' ETH';
   return wei;
 }
@@ -2797,10 +2827,11 @@ async function quoteTrade(recoveryMode=false){
       );
 
     amountIn=decimalToWei((usd/ethUsd).toFixed(18));
-    if(amountIn>MAX_AMOUNT_IN_WEI)
+    const inputCap=riskMaxInputWei();
+    if(amountIn>inputCap)
       throw Error(
-        `Computed input ${fromWei(amountIn)} ETH exceeds hard ceiling `+
-        `${fromWei(MAX_AMOUNT_IN_WEI)} ETH. Check ETH/USD reference.`
+        `Computed input ${fromWei(amountIn)} ETH exceeds your local native-input cap `+
+        `${fromWei(inputCap)} ETH. Increase it in Limits + Risk or reduce the BUY size.`
       );
     const riskCheck=await riskPreflightTrade({side:'BUY',symbol:picked.symbol,sizeUsd:usd,slippage:Number($('tradeSlippage').value),amountInWei:amountIn,recoveryMode});
     if(riskCheck.block) throw Error('RISK BLOCK: '+riskCheck.reasons.join('; '));
@@ -3356,8 +3387,8 @@ async function executeConvert(){
 function renderCommandAccounting(){
   try{const basis=loadCostBasis();let cur=0,cost=0;for(const key of ['OWNER','VAULT','TRADING','REWARDS','IDENTITY'])for(const p of terminalState.positions||[]){const bal=p.balances[key]||0n;if(bal===0n)continue;const v=currentPositionUsd(key,p);if(v!=null)cur+=v;cost+=Number(basis[positionKey(key,p.token)]||0)}const u=cur-cost;$('cmdUnrealizedPnl').textContent=(u>=0?'+':'')+money(u);$('cmdUnrealizedPnl').className=u>=0?'pnlPos':'pnlNeg';const r=realizedPnlTotal();$('cmdRealizedPnl').textContent=(r>=0?'+':'')+money(r);$('cmdRealizedPnl').className=r>=0?'pnlPos':'pnlNeg';const recovery=localStorage.getItem(TRADE_RECOVERY_KEY);const pending=readReceiptLog().some(x=>!['CONFIRMED','FAILED'].includes(x.status));$('cmdRecoveryState').textContent=recovery?'SELL CHECK':pending?'PENDING TX':'Clear ✓';$('cmdRecoveryState').className=recovery||pending?'healthWarn':'healthGood'}catch{}
 }
-function rusteeBackupPayload(){const storage={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('rustee-'))storage[k]=localStorage.getItem(k)}return {project:'Rustee Broker #1',version:'3.1-operator',chainId:CHAIN,exportedAt:new Date().toISOString(),storage,note:'Browser-side Rustee state only. No private keys or seed phrases are stored by this app.'}}
-function exportRusteeBackup(){const blob=new Blob([JSON.stringify(rusteeBackupPayload(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-broker-v3.4-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);$('backupLog').textContent='Backup exported. Rustee localStorage keys only; no wallet secrets.'}
+function rusteeBackupPayload(){const storage={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('rustee-'))storage[k]=localStorage.getItem(k)}return {project:'Rustee Broker #1',version:'3.4.2-live-policy',chainId:CHAIN,exportedAt:new Date().toISOString(),storage,note:'Browser-side Rustee state only. No private keys or seed phrases are stored by this app.'}}
+function exportRusteeBackup(){const blob=new Blob([JSON.stringify(rusteeBackupPayload(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-broker-v3.4.2-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);$('backupLog').textContent='Backup exported. Rustee localStorage keys only; no wallet secrets.'}
 async function restoreRusteeBackupFile(file){const data=JSON.parse(await file.text());if(data?.project!=='Rustee Broker #1'||!data.storage||typeof data.storage!=='object')throw Error('Not a Rustee Broker backup');let restored=0;for(const [k,v] of Object.entries(data.storage)){if(!k.startsWith('rustee-')||typeof v!=='string')continue;localStorage.setItem(k,v);restored++}$('backupLog').textContent=`Restored ${restored} Rustee browser-state entries. Reloading local views…`;renderReceipts();renderOperatorTradeLedger();restoreLastTradeVerification();renderCostBasisEditor();renderHistoryMetrics();renderCommandAccounting()}
 
 let allowanceManagerState=new Map();
@@ -4346,21 +4377,26 @@ aioBind('aioNftConnect',async()=>{await connect();await aioRefreshNftState()});a
 setTimeout(()=>{resolveAuthorityState(true).then(()=>aioRefreshNftState()).then(()=>metadataStudioLoadCurrent()).catch(e=>{console.warn('Initial NFT/metadata read',e);try{$('aioNftIdentityLog').textContent='Read-only startup check unavailable: '+(e?.message||e)}catch{}})},0);
 // -----------------------------------------------------------------------------
 
-// --- v3.4 Portfolio Risk Engine -----------------------------------------------
+// --- v3.4.2 Portfolio Risk Engine + Live Policy Controls ----------------------
 const RISK_KEY='rustee-risk-profile-v34';
 const RISK_CHAIN_KEY='rustee-risk-chain-policy-v34';
-function riskDefaults(){return {version:1,maxTradeUsd:1,dailyBudgetUsd:3,dailyLossUsd:1,weeklyLossUsd:3,maxTradesPerDay:8,cooldownMinutes:15,maxSlippagePct:.5,maxOpenPositions:5,maxTickerAllocationPct:40,maxDeployedUsd:15,minVaultReserveEth:.0003,refreshSeconds:60,allowRiskReducingExits:true,failClosedUnknownPortfolio:true,updatedAt:null}}
+const POLICY_SET_SIG='setTradingPolicy((uint128,uint128,uint32,bool))';
+const POLICY_GET_SIG='getTradingPolicy()';
+let policyPrepared=null;
+function riskDefaults(){return {version:2,maxTradeUsd:5,dailyBudgetUsd:10,dailyLossUsd:1,weeklyLossUsd:3,maxTradesPerDay:1,cooldownMinutes:15,maxSlippagePct:.5,maxInputEth:DEFAULT_MAX_INPUT_ETH,maxOpenPositions:5,maxTickerAllocationPct:40,maxDeployedUsd:15,minVaultReserveEth:.0003,refreshSeconds:60,allowRiskReducingExits:true,failClosedUnknownPortfolio:true,updatedAt:null}}
 function riskLegacySeed(){const d=riskDefaults();try{const a=JSON.parse(localStorage.getItem('rustee-supervised-autopilot-v32')||'null');if(a){if(Number.isFinite(Number(a.maxTradeUsd)))d.maxTradeUsd=Number(a.maxTradeUsd);if(Number.isFinite(Number(a.dailyBudgetUsd)))d.dailyBudgetUsd=Number(a.dailyBudgetUsd);if(Number.isFinite(Number(a.dailyLossUsd)))d.dailyLossUsd=Number(a.dailyLossUsd);if(Number.isFinite(Number(a.cooldownMinutes)))d.cooldownMinutes=Number(a.cooldownMinutes);if(Number.isFinite(Number(a.refreshSeconds)))d.refreshSeconds=Number(a.refreshSeconds);if(Number.isFinite(Number(a.slippage)))d.maxSlippagePct=Number(a.slippage)}}catch{}return d}
-function riskNormalize(p){const d={...riskDefaults(),...(p||{})};d.maxTradeUsd=Math.min(MAX_TRADE_USD,Math.max(.1,Number(d.maxTradeUsd)||1));d.dailyBudgetUsd=Math.max(.1,Number(d.dailyBudgetUsd)||3);d.dailyLossUsd=Math.max(0,Number(d.dailyLossUsd)||0);d.weeklyLossUsd=Math.max(0,Number(d.weeklyLossUsd)||0);d.maxTradesPerDay=Math.max(1,Math.floor(Number(d.maxTradesPerDay)||8));d.cooldownMinutes=Math.max(1,Math.floor(Number(d.cooldownMinutes)||15));d.maxSlippagePct=Math.min(3,Math.max(.1,Number(d.maxSlippagePct)||.5));d.maxOpenPositions=Math.max(1,Math.floor(Number(d.maxOpenPositions)||5));d.maxTickerAllocationPct=Math.min(100,Math.max(1,Number(d.maxTickerAllocationPct)||40));d.maxDeployedUsd=Math.max(.1,Number(d.maxDeployedUsd)||15);d.minVaultReserveEth=Math.max(0,Number(d.minVaultReserveEth)||0);d.refreshSeconds=Math.min(3600,Math.max(60,Number(d.refreshSeconds)||60));d.allowRiskReducingExits=d.allowRiskReducingExits!==false;d.failClosedUnknownPortfolio=d.failClosedUnknownPortfolio!==false;return d}
-function riskLoad(){try{const raw=localStorage.getItem(RISK_KEY);if(!raw){const seeded=riskNormalize(riskLegacySeed());localStorage.setItem(RISK_KEY,JSON.stringify(seeded));return seeded}return riskNormalize(JSON.parse(raw))}catch{return riskNormalize(riskDefaults())}}
+function riskNormalize(p){const d={...riskDefaults(),...(p||{})};d.version=2;d.maxTradeUsd=Math.min(ABSOLUTE_MAX_TRADE_USD,Math.max(.1,Number(d.maxTradeUsd)||5));d.dailyBudgetUsd=Math.min(ABSOLUTE_MAX_DAILY_USD,Math.max(.1,Number(d.dailyBudgetUsd)||10));d.dailyLossUsd=Math.max(0,Number(d.dailyLossUsd)||0);d.weeklyLossUsd=Math.max(0,Number(d.weeklyLossUsd)||0);d.maxTradesPerDay=Math.min(ABSOLUTE_MAX_TRADES_PER_DAY,Math.max(1,Math.floor(Number(d.maxTradesPerDay)||1)));d.cooldownMinutes=Math.max(1,Math.floor(Number(d.cooldownMinutes)||15));d.maxSlippagePct=Math.min(10,Math.max(.1,Number(d.maxSlippagePct)||.5));d.maxInputEth=Math.min(ABSOLUTE_MAX_INPUT_ETH,Math.max(.000001,Number(d.maxInputEth)||DEFAULT_MAX_INPUT_ETH));d.maxOpenPositions=Math.max(1,Math.floor(Number(d.maxOpenPositions)||5));d.maxTickerAllocationPct=Math.min(100,Math.max(1,Number(d.maxTickerAllocationPct)||40));d.maxDeployedUsd=Math.max(.1,Number(d.maxDeployedUsd)||15);d.minVaultReserveEth=Math.max(0,Number(d.minVaultReserveEth)||0);d.refreshSeconds=Math.min(3600,Math.max(60,Number(d.refreshSeconds)||60));d.allowRiskReducingExits=d.allowRiskReducingExits!==false;d.failClosedUnknownPortfolio=d.failClosedUnknownPortfolio!==false;return d}
+function riskLoad(){try{const raw=localStorage.getItem(RISK_KEY);if(!raw){const seeded=riskNormalize(riskLegacySeed());localStorage.setItem(RISK_KEY,JSON.stringify(seeded));return seeded}const parsed=JSON.parse(raw),merged=riskNormalize(parsed);if(!('maxInputEth' in parsed))merged.maxInputEth=DEFAULT_MAX_INPUT_ETH;return merged}catch{return riskNormalize(riskDefaults())}}
 function riskSave(p){const d=riskNormalize(p);d.updatedAt=new Date().toISOString();localStorage.setItem(RISK_KEY,JSON.stringify(d));riskSyncAutopilotState(d);return d}
 function riskChainLoad(){try{const x=JSON.parse(localStorage.getItem(RISK_CHAIN_KEY)||'null');return x&&x.registry?.toLowerCase()===POLICY_REGISTRY.toLowerCase()?x:null}catch{return null}}
 function riskChainSave(x){localStorage.setItem(RISK_CHAIN_KEY,JSON.stringify(x));return x}
 function riskFreshChain(maxAgeMs=5*60*1000){const x=riskChainLoad();if(!x||!x.fetchedAt)return null;return Date.now()-new Date(x.fetchedAt).getTime()<=maxAgeMs?x:null}
 function riskMinPositive(...vals){const a=vals.map(Number).filter(x=>Number.isFinite(x)&&x>0);return a.length?Math.min(...a):Infinity}
+function riskMaxInputWei(profile=riskLoad()){return decimalToWei(String(profile.maxInputEth))}
+function riskNativeInputUsdCap(profile=riskLoad()){const px=Number(snapshotEthUsd());if(!(px>0))return Infinity;return profile.maxInputEth*px}
 function riskEffectiveLimits(profile=riskLoad(),chain=riskChainLoad()){
-  const cTrade=Number(chain?.maxTradeUsd),cDaily=Number(chain?.maxDailyUsd),cTrades=Number(chain?.maxTradesPerDay);
-  return {maxTradeUsd:riskMinPositive(profile.maxTradeUsd,MAX_TRADE_USD,cTrade),dailyBudgetUsd:riskMinPositive(profile.dailyBudgetUsd,cDaily),maxTradesPerDay:riskMinPositive(profile.maxTradesPerDay,cTrades),maxSlippagePct:profile.maxSlippagePct,hardMaxTradeUsd:MAX_TRADE_USD,hardMaxInputEth:Number(MAX_AMOUNT_IN_WEI)/1e18,chainUsed:!!chain};
+  const cTrade=Number(chain?.maxTradeUsd),cDaily=Number(chain?.maxDailyUsd),cTrades=Number(chain?.maxTradesPerDay),nativeUsd=riskNativeInputUsdCap(profile);
+  return {maxTradeUsd:riskMinPositive(profile.maxTradeUsd,cTrade,nativeUsd),dailyBudgetUsd:riskMinPositive(profile.dailyBudgetUsd,cDaily),maxTradesPerDay:riskMinPositive(profile.maxTradesPerDay,cTrades),maxSlippagePct:profile.maxSlippagePct,maxInputEth:profile.maxInputEth,nativeInputUsdCap:nativeUsd,chainUsed:!!chain};
 }
 function riskTodayEntries(){const d=new Date().toISOString().slice(0,10);return operatorTradeEntries().filter(x=>String(x.time||'').slice(0,10)===d)}
 function riskTodaySpend(){return riskTodayEntries().filter(x=>x.side==='BUY').reduce((a,x)=>a+(Number(x.usdValue)||0),0)}
@@ -4368,56 +4404,41 @@ function riskTodayPnl(){return riskTodayEntries().filter(x=>x.side==='SELL').red
 function riskWeekEntries(){const cutoff=Date.now()-7*24*3600*1000;return operatorTradeEntries().filter(x=>{const t=new Date(x.time||0).getTime();return Number.isFinite(t)&&t>=cutoff})}
 function riskWeekPnl(){return riskWeekEntries().filter(x=>x.side==='SELL').reduce((a,x)=>a+(Number(x.realizedPnlUsd)||0),0)}
 function riskTodayTradeCount(){return riskTodayEntries().length}
-function riskPortfolioSnapshotSync(symbol=''){
-  let deployedUsd=0,tickerUsd=0,openPositions=0,unknownValue=0;const sym=String(symbol||'').toUpperCase();
-  for(const p of (terminalState.positions||[])){const bal=p.balances?.TRADING||0n;if(bal<=0n)continue;openPositions++;const v=currentPositionUsd('TRADING',p);if(v==null||!Number.isFinite(Number(v))){unknownValue++;continue}deployedUsd+=Number(v);if(String(p.asset?.tokenSymbol||'').toUpperCase()===sym)tickerUsd+=Number(v)}
-  return {loaded:!!(terminalState.positions||[]).length,deployedUsd,tickerUsd,openPositions,unknownValue};
-}
+function riskPortfolioSnapshotSync(symbol=''){let deployedUsd=0,tickerUsd=0,openPositions=0,unknownValue=0;const sym=String(symbol||'').toUpperCase();for(const p of (terminalState.positions||[])){const bal=p.balances?.TRADING||0n;if(bal<=0n)continue;openPositions++;const v=currentPositionUsd('TRADING',p);if(v==null||!Number.isFinite(Number(v))){unknownValue++;continue}deployedUsd+=Number(v);if(String(p.asset?.tokenSymbol||'').toUpperCase()===sym)tickerUsd+=Number(v)}return {loaded:!!(terminalState.positions||[]).length,deployedUsd,tickerUsd,openPositions,unknownValue}}
 function riskReadiness(){const p=riskLoad(),e=riskEffectiveLimits(),reasons=[];const dp=riskTodayPnl(),wp=riskWeekPnl();if(p.dailyLossUsd>0&&dp<=-Math.abs(p.dailyLossUsd))reasons.push(`daily loss stop ${money(dp)}`);if(p.weeklyLossUsd>0&&wp<=-Math.abs(p.weeklyLossUsd))reasons.push(`7-day loss stop ${money(wp)}`);if(riskTodaySpend()>=e.dailyBudgetUsd-1e-9)reasons.push('daily BUY budget used');if(riskTodayTradeCount()>=e.maxTradesPerDay)reasons.push('trade-count ceiling reached');if(localStorage.getItem(TRADE_RECOVERY_KEY))reasons.push('SELL recovery checkpoint exists');if(readReceiptLog().some(x=>!['CONFIRMED','FAILED'].includes(x.status)))reasons.push('pending transaction receipt exists');return {ok:!reasons.length,reasons}}
-function riskSyncAutopilotState(profile=riskLoad()){
-  try{const key='rustee-supervised-autopilot-v32',a=JSON.parse(localStorage.getItem(key)||'{}'),e=riskEffectiveLimits(profile);a.maxTradeUsd=e.maxTradeUsd;a.dailyBudgetUsd=e.dailyBudgetUsd;a.dailyLossUsd=profile.dailyLossUsd;a.cooldownMinutes=profile.cooldownMinutes;a.refreshSeconds=profile.refreshSeconds;a.slippage=profile.maxSlippagePct;localStorage.setItem(key,JSON.stringify(a))}catch{}
-}
-async function riskReadOnchainPolicy(render=true){
-  const raw=await secCall('getTradingPolicy()'),w=decodeWords(raw);if(w.length<4)throw Error('Unexpected getTradingPolicy() response');
-  let venueAllowed=null,spenderAllowed=null;try{venueAllowed=boolWord(decodeWords(await secCall('allowedVenue(address)',addrWord(ROUTER)))[0])}catch{}try{spenderAllowed=boolWord(decodeWords(await secCall('allowedSpender(address)',addrWord(ROUTER)))[0])}catch{}
-  const x={version:1,chainId:CHAIN,registry:POLICY_REGISTRY,maxTradeUsd:Number(BigInt('0x'+w[0]))/1e18,maxDailyUsd:Number(BigInt('0x'+w[1]))/1e18,maxTradesPerDay:Number(BigInt('0x'+w[2])),paused:boolWord(w[3]),venueAllowed,spenderAllowed,fetchedAt:new Date().toISOString()};riskChainSave(x);if(render)riskRender();return x
-}
-function riskBasicBuyBlock(symbol,sizeUsd){
-  const p=riskLoad(),e=riskEffectiveLimits(),reasons=[];const size=Number(sizeUsd);if(!(size>=.1))reasons.push('BUY size below $0.10');if(size>e.maxTradeUsd+1e-9)reasons.push(`BUY ${money(size)} exceeds effective max ${money(e.maxTradeUsd)}`);if(riskTodaySpend()+size>e.dailyBudgetUsd+1e-9)reasons.push(`daily BUY budget would exceed ${money(e.dailyBudgetUsd)}`);if(p.dailyLossUsd>0&&riskTodayPnl()<=-Math.abs(p.dailyLossUsd))reasons.push(`daily realized-loss stop reached (${money(riskTodayPnl())})`);if(p.weeklyLossUsd>0&&riskWeekPnl()<=-Math.abs(p.weeklyLossUsd))reasons.push(`rolling 7-day realized-loss stop reached (${money(riskWeekPnl())})`);if(riskTodayTradeCount()+1>e.maxTradesPerDay)reasons.push(`trade-count ceiling ${e.maxTradesPerDay}/day would be exceeded`);
-  const ps=riskPortfolioSnapshotSync(symbol);if(ps.loaded){if(p.failClosedUnknownPortfolio&&ps.unknownValue>0)reasons.push(`${ps.unknownValue} Trading position(s) cannot be valued; BUY fails closed`);const isNew=ps.tickerUsd<=0;if(isNew&&ps.openPositions>=p.maxOpenPositions)reasons.push(`maximum open positions (${p.maxOpenPositions}) reached`);if(ps.deployedUsd+size>p.maxDeployedUsd+1e-9)reasons.push(`deployed stock cap ${money(p.maxDeployedUsd)} would be exceeded`);const postTicker=ps.tickerUsd+size,tickerPct=postTicker/p.maxDeployedUsd*100;if(tickerPct>p.maxTickerAllocationPct+1e-9)reasons.push(`${String(symbol).toUpperCase()} would use ${tickerPct.toFixed(1)}% of deployed cap; max ${p.maxTickerAllocationPct}%`)}
-  return reasons;
-}
+function riskSyncAutopilotState(profile=riskLoad()){try{const key='rustee-supervised-autopilot-v32',a=JSON.parse(localStorage.getItem(key)||'{}'),e=riskEffectiveLimits(profile);a.maxTradeUsd=e.maxTradeUsd;a.dailyBudgetUsd=e.dailyBudgetUsd;a.dailyLossUsd=profile.dailyLossUsd;a.cooldownMinutes=profile.cooldownMinutes;a.refreshSeconds=profile.refreshSeconds;a.slippage=profile.maxSlippagePct;localStorage.setItem(key,JSON.stringify(a))}catch{}}
+async function riskReadOnchainPolicy(render=true){const raw=await secCall(POLICY_GET_SIG),w=decodeWords(raw);if(w.length<4)throw Error('Unexpected getTradingPolicy() response');let venueAllowed=null,spenderAllowed=null;try{venueAllowed=boolWord(decodeWords(await secCall('allowedVenue(address)',addrWord(ROUTER)))[0])}catch{}try{spenderAllowed=boolWord(decodeWords(await secCall('allowedSpender(address)',addrWord(ROUTER)))[0])}catch{}const x={version:2,chainId:CHAIN,registry:POLICY_REGISTRY,maxTradeUsd:Number(BigInt('0x'+w[0]))/1e18,maxDailyUsd:Number(BigInt('0x'+w[1]))/1e18,maxTradesPerDay:Number(BigInt('0x'+w[2])),paused:boolWord(w[3]),venueAllowed,spenderAllowed,fetchedAt:new Date().toISOString()};riskChainSave(x);if(render)riskRender();return x}
+function riskBasicBuyBlock(symbol,sizeUsd){const p=riskLoad(),e=riskEffectiveLimits(),reasons=[];const size=Number(sizeUsd);if(!(size>=.1))reasons.push('BUY size below $0.10');if(size>e.maxTradeUsd+1e-9)reasons.push(`BUY ${money(size)} exceeds effective max ${money(e.maxTradeUsd)}`);if(riskTodaySpend()+size>e.dailyBudgetUsd+1e-9)reasons.push(`daily BUY budget would exceed ${money(e.dailyBudgetUsd)}`);if(p.dailyLossUsd>0&&riskTodayPnl()<=-Math.abs(p.dailyLossUsd))reasons.push(`daily realized-loss stop reached (${money(riskTodayPnl())})`);if(p.weeklyLossUsd>0&&riskWeekPnl()<=-Math.abs(p.weeklyLossUsd))reasons.push(`rolling 7-day realized-loss stop reached (${money(riskWeekPnl())})`);if(riskTodayTradeCount()+1>e.maxTradesPerDay)reasons.push(`trade-count ceiling ${e.maxTradesPerDay}/day would be exceeded`);const ps=riskPortfolioSnapshotSync(symbol);if(p.failClosedUnknownPortfolio&&ps.loaded&&ps.unknownValue>0)reasons.push(`${ps.unknownValue} Trading position(s) cannot be valued`);if(ps.loaded){if(ps.openPositions>=p.maxOpenPositions&&ps.tickerUsd<=0)reasons.push(`open-position ceiling ${p.maxOpenPositions} reached`);if(ps.deployedUsd+size>p.maxDeployedUsd+1e-9)reasons.push(`deployed-cap ${money(p.maxDeployedUsd)} would be exceeded`);if(ps.tickerUsd+size>p.maxDeployedUsd*(p.maxTickerAllocationPct/100)+1e-9)reasons.push(`${symbol} allocation cap ${p.maxTickerAllocationPct}% of deployed limit would be exceeded`)}return reasons}
 function riskAutopilotBlock(rule,o){const p=riskLoad(),e=riskEffectiveLimits();if(rule.lastFired&&Date.now()-new Date(rule.lastFired).getTime()<p.cooldownMinutes*60000)return 'Rule cooldown active';if(rule.side==='BUY'){const size=Number(rule.size)||0;const reasons=riskBasicBuyBlock(rule.symbol,size);if(reasons.length)return reasons[0]}else{if(!o.pos||o.qty<=0)return 'No Trading TBA position to sell';const pct=Number(rule.size);if(!(pct>=1&&pct<=100))return 'SELL size must be 1–100%';if(!p.allowRiskReducingExits&&riskTodayTradeCount()+1>e.maxTradesPerDay)return `Trade-count ceiling ${e.maxTradesPerDay}/day reached`}return null}
-async function riskPreflightTrade({side,symbol,sizeUsd=null,slippage=null,amountInWei=null,recoveryMode=false}={}){
-  const p=riskLoad(),reasons=[],warnings=[];let chain=riskFreshChain();try{chain=await riskReadOnchainPolicy(false)}catch(e){warnings.push('Registry policy refresh unavailable: '+e.message)}const e=riskEffectiveLimits(p,chain||riskChainLoad());const slip=Number(slippage);if(Number.isFinite(slip)&&slip>p.maxSlippagePct+1e-9)reasons.push(`slippage ${slip}% exceeds profile max ${p.maxSlippagePct}%`);
-  if(!recoveryMode){if(localStorage.getItem(TRADE_RECOVERY_KEY))reasons.push('Resolve the incomplete SELL checkpoint first');if(readReceiptLog().some(x=>!['CONFIRMED','FAILED'].includes(x.status)))reasons.push('A pending transaction receipt already exists')}
-  if(side==='BUY'){
-    reasons.push(...riskBasicBuyBlock(symbol,Number(sizeUsd)));
-    if(amountInWei!=null&&p.minVaultReserveEth>0){try{const vb=BigInt(await rpc('eth_getBalance',[VAULT,'latest'])),reserveWei=decimalToWei(String(p.minVaultReserveEth));if(vb<BigInt(amountInWei)+reserveWei)reasons.push(`Vault reserve would fall below ${p.minVaultReserveEth} ETH`)}catch(err){reasons.push('Could not verify Vault ETH reserve: '+err.message)}}
-  }else if(side==='SELL'&&!p.allowRiskReducingExits){if(riskTodayTradeCount()+1>e.maxTradesPerDay)reasons.push(`trade-count ceiling ${e.maxTradesPerDay}/day would be exceeded`);if(p.dailyLossUsd>0&&riskTodayPnl()<=-Math.abs(p.dailyLossUsd))reasons.push('daily realized-loss stop is active');if(p.weeklyLossUsd>0&&riskWeekPnl()<=-Math.abs(p.weeklyLossUsd))reasons.push('rolling 7-day realized-loss stop is active')}
-  if(chain?.paused)warnings.push('Registry policy reports PAUSED; current supervised route is not represented as Registry-gated in this build');
-  return {block:reasons.length>0,reasons,warnings,effective:e,profile:p,chain};
-}
-function riskReadForm(){return riskNormalize({maxTradeUsd:Number($('riskMaxTradeUsd').value),dailyBudgetUsd:Number($('riskDailyBudgetUsd').value),dailyLossUsd:Number($('riskDailyLossUsd').value),weeklyLossUsd:Number($('riskWeeklyLossUsd').value),maxTradesPerDay:Number($('riskMaxTradesDay').value),cooldownMinutes:Number($('riskCooldownMinutes').value),maxSlippagePct:Number($('riskMaxSlippage').value),maxOpenPositions:Number($('riskMaxOpenPositions').value),maxTickerAllocationPct:Number($('riskMaxTickerPct').value),maxDeployedUsd:Number($('riskMaxDeployedUsd').value),minVaultReserveEth:Number($('riskMinVaultEth').value),refreshSeconds:Number($('riskRefreshSeconds').value),allowRiskReducingExits:$('riskAllowExitOverride').checked,failClosedUnknownPortfolio:$('riskFailClosedUnknown').checked})}
-function riskApplyToDependentUi(){const p=riskLoad(),e=riskEffectiveLimits(p);if($('tradeUsd'))$('tradeUsd').max=String(e.maxTradeUsd);if($('stratEntryUsd'))$('stratEntryUsd').max=String(e.maxTradeUsd);if($('tradeSlippage')){$('tradeSlippage').max=String(p.maxSlippagePct);if(Number($('tradeSlippage').value)>p.maxSlippagePct)$('tradeSlippage').value=String(p.maxSlippagePct)}if($('autoRuleSize')&&$('autoRuleSide')?.value==='BUY')$('autoRuleSize').max=String(e.maxTradeUsd);if($('autoMaxTradeUsd'))$('autoMaxTradeUsd').value=e.maxTradeUsd;if($('autoDailyBudgetUsd'))$('autoDailyBudgetUsd').value=e.dailyBudgetUsd;if($('autoDailyLossUsd'))$('autoDailyLossUsd').value=p.dailyLossUsd;if($('autoCooldownMinutes'))$('autoCooldownMinutes').value=p.cooldownMinutes;if($('autoRefreshSeconds'))$('autoRefreshSeconds').value=p.refreshSeconds;if($('autoSlippage'))$('autoSlippage').value=p.maxSlippagePct}
-function riskRender(){
-  if(!$('riskEffTrade'))return;const p=riskLoad(),c=riskChainLoad(),e=riskEffectiveLimits(p,c),r=riskReadiness(),ps=riskPortfolioSnapshotSync();
-  $('riskMaxTradeUsd').value=p.maxTradeUsd;$('riskDailyBudgetUsd').value=p.dailyBudgetUsd;$('riskDailyLossUsd').value=p.dailyLossUsd;$('riskWeeklyLossUsd').value=p.weeklyLossUsd;$('riskMaxTradesDay').value=p.maxTradesPerDay;$('riskCooldownMinutes').value=p.cooldownMinutes;$('riskMaxSlippage').value=p.maxSlippagePct;$('riskMaxOpenPositions').value=p.maxOpenPositions;$('riskMaxTickerPct').value=p.maxTickerAllocationPct;$('riskMaxDeployedUsd').value=p.maxDeployedUsd;$('riskMinVaultEth').value=p.minVaultReserveEth;$('riskRefreshSeconds').value=p.refreshSeconds;$('riskAllowExitOverride').checked=!!p.allowRiskReducingExits;$('riskFailClosedUnknown').checked=!!p.failClosedUnknownPortfolio;
-  $('riskEffTrade').textContent=money(e.maxTradeUsd);$('riskEffDaily').textContent=money(e.dailyBudgetUsd);$('riskEffTrades').textContent=String(e.maxTradesPerDay);$('riskEffSlip').textContent=p.maxSlippagePct.toFixed(2)+'%';$('riskReadiness').textContent=r.ok?'READY ✓':'BUY BLOCK';$('riskReadiness').className=r.ok?'riskStatusPass':'riskStatusBlock';$('riskHardTrade').textContent=money(MAX_TRADE_USD);$('riskHardEth').textContent=(Number(MAX_AMOUNT_IN_WEI)/1e18).toFixed(6).replace(/0+$/,'').replace(/\.$/,'')+' ETH';$('riskRegistry').textContent=short(POLICY_REGISTRY);
-  $('riskChainTrade').textContent=c?money(c.maxTradeUsd):'Not loaded';$('riskChainDaily').textContent=c?money(c.maxDailyUsd):'Not loaded';$('riskChainTrades').textContent=c?String(c.maxTradesPerDay):'Not loaded';$('riskChainPaused').textContent=c?(c.paused?'PAUSED':'UNPAUSED'):'Not loaded';$('riskChainPaused').className=c?.paused?'riskStatusWarn':'';$('riskChainVenue').textContent=c?.venueAllowed==null?'Not loaded':c.venueAllowed?'YES ✓':'NO';$('riskChainSpender').textContent=c?.spenderAllowed==null?'Not loaded':c.spenderAllowed?'YES ✓':'NO';$('riskChainTime').textContent=c?.fetchedAt?new Date(c.fetchedAt).toLocaleString():'—';
-  $('riskTodaySpend').textContent=money(riskTodaySpend());const dp=riskTodayPnl(),wp=riskWeekPnl();$('riskTodayPnl').textContent=(dp>=0?'+':'')+money(dp);$('riskTodayPnl').className=dp>=0?'pnlPos':'pnlNeg';$('riskWeekPnl').textContent=(wp>=0?'+':'')+money(wp);$('riskWeekPnl').className=wp>=0?'pnlPos':'pnlNeg';$('riskTodayTrades').textContent=String(riskTodayTradeCount());$('riskOpenPositions').textContent=ps.loaded?String(ps.openPositions):'Load Portfolio';$('riskDeployedUsd').textContent=ps.loaded?money(ps.deployedUsd)+(ps.unknownValue?` + ${ps.unknownValue} unknown`:''):'Load Portfolio';
-  $('riskEffectiveText').innerHTML=`<b>Effective BUY ceiling:</b> ${money(e.maxTradeUsd)} / trade · ${money(e.dailyBudgetUsd)} / day · ${e.maxTradesPerDay} trades/day.<br><b>Portfolio:</b> ${p.maxOpenPositions} positions · ${money(p.maxDeployedUsd)} deployed cap · ${p.maxTickerAllocationPct}% one-ticker share of that cap.<br><b>Loss controls:</b> ${p.dailyLossUsd?money(p.dailyLossUsd)+' daily':'daily off'} · ${p.weeklyLossUsd?money(p.weeklyLossUsd)+' rolling 7-day':'7-day off'}.<br><b>Exit override:</b> ${p.allowRiskReducingExits?'risk-reducing SELLs remain available':'SELLs obey loss/trade-count stops'}.`;
-  $('riskPreflightLog').textContent=r.ok?'PASS — no current account-level BUY stop is active. Candidate-specific exposure and Vault reserve checks run again before quoting.':'BUY BLOCK — '+r.reasons.join('; ');riskApplyToDependentUi();
-}
+async function riskPreflightTrade({side,symbol,sizeUsd=null,slippage=null,amountInWei=null,recoveryMode=false}={}){const p=riskLoad(),reasons=[],warnings=[];let chain=riskFreshChain();try{chain=await riskReadOnchainPolicy(false)}catch(e){warnings.push('Registry policy refresh unavailable: '+e.message)}const e=riskEffectiveLimits(p,chain||riskChainLoad());const slip=Number(slippage);if(Number.isFinite(slip)&&slip>p.maxSlippagePct+1e-9)reasons.push(`slippage ${slip}% exceeds profile max ${p.maxSlippagePct}%`);if(side==='BUY'){reasons.push(...riskBasicBuyBlock(symbol,sizeUsd));if(amountInWei!=null){const vb=BigInt(await rpc('eth_getBalance',[VAULT,'latest']));const amt=BigInt(amountInWei),reserve=decimalToWei(String(p.minVaultReserveEth)),cap=riskMaxInputWei(p);if(amt>cap)reasons.push(`BUY input ${fromWei(amt)} ETH exceeds local cap ${fromWei(cap)} ETH`);if(vb<amt+reserve)reasons.push(`Vault would fall below ${p.minVaultReserveEth} ETH reserve`)}}else if(side==='SELL'&&!p.allowRiskReducingExits){if(riskTodayTradeCount()+1>e.maxTradesPerDay)reasons.push(`trade-count ceiling ${e.maxTradesPerDay}/day would be exceeded`);if(p.dailyLossUsd>0&&riskTodayPnl()<=-Math.abs(p.dailyLossUsd))reasons.push('daily realized-loss stop is active');if(p.weeklyLossUsd>0&&riskWeekPnl()<=-Math.abs(p.weeklyLossUsd))reasons.push('rolling 7-day realized-loss stop is active')}if(chain?.paused)warnings.push('Registry policy reports PAUSED; current supervised route is not represented as Registry-gated in this build');return {block:reasons.length>0,reasons,warnings,effective:e,profile:p,chain}}
+function riskReadForm(){return riskNormalize({maxTradeUsd:Number($('riskMaxTradeUsd').value),dailyBudgetUsd:Number($('riskDailyBudgetUsd').value),dailyLossUsd:Number($('riskDailyLossUsd').value),weeklyLossUsd:Number($('riskWeeklyLossUsd').value),maxTradesPerDay:Number($('riskMaxTradesDay').value),cooldownMinutes:Number($('riskCooldownMinutes').value),maxSlippagePct:Number($('riskMaxSlippage').value),maxInputEth:Number($('riskMaxInputEth').value),maxOpenPositions:Number($('riskMaxOpenPositions').value),maxTickerAllocationPct:Number($('riskMaxTickerPct').value),maxDeployedUsd:Number($('riskMaxDeployedUsd').value),minVaultReserveEth:Number($('riskMinVaultEth').value),refreshSeconds:Number($('riskRefreshSeconds').value),allowRiskReducingExits:$('riskAllowExitOverride').checked,failClosedUnknownPortfolio:$('riskFailClosedUnknown').checked})}
+function riskApplyToDependentUi(){const p=riskLoad(),e=riskEffectiveLimits(p);if($('tradeUsd'))$('tradeUsd').max=String(Number.isFinite(e.maxTradeUsd)?e.maxTradeUsd:ABSOLUTE_MAX_TRADE_USD);if($('stratEntryUsd'))$('stratEntryUsd').max=String(Number.isFinite(e.maxTradeUsd)?e.maxTradeUsd:ABSOLUTE_MAX_TRADE_USD);if($('tradeSlippage')){$('tradeSlippage').max=String(p.maxSlippagePct);if(Number($('tradeSlippage').value)>p.maxSlippagePct)$('tradeSlippage').value=String(p.maxSlippagePct)}if($('autoRuleSize')&&$('autoRuleSide')?.value==='BUY')$('autoRuleSize').max=String(e.maxTradeUsd);if($('autoMaxTradeUsd'))$('autoMaxTradeUsd').value=e.maxTradeUsd;if($('autoDailyBudgetUsd'))$('autoDailyBudgetUsd').value=e.dailyBudgetUsd;if($('autoDailyLossUsd'))$('autoDailyLossUsd').value=p.dailyLossUsd;if($('autoCooldownMinutes'))$('autoCooldownMinutes').value=p.cooldownMinutes;if($('autoRefreshSeconds'))$('autoRefreshSeconds').value=p.refreshSeconds;if($('autoSlippage'))$('autoSlippage').value=p.maxSlippagePct}
+function policyEditorInvalidate(){policyPrepared=null;if($('policyExecute'))$('policyExecute').disabled=true;if($('policyControlLog'))$('policyControlLog').textContent='Policy editor changed. Prepare + simulate again before signing.'}
+function policyLoadEditor(chain=riskChainLoad()){if(!chain)throw Error('Refresh the on-chain policy first');$('policyMaxTradeUsd').value=Number(chain.maxTradeUsd).toFixed(2);$('policyMaxDailyUsd').value=Number(chain.maxDailyUsd).toFixed(2);$('policyMaxTradesDay').value=String(chain.maxTradesPerDay);$('policyCurrentState').textContent=chain.paused?'PAUSED · preserved':'UNPAUSED · preserved';$('policySelector').textContent='0x'+selectorOf(POLICY_SET_SIG);$('policySigner').textContent=OWNER?short(OWNER):'Resolve current NFT owner';policyPrepared=null;$('policyExecute').disabled=true;return chain}
+function policyReadProposal(){const trade=Number($('policyMaxTradeUsd').value),daily=Number($('policyMaxDailyUsd').value),trades=Math.floor(Number($('policyMaxTradesDay').value));if(!(trade>=.1&&trade<=ABSOLUTE_MAX_TRADE_USD))throw Error(`Registry max trade must be $0.10–$${ABSOLUTE_MAX_TRADE_USD.toLocaleString()}`);if(!(daily>=.1&&daily<=ABSOLUTE_MAX_DAILY_USD))throw Error(`Registry daily max must be $0.10–$${ABSOLUTE_MAX_DAILY_USD.toLocaleString()}`);if(!(trades>=1&&trades<=ABSOLUTE_MAX_TRADES_PER_DAY))throw Error(`Trades/day must be 1–${ABSOLUTE_MAX_TRADES_PER_DAY.toLocaleString()}`);if(daily+1e-9<trade)throw Error('Registry daily maximum cannot be lower than the per-trade maximum');return {trade,daily,trades}}
+function policySetCalldata(trade,daily,trades,paused){const max128=(1n<<128n)-1n,t=decimalToWei(String(trade)),d=decimalToWei(String(daily)),n=BigInt(trades);if(t>max128||d>max128)throw Error('USD policy exceeds uint128 storage range');if(n>(1n<<32n)-1n)throw Error('Trades/day exceeds uint32 storage range');return '0x'+selectorOf(POLICY_SET_SIG)+word(t)+word(d)+word(n)+word(paused?1:0)}
+async function policyPrepareUpdate(){const auth=await ensureOwnerAndChain();const chain=await riskReadOnchainPolicy(false);policyLoadEditor(chain); // show authoritative current state first
+// Re-apply what the operator had typed if prepare was invoked after editing.
+const proposal=policyPendingInput||policyReadProposal();
+const data=policySetCalldata(proposal.trade,proposal.daily,proposal.trades,chain.paused),tx={from:auth.tokenOwner,to:POLICY_REGISTRY,data};const code=await rpc('eth_getCode',[POLICY_REGISTRY,'latest']);if(!code||code==='0x')throw Error('Registry has no contract bytecode');const gas=BigInt(await rpc('eth_estimateGas',[tx])),call=await rpc('eth_call',[tx,'latest']);await armPreparedWalletHandoff(tx,'Rustee Registry trading policy update',120000);policyPrepared={time:Date.now(),tx,gas,proposal,current:chain,preservePaused:chain.paused,syncOperator:$('policySyncOperator').checked};$('policyMaxTradeUsd').value=proposal.trade;$('policyMaxDailyUsd').value=proposal.daily;$('policyMaxTradesDay').value=proposal.trades;$('policyExecute').disabled=false;$('policySelector').textContent='0x'+selectorOf(POLICY_SET_SIG);$('policySigner').textContent=short(auth.tokenOwner);$('policyControlLog').textContent=`PREPARED ✓ — NO TRANSACTION SENT\nSigner: ${auth.tokenOwner}\nRegistry: ${POLICY_REGISTRY}\nSelector: 0x${selectorOf(POLICY_SET_SIG)}\nMax trade: ${money(chain.maxTradeUsd)} → ${money(proposal.trade)}\nMax daily: ${money(chain.maxDailyUsd)} → ${money(proposal.daily)}\nTrades/day: ${chain.maxTradesPerDay} → ${proposal.trades}\nTrading state: ${chain.paused?'PAUSED':'UNPAUSED'} → preserved unchanged\nEstimated gas: ${gas}\neth_call: ${call||'0x'}\n\nREADY — tap Open wallet to sign within 120 seconds.`;policyPendingInput=null}
+let policyPendingInput=null;
+async function policyPrepareFromEditor(){policyPendingInput=policyReadProposal();return policyPrepareUpdate()}
+async function policyExecuteUpdate(){const x=policyPrepared;if(!x)throw Error('Prepare + simulate the policy update first.');if(Date.now()-x.time>120000){policyPrepared=null;$('policyExecute').disabled=true;throw Error('Policy preparation expired. Prepare again.')}const hash=await secureSendTransaction({...x.tx,gas:hexQty(x.gas*120n/100n)},'Rustee Registry trading policy update');$('policyExecute').disabled=true;$('policyControlLog').textContent='SUBMITTED\n'+hash+'\nWaiting for receipt…';const receipt=await waitReceipt(hash);const fresh=await riskReadOnchainPolicy(false);const ok=Math.abs(fresh.maxTradeUsd-x.proposal.trade)<1e-9&&Math.abs(fresh.maxDailyUsd-x.proposal.daily)<1e-9&&fresh.maxTradesPerDay===x.proposal.trades&&fresh.paused===x.preservePaused;if(!ok)throw Error('Transaction confirmed but read-back policy does not exactly match the prepared proposal');if(x.syncOperator){const p=riskLoad();p.maxTradeUsd=x.proposal.trade;p.dailyBudgetUsd=x.proposal.daily;p.maxTradesPerDay=x.proposal.trades;riskSave(p)}policyPrepared=null;riskRender();policyLoadEditor(fresh);if(typeof autopilotRender==='function')autopilotRender();if(typeof strategyRender==='function')strategyRender();$('policyControlLog').textContent=`CONFIRMED + VERIFIED ✓\nTransaction: ${hash}\nBlock: ${Number(BigInt(receipt.blockNumber))}\nRegistry max trade: ${money(fresh.maxTradeUsd)}\nRegistry daily max: ${money(fresh.maxDailyUsd)}\nTrades/day: ${fresh.maxTradesPerDay}\nTrading state preserved: ${fresh.paused?'PAUSED':'UNPAUSED'}\nOperator profile synced: ${x.syncOperator?'YES':'NO'}`}
+function riskRender(){if(!$('riskEffTrade'))return;const p=riskLoad(),c=riskChainLoad(),e=riskEffectiveLimits(p,c),r=riskReadiness(),ps=riskPortfolioSnapshotSync();$('riskMaxTradeUsd').value=p.maxTradeUsd;$('riskDailyBudgetUsd').value=p.dailyBudgetUsd;$('riskDailyLossUsd').value=p.dailyLossUsd;$('riskWeeklyLossUsd').value=p.weeklyLossUsd;$('riskMaxTradesDay').value=p.maxTradesPerDay;$('riskCooldownMinutes').value=p.cooldownMinutes;$('riskMaxSlippage').value=p.maxSlippagePct;$('riskMaxInputEth').value=p.maxInputEth;$('riskMaxOpenPositions').value=p.maxOpenPositions;$('riskMaxTickerPct').value=p.maxTickerAllocationPct;$('riskMaxDeployedUsd').value=p.maxDeployedUsd;$('riskMinVaultEth').value=p.minVaultReserveEth;$('riskRefreshSeconds').value=p.refreshSeconds;$('riskAllowExitOverride').checked=!!p.allowRiskReducingExits;$('riskFailClosedUnknown').checked=!!p.failClosedUnknownPortfolio;$('riskEffTrade').textContent=money(e.maxTradeUsd);$('riskEffDaily').textContent=money(e.dailyBudgetUsd);$('riskEffTrades').textContent=String(e.maxTradesPerDay);$('riskEffSlip').textContent=p.maxSlippagePct.toFixed(2)+'%';$('riskReadiness').textContent=r.ok?'READY ✓':'BUY BLOCK';$('riskReadiness').className=r.ok?'riskStatusPass':'riskStatusBlock';$('riskHardTrade').textContent=money(p.maxTradeUsd);$('riskHardEth').textContent=Number(p.maxInputEth).toFixed(6).replace(/0+$/,'').replace(/\.$/,'')+' ETH';$('riskInputUsdCap').textContent=Number.isFinite(e.nativeInputUsdCap)?money(e.nativeInputUsdCap):'Need ETH/USD';$('riskRegistry').textContent=short(POLICY_REGISTRY);$('riskChainTrade').textContent=c?money(c.maxTradeUsd):'Not loaded';$('riskChainDaily').textContent=c?money(c.maxDailyUsd):'Not loaded';$('riskChainTrades').textContent=c?String(c.maxTradesPerDay):'Not loaded';$('riskChainPaused').textContent=c?(c.paused?'PAUSED':'UNPAUSED'):'Not loaded';$('riskChainPaused').className=c?.paused?'riskStatusWarn':'';$('riskChainVenue').textContent=c?.venueAllowed==null?'Not loaded':c.venueAllowed?'YES ✓':'NO';$('riskChainSpender').textContent=c?.spenderAllowed==null?'Not loaded':c.spenderAllowed?'YES ✓':'NO';$('riskChainTime').textContent=c?.fetchedAt?new Date(c.fetchedAt).toLocaleString():'—';$('riskTodaySpend').textContent=money(riskTodaySpend());const dp=riskTodayPnl(),wp=riskWeekPnl();$('riskTodayPnl').textContent=(dp>=0?'+':'')+money(dp);$('riskTodayPnl').className=dp>=0?'pnlPos':'pnlNeg';$('riskWeekPnl').textContent=(wp>=0?'+':'')+money(wp);$('riskWeekPnl').className=wp>=0?'pnlPos':'pnlNeg';$('riskTodayTrades').textContent=String(riskTodayTradeCount());$('riskOpenPositions').textContent=ps.loaded?String(ps.openPositions):'Load Portfolio';$('riskDeployedUsd').textContent=ps.loaded?money(ps.deployedUsd)+(ps.unknownValue?` + ${ps.unknownValue} unknown`:''):'Load Portfolio';$('riskEffectiveText').innerHTML=`<b>Effective BUY ceiling:</b> ${money(e.maxTradeUsd)} / trade · ${money(e.dailyBudgetUsd)} / day · ${e.maxTradesPerDay} trades/day.<br><b>Native input:</b> ${p.maxInputEth} ETH local cap${Number.isFinite(e.nativeInputUsdCap)?` ≈ ${money(e.nativeInputUsdCap)} at current ETH/USD reference`:''}.<br><b>Portfolio:</b> ${p.maxOpenPositions} positions · ${money(p.maxDeployedUsd)} deployed cap · ${p.maxTickerAllocationPct}% one-ticker share of that cap.<br><b>Loss controls:</b> ${p.dailyLossUsd?money(p.dailyLossUsd)+' daily':'daily off'} · ${p.weeklyLossUsd?money(p.weeklyLossUsd)+' rolling 7-day':'7-day off'}.<br><b>Exit override:</b> ${p.allowRiskReducingExits?'risk-reducing SELLs remain available':'SELLs obey loss/trade-count stops'}.`;$('riskPreflightLog').textContent=r.ok?'PASS — no current account-level BUY stop is active. Candidate-specific exposure and Vault reserve checks run again before quoting.':'BUY BLOCK — '+r.reasons.join('; ');if(c){$('policyCurrentState').textContent=c.paused?'PAUSED · preserved':'UNPAUSED · preserved';$('policySelector').textContent='0x'+selectorOf(POLICY_SET_SIG);$('policySigner').textContent=OWNER?short(OWNER):'Resolve owner'}riskApplyToDependentUi()}
 async function riskRefreshRuntime(loadPortfolio=true){if(loadPortfolio&&!terminalState.positions.length){try{await discoverPortfolio()}catch{}}let policyErr=null;try{await riskReadOnchainPolicy(false)}catch(e){policyErr=e.message}let vaultText='Unavailable';try{const vb=BigInt(await rpc('eth_getBalance',[VAULT,'latest']));vaultText=fromWei(vb)+' ETH'}catch{}riskRender();if($('riskVaultEth'))$('riskVaultEth').textContent=vaultText;if(policyErr)$('riskPreflightLog').textContent+='\nRegistry refresh warning: '+policyErr;return {policyErr,vaultText}}
-function riskExport(){const payload={schema:'rustee-risk-profile-v34',exportedAt:new Date().toISOString(),profile:riskLoad(),chainReference:riskChainLoad(),hardCeilings:{maxTradeUsd:MAX_TRADE_USD,maxAmountInWei:MAX_AMOUNT_IN_WEI.toString()}};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-risk-profile-v3.4.json';a.click();URL.revokeObjectURL(a.href)}
-function riskReset(){const d=riskSave(riskDefaults());riskRender();if(typeof autopilotRender==='function')autopilotRender();if(typeof strategyRender==='function')strategyRender();$('riskSaveLog').textContent='Profile reset to v3.4 defaults. Autopilot remains in its existing ON/OFF state.';return d}
-if($('riskSave'))$('riskSave').onclick=()=>{try{const p=riskSave(riskReadForm());riskRender();if(typeof autopilotRender==='function')autopilotRender();if(typeof strategyRender==='function')strategyRender();$('riskSaveLog').textContent='PASS — centralized risk profile saved. Manual Trade, Autopilot and Strategy Lab sizing now use these limits.'}catch(e){$('riskSaveLog').textContent='ERROR: '+e.message}};
-if($('riskReset'))$('riskReset').onclick=()=>{if(confirm('Reset the Rustee operator risk profile to v3.4 defaults? Existing strategies and trades are not deleted.'))riskReset()};
+function riskExport(){const payload={schema:'rustee-risk-profile-v342',exportedAt:new Date().toISOString(),profile:riskLoad(),chainPolicy:riskChainLoad(),sanityBounds:{maxTradeUsd:ABSOLUTE_MAX_TRADE_USD,maxDailyUsd:ABSOLUTE_MAX_DAILY_USD,maxTradesPerDay:ABSOLUTE_MAX_TRADES_PER_DAY,maxInputEth:ABSOLUTE_MAX_INPUT_ETH},note:'Operational limits are editable; included DataStreamsPolicyGateV2 source is not modified by v3.4.2.'};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-risk-policy-v3.4.2.json';a.click();URL.revokeObjectURL(a.href)}
+function riskReset(){const d=riskSave(riskDefaults());riskRender();if(typeof autopilotRender==='function')autopilotRender();if(typeof strategyRender==='function')strategyRender();$('riskSaveLog').textContent='Profile reset to v3.4.2 defaults. This does not change the on-chain Registry policy.';return d}
+if($('riskSave'))$('riskSave').onclick=()=>{try{const p=riskSave(riskReadForm());riskRender();if(typeof autopilotRender==='function')autopilotRender();if(typeof strategyRender==='function')strategyRender();$('riskSaveLog').textContent='PASS — centralized operator risk profile saved. Registry policy is unchanged unless you separately sign a Live Policy update.'}catch(e){$('riskSaveLog').textContent='ERROR: '+e.message}};
+if($('riskReset'))$('riskReset').onclick=()=>{if(confirm('Reset only the local Rustee operator risk profile to v3.4.2 defaults? On-chain Registry values will not change.'))riskReset()};
 if($('riskExport'))$('riskExport').onclick=riskExport;
-if($('riskLoadChain'))$('riskLoadChain').onclick=()=>riskReadOnchainPolicy(true).then(()=>$('riskSaveLog').textContent='PASS — on-chain Registry reference refreshed.').catch(e=>$('riskSaveLog').textContent='ERROR: '+e.message);
-if($('riskLivePreflight'))$('riskLivePreflight').onclick=()=>riskRefreshRuntime(true).then(()=>$('riskSaveLog').textContent='PASS — live risk preflight refreshed balances, portfolio state and Registry reference.').catch(e=>$('riskSaveLog').textContent='ERROR: '+e.message);
-riskSyncAutopilotState(riskLoad());setTimeout(()=>{riskRender();riskRefreshRuntime(false).catch(()=>{})},0);
+if($('riskLoadChain'))$('riskLoadChain').onclick=()=>riskReadOnchainPolicy(true).then(c=>{policyLoadEditor(c);$('riskSaveLog').textContent='PASS — on-chain Registry policy refreshed.'}).catch(e=>$('riskSaveLog').textContent='ERROR: '+e.message);
+if($('riskLivePreflight'))$('riskLivePreflight').onclick=()=>riskRefreshRuntime(true).then(()=>$('riskSaveLog').textContent='PASS — live risk preflight refreshed balances, portfolio state and Registry policy.').catch(e=>$('riskSaveLog').textContent='ERROR: '+e.message);
+if($('policyLoadCurrent'))$('policyLoadCurrent').onclick=()=>riskReadOnchainPolicy(true).then(c=>{policyLoadEditor(c);$('policyControlLog').textContent='Loaded current Registry policy. Edit the three numeric values, then Prepare + simulate.'}).catch(e=>$('policyControlLog').textContent='ERROR: '+e.message);
+if($('policyPrepare'))$('policyPrepare').onclick=()=>policyPrepareFromEditor().catch(e=>{policyPrepared=null;$('policyExecute').disabled=true;$('policyControlLog').textContent='ERROR: '+e.message});
+if($('policyExecute'))$('policyExecute').onclick=()=>policyExecuteUpdate().catch(e=>{$('policyControlLog').textContent='ERROR: '+e.message});
+for(const id of ['policyMaxTradeUsd','policyMaxDailyUsd','policyMaxTradesDay'])if($(id))$(id).addEventListener('input',()=>{if(policyPrepared)policyEditorInvalidate()});
+if($('policySyncOperator'))$('policySyncOperator').addEventListener('change',()=>{if(policyPrepared)policyEditorInvalidate()});
+riskSyncAutopilotState(riskLoad());setTimeout(()=>{riskRender();riskRefreshRuntime(false).then(()=>{try{policyLoadEditor(riskChainLoad())}catch{}}).catch(()=>{})},0);
 // -----------------------------------------------------------------------------
 
 // --- v3.2 Supervised Autopilot -------------------------------------------------

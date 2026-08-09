@@ -1,7 +1,7 @@
 {
-  "name": "Rustee Broker #1",
-  "short_name": "Rustee Broker",
-  "description": "Rustee Broker #1 v3.4.1 Metadata Studio + Ownership Hardening + Portfolio Risk Engine for Robinhood Chain",
+  "name": "Rustee Broker v3.4.2 Live Policy Controls",
+  "short_name": "Rustee v3.4.2",
+  "description": "Rustee Broker #1 v3.4.2 Live Policy Controls for Robinhood Chain",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

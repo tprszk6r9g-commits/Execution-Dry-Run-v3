@@ -78,3 +78,7 @@ The workflow refreshes same-origin Robinhood snapshots, regenerates the integrit
 - `OPERATOR_3_1_0.md` — v3.1 additions, guarantees, and non-factory scope.
 - `WALLET_HANDOFF_3_1_2.md` — mobile signing hotfix and validation notes.
 - `archive/` — untouched rollback copies of both uploaded apps.
+
+
+## v3.4.2 — Live Policy Controls
+Limits + Risk can now edit the deployed Registry numeric trading policy through an NFT-owner-signed, simulated transaction. The current Registry pause state is preserved. Operator trade size, daily budget, trades/day, slippage and native-input cap are locally configurable. See `LIVE_POLICY_CONTROLS_3_4_2.md`.
