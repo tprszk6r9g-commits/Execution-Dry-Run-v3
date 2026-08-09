@@ -1,0 +1,41 @@
+name: rehearsal-permission-gate-ci
+
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - 'src/RobinhoodRestrictedTradeAdapter.sol'
+      - 'src/RusteeProductionRunner.sol'
+      - 'src/EngineAuthorizedTradingAccount.sol'
+      - 'test/RusteeRehearsalPermissionGate.t.sol'
+      - '.github/workflows/rehearsal-permission-gate-ci.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foundry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+      - name: Ensure forge-std
+        shell: bash
+        run: |
+          if [ ! -f lib/forge-std/src/Test.sol ]; then
+            mkdir -p lib
+            git clone --depth 1 https://github.com/foundry-rs/forge-std lib/forge-std
+          fi
+      - name: Format check — v3.7.5 files
+        run: forge fmt --check test/RusteeRehearsalPermissionGate.t.sol
+      - name: Build full Rustee contracts
+        run: forge build --sizes
+      - name: Full Rustee test suite
+        run: forge test -vvv
+      - name: Rehearsal allowance 5,000-run fuzz gate
+        env:
+          FOUNDRY_FUZZ_RUNS: '5000'
+        run: forge test --match-contract RusteeRehearsalPermissionGateTest --match-test testFuzzExactAllowanceRoundTrip -vv
