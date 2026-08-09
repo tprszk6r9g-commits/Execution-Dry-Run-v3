@@ -1,4 +1,4 @@
-name: Rustee Broker v3.4.1 · refresh snapshots + verify + deploy
+name: Rustee Broker v3.5 · refresh snapshots + verify + deploy
 
 on:
   push:
