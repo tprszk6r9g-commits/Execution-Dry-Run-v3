@@ -1,10 +1,10 @@
 {
-  "name": "Rustee Broker Live Policy Controls + Metadata Studio",
-  "version": "3.4.2",
+  "name": "Rustee Broker Rotating TBA Manager",
+  "version": "3.5.0",
   "executionCore": "2.8.12",
   "chainId": 4663,
   "brokerNft": "0x4523467C4DDC6D775C7EaD4Dce7656DCe54e7F60",
-  "scope": "stable Rustee Broker #1 operator console; dynamic NFT-owner authority; editable metadata and signed Registry policy controls; not factory",
+  "scope": "Rustee Broker #1 operator console; ERC-6551 Trading TBA generations; STONKBROKER trading; transfer readiness; not factory",
   "files": {
     "index.html": "68853f3cef747b35853394e7b9cca4c605e71e6e64e33b5670a2b41dc6d2cd6e",
     "assets/rustee-broker-384.webp": "3bad628c662448681974836859e9089658c9f9e4a2b166c6e7edccc3903f6167",
@@ -22,6 +22,6 @@
     "Rustee_Broker_v3.4.2_Release_Notes.md": "93bd8e5e68e1458e13738388bf17e149ac1ea789c8066007ac512535bae3a881",
     "Rustee_Broker_v3.4.2_Validation.md": "01740abb1ca2a9e50963e0620da2d5f8eed8e5ed608adc72b7013d4cadece29f"
   },
-  "operatorVersion": "3.4.2",
-  "release": "Live Policy Controls"
+  "operatorVersion": "3.5.0",
+  "release": "Rotating Trading TBA Manager"
 }

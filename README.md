@@ -82,3 +82,153 @@ The workflow refreshes same-origin Robinhood snapshots, regenerates the integrit
 
 ## v3.4.2 — Live Policy Controls
 Limits + Risk can now edit the deployed Registry numeric trading policy through an NFT-owner-signed, simulated transaction. The current Registry pause state is preserved. Operator trade size, daily budget, trades/day, slippage and native-input cap are locally configurable. See `LIVE_POLICY_CONTROLS_3_4_2.md`.
+
+
+## v3.4.4 — Transfer Readiness
+Adds a read-only proposed-owner migration check for Broker NFT #1. It verifies all four ERC-6551 token bindings and current ownership, blocks self/TBA destination cycles, distinguishes metadata administration from NFT ownership, and explains which browser-local state does not move with the NFT. It cannot transfer the NFT or request a signature.
+
+
+# Current Release — v3.5
+
+## Rotating Trading TBA Manager
+
+v3.5 adds real ERC-6551 **Trading TBA generations** while preserving Rustee's permanent Broker NFT identity and permanent Vault architecture.
+
+### Architecture
+
+```text
+Rustee Broker NFT #1
+        │
+        ├── Vault TBA — permanent
+        ├── Rewards TBA — permanent
+        ├── Identity TBA — permanent
+        │
+        ├── Trading TBA Generation 1 — original / recoverable
+        ├── Trading TBA Generation 2 — optional
+        ├── Trading TBA Generation 3 — optional
+        └── Trading TBA Generation N — optional
+```
+
+A Trading TBA generation does not replace or destroy an earlier ERC-6551 account. Each generation is a separate deterministic token-bound account associated with the same Broker NFT.
+
+### TBA Manager
+
+The v3.5 **TBA Manager** can:
+
+- select a proposed Trading TBA generation
+- derive the deterministic generation salt
+- predict the ERC-6551 account address before deployment
+- verify the canonical ERC-6551 Registry
+- verify Rustee's deployed StockTradingAccount implementation
+- verify the Broker NFT and token ID binding
+- detect whether the predicted account already exists
+- simulate the exact account-creation transaction
+- use Rustee's existing mobile-safe Rabby wallet handoff
+- verify the deployed account after confirmation
+- verify `token()` binding
+- verify current `owner()`
+- verify the StockTokenRegistry relationship
+- activate a verified generation as Rustee's current Trading TBA
+- retain prior generations for recovery/rollback
+
+### Generation salts
+
+Trading generations use deterministic, human-auditable generation identifiers such as:
+
+`RUSTEE_TRADING_GEN_00000002`
+
+The salt is part of the ERC-6551 account derivation, allowing the same NFT and implementation to have multiple distinct Trading TBAs.
+
+### Rotation workflow
+
+```text
+Choose generation
+      ↓
+Predict deterministic address
+      ↓
+Read-only preflight
+      ↓
+Verify Registry + implementation + NFT binding
+      ↓
+Simulate createAccount()
+      ↓
+Open wallet to sign
+      ↓
+Rabby confirmation
+      ↓
+Verify deployed account
+      ↓
+Verify token() / owner() / policy binding
+      ↓
+Optional asset migration
+      ↓
+Activate new Trading generation
+```
+
+Deployment and activation are deliberately separate operations.
+
+Rustee must never automatically mark an unverified account as active.
+
+### Asset migration
+
+v3.5 deliberately does **not** automatically sweep assets merely because a new generation is created.
+
+Before retiring an old Trading TBA, the operator should verify and move any required:
+
+- ETH
+- WETH
+- Robinhood Stock Tokens
+- STONKBROKER
+- other supported ERC-20 balances
+
+using Rustee's existing asset movement/recovery tools.
+
+The old TBA continues to exist on-chain and can remain available for recovery.
+
+### Permanent Vault model
+
+The recommended architecture is:
+
+**permanent Vault + rotating Trading compartments**
+
+The Vault remains Rustee's stable capital/settlement account while Trading TBAs can be replaced as operational compartments.
+
+This avoids unnecessary Vault churn while allowing trading-account isolation, recovery, experimentation and future security policies.
+
+### Safety rules
+
+v3.5 preserves the following rules:
+
+1. Generation 1 is never destroyed.
+2. Creating a new TBA does not automatically activate it.
+3. Activating a new TBA does not automatically destroy or invalidate the previous one.
+4. A generation must pass binding/ownership verification before activation.
+5. The Broker NFT must never be transferred into one of its own TBAs.
+6. Rustee must fail closed on unexpected NFT, chain, Registry, implementation or account-binding state.
+7. Private keys are never embedded or requested.
+8. Real on-chain creation remains owner wallet signed.
+9. Existing mobile wallet execution behavior must not regress.
+10. Bitcoin and Kaspa accounts are not falsely represented as ERC-6551 TBAs.
+
+### Why rotation matters
+
+Trading TBA generations create a foundation for future features such as:
+
+- compromised-account retirement
+- hot/cold trading compartments
+- strategy-specific accounts
+- per-generation accounting
+- experimental execution environments
+- restricted session accounts
+- emergency migration
+- clean operational epochs
+- future Trading Engine isolation
+
+### Cross-chain direction
+
+v3.5 is an EVM/ERC-6551 feature.
+
+Future Bitcoin and Kaspa support should use chain-native account adapters under Rustee's cross-chain identity/control layer rather than claiming those networks natively support ERC-6551.
+
+---
+

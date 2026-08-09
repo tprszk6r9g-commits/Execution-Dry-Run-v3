@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-B7jcfXeC3FcYZGQibsCNY5JGM1RY/5CGACsv7G4U3ew='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
-<title>Rustee Broker v3.4.3 STONKBROKER Trading · Robinhood Chain</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-HBvk98NLrHv52hhSuxmPCAi09YwUooNgxDVQxfMEWTU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<title>Rustee Broker v3.5 Rotating TBA Manager · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -232,6 +232,12 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
 /* v3.4 Portfolio Risk Engine */
 .riskHero{display:grid;grid-template-columns:1.08fr .92fr;gap:12px}.riskCard{border:1px solid var(--line);border-radius:20px;padding:17px;background:#061d18}.riskCard h3{margin:0 0 10px;font-size:20px}.riskMetrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:12px 0}.riskMetric{border:1px solid var(--line);border-radius:14px;padding:11px;background:#051713}.riskMetric small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.07em}.riskMetric strong{display:block;margin-top:6px;font-size:18px}.riskGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.riskGrid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.riskBoundary{border-left:6px solid var(--teal);background:#06241e;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.5}.riskWarn{border-left-color:var(--orange);background:#251a08}.riskPolicy{width:100%;border-collapse:collapse}.riskPolicy td{padding:9px 7px;border-top:1px solid #1d4b42;font-size:12px}.riskPolicy td:first-child{color:var(--muted)}.riskPolicy td:last-child{text-align:right;font-weight:700}.riskStatusPass{color:var(--green)}.riskStatusBlock{color:var(--red)}.riskStatusWarn{color:var(--orange)}.riskPill{display:inline-block;padding:5px 8px;border:1px solid var(--line);border-radius:999px;font-size:10px;margin:2px}.riskLocked{opacity:.78}.riskMini{font-size:11px;color:var(--muted);line-height:1.5}.riskCheckRow{display:grid;grid-template-columns:1fr auto;gap:10px;padding:9px 0;border-top:1px solid #1d4b42}.riskCheckRow:first-child{border-top:0}.riskActions{display:flex;flex-wrap:wrap;gap:8px}.riskActions button{margin:0}.riskInputHint{font-size:10px;color:var(--muted);margin-top:4px}.riskEffective{font-size:12px;line-height:1.6;padding:11px;border-radius:13px;background:#041713;border:1px solid var(--line)}
 @media(max-width:650px){.riskHero,.riskGrid,.riskGrid3{grid-template-columns:1fr}.riskMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.riskMetric:last-child{grid-column:span 2}}
+
+/* v3.4.4 Transfer Readiness */
+.transferGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.transferCheck{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 0;border-top:1px solid #1d4b42}.transferCheck:first-child{border-top:0}.transferPass{color:var(--green)}.transferWarn{color:var(--orange)}.transferFail{color:var(--red)}.transferSummary{border:1px solid var(--line);border-radius:16px;padding:13px;background:#041713}.transferAddress{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all}@media(max-width:650px){.transferGrid{grid-template-columns:1fr}}
+
+/* v3.5 Rotating TBA Manager */
+.tbaHero{display:grid;grid-template-columns:1.08fr .92fr;gap:12px}.tbaCard{border:1px solid var(--line);border-radius:20px;padding:17px;background:#061d18}.tbaCard h3{margin:0 0 10px;font-size:20px}.tbaMetrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0}.tbaMetric{border:1px solid var(--line);border-radius:14px;padding:11px;background:#051713}.tbaMetric small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.07em}.tbaMetric strong{display:block;margin-top:6px;font-size:16px;word-break:break-all}.tbaRow{display:grid;grid-template-columns:1fr auto;gap:10px;padding:12px 0;border-top:1px solid #1d4b42}.tbaRow:first-child{border-top:0}.tbaMeta{font-size:11px;color:var(--muted);line-height:1.5}.tbaStatus{display:inline-block;padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:10px}.tbaActive{color:var(--green);border-color:#2d7659}.tbaRetired{color:var(--muted)}.tbaReady{color:var(--orange);border-color:#8d6734}.tbaBoundary{border-left:6px solid var(--teal);background:#06241e;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.5}.tbaWarn{border-left-color:var(--orange);background:#251a08}.tbaActions{display:flex;flex-wrap:wrap;gap:8px}.tbaActions button{margin:0}.tbaAddress{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;word-break:break-all}@media(max-width:650px){.tbaHero{grid-template-columns:1fr}.tbaMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.tbaRow{grid-template-columns:1fr}}
 </style>
 </head>
 <body><main>
@@ -248,6 +254,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <button class="tabbtn" data-tab="convertPane">ETH ↔ WETH</button>
   <button class="tabbtn" data-tab="historyPane">History + P&amp;L</button>
   <button class="tabbtn" data-tab="accountsPane">Accounts</button>
+  <button class="tabbtn" data-tab="tbaManagerPane">TBA Manager</button>
   <button class="tabbtn" data-tab="transferPane">Move Assets</button>
   <button class="tabbtn" data-tab="operationsPane">Operations</button>
   <button class="tabbtn" data-tab="securityPane">Policy + Security</button>
@@ -260,7 +267,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <div class="rusteeBrand">
     <img class="rusteePortrait" src="assets/rustee-broker-384.webp" alt="Rustee Broker #1">
     <div>
-      <span class="aioTag">v3.4.3 · STONKBROKER Trading</span>
+      <span class="aioTag">v3.5 · Rotating TBA Manager</span>
       <h1>Rustee Broker #1</h1>
       <p>NFT-rooted broker command center for portfolio visibility, guarded trading, ERC-6551 account operations, on-chain identity, metadata administration, security evidence, and recovery.</p>
       <div class="quickDock">
@@ -405,6 +412,36 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
       <div class="nftTba"><b>Rewards TBA</b><span>0xfd0d881d73ec1476f5da0ab78283149ea21c3b32</span></div>
       <div class="nftTba"><b>Identity TBA</b><span>0x496d7d47ae69d65d714413f0dc78c712ed92158d</span></div>
     </div>
+  </div>
+
+  <div class="card">
+    <span class="badge">v3.4.4 · READ-ONLY TRANSFER READINESS</span>
+    <h2>Transfer Readiness + Ownership Migration Check</h2>
+    <p>Enter a proposed new owner wallet and Rustee will test the live NFT/TBA ownership architecture <b>without transferring anything</b>. This check proves the current ERC-6551 bindings, identifies what follows <code>ownerOf(#1)</code>, warns about metadata administration, and blocks dangerous destinations such as Rustee's own TBAs.</p>
+    <div class="riskBoundary"><b>No transaction capability:</b> this panel does not encode <code>transferFrom</code>, does not request a wallet signature, and cannot transfer the NFT. It is a pre-transfer inspection only.</div>
+    <div class="transferGrid" style="margin-top:12px">
+      <div class="transferSummary">
+        <h3>Proposed new NFT owner</h3>
+        <label>Wallet address</label>
+        <input id="transferProposedOwner" placeholder="0x…" spellcheck="false" autocapitalize="off">
+        <div class="actions"><button class="primary" id="transferReadinessRun">Run transfer readiness test</button><button id="transferUseConnected">Use connected wallet</button></div>
+        <pre id="transferReadinessLog">No transfer readiness test has run.</pre>
+      </div>
+      <div class="transferSummary">
+        <h3>Migration outcome</h3>
+        <div class="transferCheck"><span>Current NFT/TBA binding</span><b id="transferBinding">—</b></div>
+        <div class="transferCheck"><span>Proposed address safety</span><b id="transferDestination">—</b></div>
+        <div class="transferCheck"><span>Vault authority follows NFT</span><b id="transferVault">—</b></div>
+        <div class="transferCheck"><span>Trading authority follows NFT</span><b id="transferTrading">—</b></div>
+        <div class="transferCheck"><span>Rewards authority follows NFT</span><b id="transferRewards">—</b></div>
+        <div class="transferCheck"><span>Identity authority follows NFT</span><b id="transferIdentity">—</b></div>
+        <div class="transferCheck"><span>Registry policy authority</span><b id="transferRegistry">—</b></div>
+        <div class="transferCheck"><span>Metadata administrator follows NFT</span><b id="transferMetadata">—</b></div>
+        <div class="transferCheck"><span>Local strategies/browser state</span><b id="transferLocal">LOCAL ONLY</b></div>
+        <div class="transferCheck"><span>Proposed wallet type</span><b id="transferWalletType">—</b></div>
+      </div>
+    </div>
+    <div class="transferSummary" style="margin-top:12px"><h3>Transfer model</h3><pre id="transferModelLog">Run the readiness test to build a migration report.</pre></div>
   </div>
 
   <div class="card warn">
@@ -1059,6 +1096,51 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
   </div>
 </div>
 
+<div id="tbaManagerPane" class="tabpane">
+  <div class="card">
+    <span class="badge">v3.5 · ERC-6551 TRADING GENERATIONS</span>
+    <h2>Rotating Trading TBA Manager</h2>
+    <p>Rustee keeps the Vault TBA permanent while allowing additional restricted <b>Trading TBA generations</b> to be created for Broker NFT #1. Rotation changes which verified Trading TBA the dashboard uses; it does not delete prior accounts or change the parent NFT.</p>
+    <div class="tbaBoundary"><b>Architecture:</b> Original Trading TBA = Generation 1. Generation 2+ uses Rustee's deployed <code>StockTradingAccount</code> implementation with a deterministic generation salt through the canonical ERC-6551 Registry. Every generation remains permanently addressable and follows the current NFT owner through <code>ownerOf(#1)</code>.</div>
+    <div class="tbaMetrics">
+      <div class="tbaMetric"><small>Active generation</small><strong id="tbaActiveGeneration">—</strong></div>
+      <div class="tbaMetric"><small>Active Trading TBA</small><strong id="tbaActiveAddress">—</strong></div>
+      <div class="tbaMetric"><small>Known generations</small><strong id="tbaGenerationCount">—</strong></div>
+      <div class="tbaMetric"><small>Implementation</small><strong id="tbaImplementationShort">—</strong></div>
+    </div>
+    <div class="tbaHero">
+      <div class="tbaCard">
+        <h3>Create / verify next generation</h3>
+        <label>Generation number</label>
+        <input id="tbaGenerationInput" type="number" min="2" max="1000000" step="1" value="2">
+        <div class="tbaActions" style="margin-top:10px">
+          <button id="tbaPredict" class="primary">Predict + preflight</button>
+          <button id="tbaPrepareCreate" disabled>Prepare + simulate creation</button>
+          <button id="tbaExecuteCreate" disabled>Open wallet to create</button>
+        </div>
+        <pre id="tbaCreateLog">Generation 1 is the deployed original. Predict Generation 2 to begin.</pre>
+      </div>
+      <div class="tbaCard">
+        <h3>Deployment anchors</h3>
+        <div class="tbaMeta">Canonical ERC-6551 Registry</div><div class="tbaAddress" id="tbaRegistryAddress"></div>
+        <div class="tbaMeta" style="margin-top:10px">StockTradingAccount implementation</div><div class="tbaAddress" id="tbaImplementationAddress"></div>
+        <div class="tbaMeta" style="margin-top:10px">Permanent Vault TBA</div><div class="tbaAddress" id="tbaPermanentVault"></div>
+        <div class="tbaBoundary tbaWarn" style="margin-top:12px"><b>Rotation is not deletion.</b> Old Trading TBAs continue to exist and remain controlled by the current Broker NFT owner. You can switch back to a verified generation for recovery.</div>
+      </div>
+    </div>
+    <div class="tbaCard" style="margin-top:12px">
+      <h3>Trading TBA generations</h3>
+      <div id="tbaGenerationList"><div class="emptyState">No generation state loaded.</div></div>
+    </div>
+    <div class="tbaCard" style="margin-top:12px">
+      <h3>Rotation checklist</h3>
+      <p class="sourceNote">Creating a new TBA does not automatically migrate assets. Before activating a new generation, use Move Assets to recover/move positions as appropriate. If an older generation still contains assets, you can switch back to it later for recovery because its ownership still follows the Broker NFT.</p>
+      <div class="tbaActions"><button data-open-tab="transferPane">Open Move Assets</button><button id="tbaRefreshAll">Refresh generation verification</button><button id="tbaExport">Export generation map</button></div>
+      <pre id="tbaManagerLog">Rotating TBA Manager ready.</pre>
+    </div>
+  </div>
+</div>
+
 <div id="transferPane" class="tabpane">
   <div class="card">
     <span class="badge">SIMULATE → WALLET CONFIRM → RECEIPT</span>
@@ -1500,7 +1582,10 @@ let OWNER=''; // resolved from Broker NFT ownerOf(tokenId)
 let NFT_ADMIN=''; // resolved independently from Broker NFT owner()
 let AUTHORITY_STATE=null;
 const VAULT='0x8ad8bd35d33dd7b4d0de81f809f5b7f92623956d';
-const TRADING='0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654';
+const ORIGINAL_TRADING='0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654';
+const TBA_ROTATION_KEY='rustee-trading-tba-generations-v35';
+let TRADING=ORIGINAL_TRADING;
+try{const __rt=JSON.parse(localStorage.getItem(TBA_ROTATION_KEY)||'null'),__a=String(__rt?.activeAddress||'');if(/^0x[0-9a-fA-F]{40}$/.test(__a)&&!/^0x0{40}$/i.test(__a))TRADING=__a}catch{}
 const REWARDS='0xfd0d881d73ec1476f5da0ab78283149ea21c3b32';
 const IDENTITY='0x496d7d47ae69d65d714413f0dc78c712ed92158d';
 // Broker NFT binding is derived from the deployed ERC-6551 TBA at runtime.
@@ -1508,6 +1593,9 @@ const IDENTITY='0x496d7d47ae69d65d714413f0dc78c712ed92158d';
 let NFT='';
 let BROKER_TOKEN_ID=null;
 const SEL_TOKEN='fc0c546a';
+const ERC6551_REGISTRY='0x000000006551c19487814612e58FE06813775758';
+const STOCK_TRADING_IMPLEMENTATION='0x7599fd8a10e626ddb5e03207389e89991578d735';
+const SEL_6551_ACCOUNT='246a0021', SEL_6551_CREATE='8a54c52f';
 const POLICY_REGISTRY='0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199';
 const DATA_STREAMS_VERIFIER='0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7';
 const WETH='0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
@@ -1931,7 +2019,7 @@ async function execute(){
   await refreshBalances();
 }
 
-const ACCOUNT_MAP=new Proxy({OWNER:'',VAULT,TRADING,REWARDS,IDENTITY},{get:(t,p)=>p==='OWNER'?OWNER:t[p]});
+const ACCOUNT_MAP=new Proxy({OWNER:'',VAULT,REWARDS,IDENTITY},{get:(t,p)=>p==='OWNER'?OWNER:p==='TRADING'?TRADING:t[p]});
 const ACCOUNT_LABELS={OWNER:'Main Wallet',VAULT:'Vault TBA',TRADING:'Trading TBA',REWARDS:'Rewards TBA',IDENTITY:'Identity TBA'};
 const KNOWN_ASSETS=[
   {symbol:'NVDA',address:NVDA},
@@ -3405,8 +3493,8 @@ async function executeConvert(){
 function renderCommandAccounting(){
   try{const basis=loadCostBasis();let cur=0,cost=0;for(const key of ['OWNER','VAULT','TRADING','REWARDS','IDENTITY'])for(const p of terminalState.positions||[]){const bal=p.balances[key]||0n;if(bal===0n)continue;const v=currentPositionUsd(key,p);if(v!=null)cur+=v;cost+=Number(basis[positionKey(key,p.token)]||0)}const u=cur-cost;$('cmdUnrealizedPnl').textContent=(u>=0?'+':'')+money(u);$('cmdUnrealizedPnl').className=u>=0?'pnlPos':'pnlNeg';const r=realizedPnlTotal();$('cmdRealizedPnl').textContent=(r>=0?'+':'')+money(r);$('cmdRealizedPnl').className=r>=0?'pnlPos':'pnlNeg';const recovery=localStorage.getItem(TRADE_RECOVERY_KEY);const pending=readReceiptLog().some(x=>!['CONFIRMED','FAILED'].includes(x.status));$('cmdRecoveryState').textContent=recovery?'SELL CHECK':pending?'PENDING TX':'Clear ✓';$('cmdRecoveryState').className=recovery||pending?'healthWarn':'healthGood'}catch{}
 }
-function rusteeBackupPayload(){const storage={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('rustee-'))storage[k]=localStorage.getItem(k)}return {project:'Rustee Broker #1',version:'3.4.3-stonkbroker-trading',chainId:CHAIN,exportedAt:new Date().toISOString(),storage,note:'Browser-side Rustee state only. No private keys or seed phrases are stored by this app.'}}
-function exportRusteeBackup(){const blob=new Blob([JSON.stringify(rusteeBackupPayload(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-broker-v3.4.3-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);$('backupLog').textContent='Backup exported. Rustee localStorage keys only; no wallet secrets.'}
+function rusteeBackupPayload(){const storage={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('rustee-'))storage[k]=localStorage.getItem(k)}return {project:'Rustee Broker #1',version:'3.5-rotating-tba-manager',chainId:CHAIN,exportedAt:new Date().toISOString(),storage,note:'Browser-side Rustee state only. No private keys or seed phrases are stored by this app.'}}
+function exportRusteeBackup(){const blob=new Blob([JSON.stringify(rusteeBackupPayload(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-broker-v3.5-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);$('backupLog').textContent='Backup exported. Rustee localStorage keys only; no wallet secrets.'}
 async function restoreRusteeBackupFile(file){const data=JSON.parse(await file.text());if(data?.project!=='Rustee Broker #1'||!data.storage||typeof data.storage!=='object')throw Error('Not a Rustee Broker backup');let restored=0;for(const [k,v] of Object.entries(data.storage)){if(!k.startsWith('rustee-')||typeof v!=='string')continue;localStorage.setItem(k,v);restored++}$('backupLog').textContent=`Restored ${restored} Rustee browser-state entries. Reloading local views…`;renderReceipts();renderOperatorTradeLedger();restoreLastTradeVerification();renderCostBasisEditor();renderHistoryMetrics();renderCommandAccounting()}
 
 let allowanceManagerState=new Map();
@@ -3846,7 +3934,7 @@ window.__rusteeBoot='phase8';phase8Load();
 
 // --- v2.8.1 browser/runtime hardening ---
 const SECURITY_MAX_FUND_WEI=6_000_000_000_000_000n; // 0.006 ETH per direct Vault funding tx
-const SECURITY_FIXED_CONTRACTS=[VAULT,TRADING,REWARDS,IDENTITY,ROUTER,QUOTER,WETH,USDG,NVDA,POLICY_REGISTRY,DATA_STREAMS_VERIFIER]
+const SECURITY_FIXED_CONTRACTS=[VAULT,TRADING,REWARDS,IDENTITY,ROUTER,QUOTER,WETH,USDG,NVDA,POLICY_REGISTRY,DATA_STREAMS_VERIFIER,ERC6551_REGISTRY,STOCK_TRADING_IMPLEMENTATION]
   .filter(Boolean).map(x=>x.toLowerCase());
 let runtimeSecurityCache={time:0,ok:false,missing:[]};
 let integritySecurityCache={time:0,ok:false,details:null};
@@ -4322,6 +4410,76 @@ installWalletListeners().catch(e=>reportStartupFailure('installWalletListeners',
 setTimeout(()=>restoreWalletConnection().catch(e=>reportStartupFailure('restoreWalletConnection',e)),250);
 window.__rusteeBoot='complete';
 __bootSay('Boot complete \u2713 — provider: '+(activeWalletName()||'none detected'));
+
+
+
+// --- v3.5 Rotating Trading TBA Manager ----------------------------------------
+let tbaCreateState=null;
+function tbaDefaultState(){return {version:1,activeGeneration:1,activeAddress:ORIGINAL_TRADING,generations:[{generation:1,address:ORIGINAL_TRADING,status:'ACTIVE',scheme:'original-directory',createdAt:null}],updatedAt:null}}
+function tbaLoad(){try{const x=JSON.parse(localStorage.getItem(TBA_ROTATION_KEY)||'null');if(!x||!Array.isArray(x.generations))return tbaDefaultState();return x}catch{return tbaDefaultState()}}
+function tbaSave(x){x.updatedAt=new Date().toISOString();localStorage.setItem(TBA_ROTATION_KEY,JSON.stringify(x));return x}
+function tbaInitState(){let x=tbaLoad();if(!x.generations.some(g=>Number(g.generation)===1))x.generations.unshift({generation:1,address:ORIGINAL_TRADING,status:'RETIRED',scheme:'original-directory',createdAt:null});const active=x.generations.find(g=>String(g.address).toLowerCase()===String(TRADING).toLowerCase());if(active){x.activeGeneration=Number(active.generation);x.activeAddress=active.address;for(const g of x.generations)g.status=String(g.address).toLowerCase()===String(active.address).toLowerCase()?'ACTIVE':(g.status==='ACTIVE'?'RETIRED':g.status)}else{x.activeGeneration=TRADING.toLowerCase()===ORIGINAL_TRADING.toLowerCase()?1:null;x.activeAddress=TRADING}return tbaSave(x)}
+function tbaGenerationSalt(gen){gen=Math.floor(Number(gen));if(!(gen>=2&&gen<=1000000))throw Error('Generation must be between 2 and 1,000,000');const label='RUSTEE_TRADING_GEN_'+String(gen).padStart(8,'0');const bytes=new TextEncoder().encode(label);if(bytes.length>32)throw Error('Generation salt label exceeds bytes32');return '0x'+[...bytes].map(b=>b.toString(16).padStart(2,'0')).join('').padEnd(64,'0')}
+function tbaRegistryCalldata(selector,gen){if(!NFT||BROKER_TOKEN_ID===null)throw Error('Broker NFT binding unresolved');const salt=tbaGenerationSalt(gen);return '0x'+selector+addrWord(STOCK_TRADING_IMPLEMENTATION)+salt.slice(2)+word(CHAIN)+addrWord(NFT)+word(BROKER_TOKEN_ID)}
+function tbaDecodeAddress(raw,label='address'){const h=String(raw||'').replace(/^0x/,'');if(h.length<64)throw Error('Unable to decode '+label);const a='0x'+h.slice(-40);if(!/^0x[0-9a-fA-F]{40}$/.test(a)||/^0x0{40}$/i.test(a))throw Error('Invalid '+label);return a}
+async function tbaReadBinding(addr){const raw=await fallbackRpc('eth_call',[{to:addr,data:'0x'+SEL_TOKEN},'latest']),h=String(raw||'').replace(/^0x/,'');if(h.length<192)throw Error('Unable to decode token() for '+addr);return {chainId:BigInt('0x'+h.slice(0,64)),nft:'0x'+h.slice(88,128),tokenId:BigInt('0x'+h.slice(128,192))}}
+async function tbaVerifyAccount(addr){if(!/^0x[0-9a-fA-F]{40}$/.test(String(addr)))throw Error('Invalid TBA address');await resolveAuthorityState(true);const [code,binding,ownerRaw,registryRaw]=await Promise.all([fallbackRpc('eth_getCode',[addr,'latest']),tbaReadBinding(addr),fallbackRpc('eth_call',[{to:addr,data:'0x'+SEL_OWNER},'latest']),fallbackRpc('eth_call',[{to:addr,data:'0x7b103999'},'latest'])]);const owner=tbaDecodeAddress(ownerRaw,'Trading TBA owner'),policyRegistry=tbaDecodeAddress(registryRaw,'Trading TBA Registry');const pass=!!code&&code!=='0x'&&binding.chainId===BigInt(CHAIN)&&binding.nft.toLowerCase()===NFT.toLowerCase()&&binding.tokenId===BROKER_TOKEN_ID&&owner.toLowerCase()===OWNER.toLowerCase()&&policyRegistry.toLowerCase()===POLICY_REGISTRY.toLowerCase();return {pass,codeBytes:code&&code!=='0x'?(code.length-2)/2:0,binding,owner,policyRegistry}}
+async function tbaPredictGeneration(){await resolveAuthorityState(true);const gen=Math.floor(Number($('tbaGenerationInput').value));const [regCode,implCode]=await Promise.all([fallbackRpc('eth_getCode',[ERC6551_REGISTRY,'latest']),fallbackRpc('eth_getCode',[STOCK_TRADING_IMPLEMENTATION,'latest'])]);if(!regCode||regCode==='0x')throw Error('Canonical ERC-6551 Registry has no bytecode');if(!implCode||implCode==='0x')throw Error('Rustee StockTradingAccount implementation has no bytecode');const data=tbaRegistryCalldata(SEL_6551_ACCOUNT,gen),raw=await fallbackRpc('eth_call',[{to:ERC6551_REGISTRY,data},'latest']),predicted=tbaDecodeAddress(raw,'predicted TBA'),code=await fallbackRpc('eth_getCode',[predicted,'latest']);const forbidden=[NFT,VAULT,ORIGINAL_TRADING,REWARDS,IDENTITY].map(x=>String(x).toLowerCase());if(forbidden.includes(predicted.toLowerCase()))throw Error('Predicted generation collides with an existing Rustee core address');let verification=null;if(code&&code!=='0x')verification=await tbaVerifyAccount(predicted);tbaCreateState={generation:gen,salt:tbaGenerationSalt(gen),predicted,exists:!!code&&code!=='0x',verified:!!verification?.pass,prepared:null};$('tbaCreateLog').textContent=`PREDICTED GENERATION ${gen}\nAddress: ${predicted}\nSalt: ${tbaCreateState.salt}\nRegistry code: PASS\nTrading implementation code: PASS\nExisting bytecode: ${tbaCreateState.exists?'YES':'NO — counterfactual'}${verification?`\nBinding verification: ${verification.pass?'PASS':'FAIL'}\nPolicy Registry: ${verification.policyRegistry}`:''}\n\n${tbaCreateState.exists?'This account already exists. If verification passes it can be added/activated without creating it again.':'Prepare + simulate creation next.'}`;$('tbaPrepareCreate').disabled=tbaCreateState.exists;$('tbaExecuteCreate').disabled=true;if(tbaCreateState.exists&&tbaCreateState.verified)tbaRecordGeneration(gen,predicted,'READY','v3.5-ascii-salt');tbaRender();return tbaCreateState}
+async function tbaPrepareCreate(){if(!tbaCreateState||tbaCreateState.exists)throw Error('Predict an undeployed generation first');await ensureOwnerAndChain();const data=tbaRegistryCalldata(SEL_6551_CREATE,tbaCreateState.generation),tx0={from:OWNER,to:ERC6551_REGISTRY,data},gas=BigInt(await rpc('eth_estimateGas',[tx0])),ret=await rpc('eth_call',[tx0,'latest']),returned=tbaDecodeAddress(ret,'simulated createAccount return');if(returned.toLowerCase()!==tbaCreateState.predicted.toLowerCase())throw Error('Registry simulation returned a different TBA address');const tx={...tx0,gas:hexQty(gas*120n/100n)};await armPreparedWalletHandoff(tx,`Create Rustee Trading TBA Generation ${tbaCreateState.generation}`,120000);tbaCreateState.prepared={tx,gas,time:Date.now()};$('tbaPrepareCreate').disabled=true;$('tbaExecuteCreate').disabled=false;$('tbaCreateLog').textContent+=`\n\nSIMULATION PASS\nEstimated gas: ${gas}\nReturned TBA: ${returned}\nWallet handoff armed for 120 seconds.`}
+async function tbaExecuteCreate(){const st=tbaCreateState;if(!st?.prepared)throw Error('Prepare + simulate creation first');if(Date.now()-st.prepared.time>120000){st.prepared=null;$('tbaExecuteCreate').disabled=true;throw Error('Creation simulation expired. Prepare again.')}const hash=await secureSendTransaction(st.prepared.tx,`Create Rustee Trading TBA Generation ${st.generation}`);$('tbaExecuteCreate').disabled=true;$('tbaCreateLog').textContent=`SUBMITTED\n${hash}\nWaiting for receipt…`;const receipt=await waitReceipt(hash),v=await tbaVerifyAccount(st.predicted);if(!v.pass)throw Error('Generation deployed but post-deployment binding verification failed');tbaRecordGeneration(st.generation,st.predicted,'READY','v3.5-ascii-salt',{txHash:hash,createdAt:new Date().toISOString()});$('tbaCreateLog').textContent=`CONFIRMED + VERIFIED ✓\nGeneration: ${st.generation}\nAddress: ${st.predicted}\nTx: ${hash}\nBlock: ${Number(BigInt(receipt.blockNumber))}\nBinding: Broker NFT #${BROKER_TOKEN_ID}\nOwner: ${v.owner}\nPolicy Registry: ${v.policyRegistry}\n\nGeneration is READY. Activation is a separate local dashboard action.`;tbaCreateState=null;tbaRender()}
+function tbaRecordGeneration(gen,address,status='READY',scheme='v3.5-ascii-salt',extra={}){const x=tbaLoad(),i=x.generations.findIndex(g=>Number(g.generation)===Number(gen));const row={generation:Number(gen),address,status,scheme,...(i>=0?x.generations[i]:{}),...extra};if(i>=0)x.generations[i]=row;else x.generations.push(row);x.generations.sort((a,b)=>Number(a.generation)-Number(b.generation));tbaSave(x);return row}
+async function tbaActivateGeneration(gen){const x=tbaLoad(),g=x.generations.find(r=>Number(r.generation)===Number(gen));if(!g)throw Error('Unknown generation');const v=await tbaVerifyAccount(g.address);if(!v.pass)throw Error('Cannot activate: live ERC-6551 binding verification failed');for(const r of x.generations)r.status=Number(r.generation)===Number(gen)?'ACTIVE':'RETIRED';x.activeGeneration=Number(gen);x.activeAddress=g.address;tbaSave(x);$('tbaManagerLog').textContent=`Generation ${gen} verified and selected as ACTIVE. Reloading Rustee so every trading/portfolio/security path uses ${g.address}.`;setTimeout(()=>location.reload(),350)}
+async function tbaRefreshGenerations(){const x=tbaLoad(),lines=[];for(const g of x.generations){try{const code=await fallbackRpc('eth_getCode',[g.address,'latest']);if(!code||code==='0x'){g.verified=false;lines.push(`Gen ${g.generation}: counterfactual / no code`);continue}const v=await tbaVerifyAccount(g.address);g.verified=v.pass;g.lastVerifiedAt=new Date().toISOString();lines.push(`Gen ${g.generation}: ${v.pass?'PASS':'FAIL'} · ${g.address}`)}catch(e){g.verified=false;lines.push(`Gen ${g.generation}: ERROR ${e.message}`)}}tbaSave(x);$('tbaManagerLog').textContent=lines.join('\n');tbaRender()}
+function tbaRender(){const x=tbaInitState();if($('tbaActiveGeneration'))$('tbaActiveGeneration').textContent='Gen '+(x.activeGeneration??'?');if($('tbaActiveAddress'))$('tbaActiveAddress').textContent=x.activeAddress||TRADING;if($('tbaGenerationCount'))$('tbaGenerationCount').textContent=String(x.generations.length);if($('tbaImplementationShort'))$('tbaImplementationShort').textContent=short(STOCK_TRADING_IMPLEMENTATION);if($('tbaRegistryAddress'))$('tbaRegistryAddress').textContent=ERC6551_REGISTRY;if($('tbaImplementationAddress'))$('tbaImplementationAddress').textContent=STOCK_TRADING_IMPLEMENTATION;if($('tbaPermanentVault'))$('tbaPermanentVault').textContent=VAULT;if($('tbaGenerationInput')){const max=Math.max(1,...x.generations.map(g=>Number(g.generation)||1));if(Number($('tbaGenerationInput').value)<=max)$('tbaGenerationInput').value=String(max+1)}if($('tbaGenerationList'))$('tbaGenerationList').innerHTML=x.generations.map(g=>{const active=String(g.address).toLowerCase()===String(TRADING).toLowerCase(),cls=active?'tbaActive':g.status==='READY'?'tbaReady':'tbaRetired',label=active?'ACTIVE':g.status||'RETIRED';return `<div class="tbaRow"><div><b>Generation ${Number(g.generation)}</b> <span class="tbaStatus ${cls}">${label}</span><div class="tbaAddress">${escapeHtml(g.address)}</div><div class="tbaMeta">${escapeHtml(g.scheme||'unknown scheme')}${g.createdAt?' · created '+escapeHtml(g.createdAt):''}${g.verified===false?' · verification needs attention':''}</div></div><div class="tbaActions">${active?'':`<button data-tba-activate="${Number(g.generation)}">Verify + make active</button>`}<button data-tba-explorer="${escapeHtml(g.address)}">Explorer ↗</button></div></div>`}).join('')||'<div class="emptyState">No generations.</div>';document.querySelectorAll('[data-tba-activate]').forEach(b=>b.onclick=()=>tbaActivateGeneration(Number(b.dataset.tbaActivate)).catch(e=>{$('tbaManagerLog').textContent='ERROR: '+e.message}));document.querySelectorAll('[data-tba-explorer]').forEach(b=>b.onclick=()=>window.open(BLOCKSCOUT+'/address/'+b.dataset.tbaExplorer,'_blank','noopener'))}
+function tbaExportState(){const x=tbaLoad(),payload={project:'Rustee Broker #1',schema:'rustee-trading-tba-generations/v1',exportedAt:new Date().toISOString(),brokerNft:NFT||null,tokenId:BROKER_TOKEN_ID===null?null:BROKER_TOKEN_ID.toString(),erc6551Registry:ERC6551_REGISTRY,tradingImplementation:STOCK_TRADING_IMPLEMENTATION,permanentVault:VAULT,...x,note:'Generation status is operator/dashboard state. Every deployed TBA remains on-chain and ownerOf()-controlled.'};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-trading-tba-generations.json';a.click();URL.revokeObjectURL(a.href)}
+if($('tbaPredict'))$('tbaPredict').onclick=()=>tbaPredictGeneration().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaPrepareCreate'))$('tbaPrepareCreate').onclick=()=>tbaPrepareCreate().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaExecuteCreate'))$('tbaExecuteCreate').onclick=()=>tbaExecuteCreate().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaRefreshAll'))$('tbaRefreshAll').onclick=()=>tbaRefreshGenerations().catch(e=>{$('tbaManagerLog').textContent='ERROR: '+e.message});if($('tbaExport'))$('tbaExport').onclick=tbaExportState;tbaRender();
+// -----------------------------------------------------------------------------
+
+// --- v3.4.4 Transfer Readiness + Ownership Migration Check --------------------
+function transferSet(id,text,state=''){
+  const el=$(id);if(!el)return;el.textContent=text;el.className=state==='PASS'?'transferPass':state==='WARN'?'transferWarn':state==='FAIL'?'transferFail':'';
+}
+function transferValidAddress(a){return /^0x[0-9a-fA-F]{40}$/.test(String(a||''))&&!/^0x0{40}$/i.test(String(a||''))}
+async function transferReadTbaTokenBinding(addr){
+  const raw=await fallbackRpc('eth_call',[{to:addr,data:'0x'+SEL_TOKEN},'latest']),body=String(raw||'').replace(/^0x/,'');
+  if(body.length<192)throw Error('Unable to decode token() binding for '+addr);
+  return {chainId:BigInt('0x'+body.slice(0,64)),nft:'0x'+body.slice(64+24,128),tokenId:BigInt('0x'+body.slice(128,192))};
+}
+async function transferReadinessTest(){
+  const proposed=String($('transferProposedOwner').value||'').trim();
+  if(!transferValidAddress(proposed))throw Error('Enter a valid non-zero proposed owner address.');
+  const state=await aioReadNftState(),lower=proposed.toLowerCase();
+  const forbidden=[state.nft,VAULT,TRADING,ORIGINAL_TRADING,REWARDS,IDENTITY,...tbaLoad().generations.map(g=>g.address)].map(x=>String(x).toLowerCase());
+  const dangerous=forbidden.includes(lower),sameOwner=lower===state.tokenOwner.toLowerCase();
+  const [vaultBind,tradingBind,rewardsBind,identityBind,proposedCode]=await Promise.all([
+    transferReadTbaTokenBinding(VAULT),transferReadTbaTokenBinding(TRADING),transferReadTbaTokenBinding(REWARDS),transferReadTbaTokenBinding(IDENTITY),fallbackRpc('eth_getCode',[proposed,'latest'])
+  ]);
+  const binds={VAULT:vaultBind,TRADING:tradingBind,REWARDS:rewardsBind,IDENTITY:identityBind};
+  const expectedNft=state.nft.toLowerCase(),expectedId=state.tokenId,allTokenBindings=Object.values(binds).every(x=>x.chainId===BigInt(CHAIN)&&x.nft.toLowerCase()===expectedNft&&x.tokenId===expectedId);
+  const liveOwnersOk=state.tbaBindingOk&&Object.values(state.tbaOwners).every(x=>x.toLowerCase()===state.tokenOwner.toLowerCase());
+  const transferArchitectureOk=allTokenBindings&&liveOwnersOk;
+  const isContract=!!proposedCode&&proposedCode!=='0x';
+  const adminFollows=state.adminFollowsToken;
+  const destinationOk=!dangerous&&!sameOwner;
+  transferSet('transferBinding',transferArchitectureOk?'PASS ✓':'FAIL ✕',transferArchitectureOk?'PASS':'FAIL');
+  transferSet('transferDestination',dangerous?'BLOCKED ✕':sameOwner?'UNCHANGED':destinationOk?'PASS ✓':'FAIL ✕',dangerous?'FAIL':sameOwner?'WARN':'PASS');
+  for(const id of ['transferVault','transferTrading','transferRewards','transferIdentity'])transferSet(id,transferArchitectureOk?'FOLLOWS ownerOf() ✓':'UNPROVEN ✕',transferArchitectureOk?'PASS':'FAIL');
+  transferSet('transferRegistry',transferArchitectureOk?'NFT-owner controlled ✓':'UNPROVEN ✕',transferArchitectureOk?'PASS':'FAIL');
+  transferSet('transferMetadata',adminFollows?'CURRENTLY SAME ✓':'SEPARATE ADMIN ⚠',adminFollows?'PASS':'WARN');
+  transferSet('transferLocal','DOES NOT TRANSFER','WARN');
+  transferSet('transferWalletType',isContract?'CONTRACT ⚠':'EOA / no code ✓',isContract?'WARN':'PASS');
+  const verdict=transferArchitectureOk&&destinationOk?'READY':'BLOCKED';
+  const warnings=[];
+  if(!adminFollows)warnings.push('Metadata administration is separate from NFT ownership; transferring the NFT will not necessarily transfer setTokenURI/freezeMetadata authority.');
+  if(isContract)warnings.push('Proposed owner has contract bytecode. ERC-721 ownership is possible, but wallet/Rabby signing compatibility cannot be proven by this read-only test.');
+  warnings.push('Strategy Lab, Autopilot rules, local cost basis, receipts, and preferences are browser-local. Export a Rustee backup separately if those should move to another device/browser.');
+  $('transferReadinessLog').textContent=`${verdict}\nCurrent owner: ${state.tokenOwner}\nProposed owner: ${proposed}\nBroker NFT: ${state.nft} #${state.tokenId}\nAll four TBA token() bindings: ${allTokenBindings?'PASS':'FAIL'}\nAll four live owner() values match current ownerOf(): ${liveOwnersOk?'PASS':'FAIL'}\nDangerous self/TBA destination: ${dangerous?'YES — BLOCK':'NO'}\nSame as current owner: ${sameOwner?'YES':'NO'}\nProposed address bytecode: ${isContract?'CONTRACT':'NO CODE / EOA'}\nMetadata admin: ${state.admin}\nMetadata admin currently equals NFT owner: ${adminFollows}\n\n${warnings.map(x=>'⚠ '+x).join('\n')}`;
+  $('transferModelLog').textContent=`TRANSFER MODEL — READ ONLY\n\nBefore transfer\n  Broker NFT #${state.tokenId} ownerOf() → ${state.tokenOwner}\n  Vault owner()    → ${state.tbaOwners.VAULT}\n  Trading owner()  → ${state.tbaOwners.TRADING}\n  Rewards owner()  → ${state.tbaOwners.REWARDS}\n  Identity owner() → ${state.tbaOwners.IDENTITY}\n\nExpected after ERC-721 transfer\n  Broker NFT #${state.tokenId} ownerOf() → ${proposed}\n  Vault/Trading/Rewards/Identity owner() → dynamically resolve new ownerOf(#${state.tokenId})\n  TBA addresses → unchanged\n  Assets held by TBAs → remain at the same TBA addresses\n  Registry authority → intended to follow current Broker NFT owner\n  Metadata admin owner() → ${adminFollows?'expected to be the same role only while contract owner tracks token owner':'remains a separate contract-admin role'}\n  Browser strategies/state → does not move on-chain\n\n${verdict==='READY'?'READINESS PASS — architecture is consistent with ownership migration. This panel still does not transfer the NFT.':'READINESS BLOCKED — do not transfer until failed checks are resolved.'}`;
+  return {verdict,currentOwner:state.tokenOwner,proposedOwner:proposed,allTokenBindings,liveOwnersOk,adminFollows,isContract,dangerous,sameOwner};
+}
+if($('transferReadinessRun'))$('transferReadinessRun').onclick=()=>transferReadinessTest().catch(e=>{$('transferReadinessLog').textContent='ERROR: '+e.message});
+if($('transferUseConnected'))$('transferUseConnected').onclick=()=>{if(!account){$('transferReadinessLog').textContent='Connect the proposed wallet first, or paste its address.';return}$('transferProposedOwner').value=account;transferReadinessTest().catch(e=>{$('transferReadinessLog').textContent='ERROR: '+e.message})};
+// -----------------------------------------------------------------------------
 
 // --- Rustee Broker v3.4.1 · Metadata Studio + ownership hardening ---------
 const AIO_EXPECTED_NFT='0x4523467C4DDC6D775C7EaD4Dce7656DCe54e7F60';

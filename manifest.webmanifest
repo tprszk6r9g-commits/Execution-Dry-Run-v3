@@ -1,7 +1,7 @@
 {
-  "name": "Rustee Broker v3.4.3 STONKBROKER Trading",
-  "short_name": "Rustee v3.4.3",
-  "description": "Rustee Broker #1 v3.4.3 with owner-signed Stock Token and STONKBROKER trading",
+  "name": "Rustee Broker v3.5 Rotating TBA Manager",
+  "short_name": "Rustee v3.5",
+  "description": "Rustee Broker #1 with STONKBROKER trading, transfer readiness, and ERC-6551 Trading TBA generations",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
