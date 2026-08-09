@@ -1,5 +1,27 @@
 # Rustee Broker
 
+## Current Release — v3.6B.3 In-App Metadata Controller Deployer
+
+v3.6B.3 adds an iPhone/Rabby deployment path for the already-qualified `RusteeMetadataController`.
+
+### New website flow
+
+`Prepare deployment → simulate → Open NFT-holder wallet → deploy → receipt → bytecode verification → Broker NFT/token binding verification → auto-fill controller address`
+
+Deployment itself does **not** transfer NFT metadata administration. The existing v3.6B.2 Step 1 / Step 2 migration remains separately signed.
+
+### Safety
+- deployer must be the current Broker NFT holder;
+- chain must be Robinhood Chain 4663;
+- constructor is hard-bound to the live Broker NFT + token ID;
+- deployment is simulated before the wallet button is enabled;
+- receipt must contain a contract address;
+- deployed bytecode must exist;
+- controller `brokerNFT()` + `tokenId()` are verified before migration buttons are enabled.
+
+---
+
+
 ## Current Release — v3.6B.2 NFT-Following Metadata Authority
 
 v3.6B.2 fixes the metadata-authority mismatch that appears after Rustee Broker #1 is transferred to a different wallet.
