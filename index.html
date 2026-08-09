@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ZigHC5gYsJ66Zhvx5UeSXZXfNYDwNczuldeE7VMTA5M='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-yd9Pek7jjE/lUCs1Wfh/OjCINe6YeoGhHQFAQrwCues='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
 <title>Rustee Broker v3.5.2 TBA Migration Manager · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
@@ -256,6 +256,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <button class="tabbtn" data-tab="accountsPane">Accounts</button>
   <button class="tabbtn" data-tab="tbaManagerPane">TBA Manager</button>
   <button class="tabbtn" data-tab="tbaMigrationPane">TBA Migration</button>
+  <button class="tabbtn" data-tab="capabilityPane">Capabilities</button>
   <button class="tabbtn" data-tab="transferPane">Move Assets</button>
   <button class="tabbtn" data-tab="operationsPane">Operations</button>
   <button class="tabbtn" data-tab="securityPane">Policy + Security</button>
@@ -1229,6 +1230,88 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
         <button id="migMarkRecovery">Mark source Recovery Only</button>
       </div>
       <pre id="migFinalLog">No completed migration yet.</pre>
+    </div>
+  </div>
+</div>
+
+
+<div id="capabilityPane" class="tabpane">
+  <div class="card">
+    <span class="badge">v3.6A · EIP-712 + ERC-1271 SIGNATURE FOUNDATION</span>
+    <h2>Rustee Capability Passport</h2>
+    <p>Create a human-readable, account-bound capability manifest for one specific Rustee Trading TBA generation. Phase 1 does <b>not</b> grant autonomous execution. It creates and verifies cryptographic owner intent that later phases can consume under stricter on-chain policy.</p>
+
+    <div class="tbaBoundary"><b>Security model:</b> the capability is bound to Robinhood Chain, Broker NFT #1, the currently selected Trading TBA address, an expiry window and a nonce. A valid passport is still only a signed authorization document in v3.6A — it cannot execute a trade by itself.</div>
+
+    <div class="tbaMetrics">
+      <div class="tbaMetric"><small>Trading generation</small><strong id="capGeneration">—</strong></div>
+      <div class="tbaMetric"><small>ERC-1271</small><strong id="cap1271State">UNCHECKED</strong></div>
+      <div class="tbaMetric"><small>EIP-712 domain</small><strong id="capDomainState">ACCOUNT-BOUND</strong></div>
+      <div class="tbaMetric"><small>ERC-7739 readiness</small><strong id="cap7739State">PROBE NEEDED</strong></div>
+    </div>
+
+    <div class="tbaHero">
+      <div class="tbaCard">
+        <h3>1. Capability scope</h3>
+        <div class="controlgrid">
+          <div class="field"><label>Allowed assets</label><input id="capAssets" placeholder="NVDA, STONKBROKER"></div>
+          <div class="field"><label>Valid for (minutes)</label><input id="capMinutes" type="number" min="1" max="10080" value="60"></div>
+        </div>
+
+        <div class="controlgrid" style="margin-top:10px">
+          <div class="field"><label>Maximum trade (USD)</label><input id="capMaxTrade" inputmode="decimal" value="5"></div>
+          <div class="field"><label>Maximum daily (USD)</label><input id="capMaxDaily" inputmode="decimal" value="10"></div>
+        </div>
+
+        <div class="controlgrid" style="margin-top:10px">
+          <div class="field"><label>Maximum trades</label><input id="capMaxTrades" type="number" min="1" max="1000" value="1"></div>
+          <div class="field"><label>Maximum slippage (%)</label><input id="capSlippage" inputmode="decimal" value="0.5"></div>
+        </div>
+
+        <div class="field" style="margin-top:10px"><label>Allowed actions</label>
+          <div class="ack">
+            <label><input type="checkbox" id="capBuy" checked> BUY</label>
+            <label><input type="checkbox" id="capSell" checked> SELL</label>
+            <label><input type="checkbox" id="capWrap"> WRAP ETH</label>
+            <label><input type="checkbox" id="capUnwrap"> UNWRAP WETH</label>
+          </div>
+        </div>
+
+        <div class="tbaActions" style="margin-top:10px">
+          <button id="capBuild" class="primary">Build capability</button>
+          <button id="capSign" disabled>Sign capability</button>
+          <button id="capVerify" disabled>Verify with Trading TBA</button>
+        </div>
+        <pre id="capBuildLog">Build a capability to create the exact EIP-712 typed data and digest.</pre>
+      </div>
+
+      <div class="tbaCard">
+        <h3>2. Signature readiness</h3>
+        <div class="tbaActions">
+          <button id="capProbe1271">Probe ERC-1271</button>
+          <button id="capProbe7739">Probe ERC-5267 / ERC-7739 readiness</button>
+        </div>
+        <pre id="capProbeLog">No live signature probes run yet.</pre>
+      </div>
+    </div>
+
+    <div class="tbaCard" style="margin-top:12px">
+      <h3>3. Capability passport</h3>
+      <div class="tbaActions">
+        <button id="capExport" disabled>Export signed passport</button>
+        <button id="capInvalidate">Advance local nonce</button>
+      </div>
+      <pre id="capPassportLog">No signed capability passport.</pre>
+    </div>
+
+    <div class="tbaCard" style="margin-top:12px">
+      <h3>Standards status</h3>
+      <div class="status-list">
+        <div class="status-row"><div><b>EIP-712</b><span>Typed, human-readable structured-data signing.</span></div><span class="pill ok">PHASE 1</span></div>
+        <div class="status-row"><div><b>ERC-1271</b><span>Smart-account signature validation through <code>isValidSignature(bytes32,bytes)</code>.</span></div><span class="pill ok">LIVE PROBE</span></div>
+        <div class="status-row"><div><b>ERC-7739</b><span>Defensive smart-account rehashing against cross-account replay. Full compliance requires account implementation support and ERC-5267 domain retrieval.</span></div><span class="pill warn">READINESS ONLY</span></div>
+        <div class="status-row"><div><b>ERC-8273 / ERC-8196</b><span>Transaction-scoped attestation and policy-bound agent execution are reserved for later reviewed phases.</span></div><span class="pill">NOT ACTIVE</span></div>
+      </div>
     </div>
   </div>
 </div>
@@ -2232,6 +2315,7 @@ document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tabbtn').forEach(x=>x.classList.toggle('active',x===b));
   document.querySelectorAll('.tabpane').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));
   if(b.dataset.tab==='tbaMigrationPane'){migPopulateGenerations();migRenderCheckpoint();}
+  if(b.dataset.tab==='capabilityPane'){capInit();}
   if(b.dataset.tab==='accountsPane') refreshAllAccounts().catch(e=>$('accountCenterLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='commandPane') refreshCommandCenter().catch(e=>$('commandLog').textContent='ERROR: '+e.message);
   if(b.dataset.tab==='securityPane') runSecurityPreflight().catch(()=>{});
@@ -4748,7 +4832,227 @@ function migInit(){
   if(c?.state==='COMPLETED')$('migFinalLog').textContent=`MIGRATION COMPLETE ✓\nGeneration ${c.sourceGeneration} → Generation ${c.destinationGeneration}\nDestination activation remains separate.`;
 }
 
-if($('tbaPredict'))$('tbaPredict').onclick=()=>tbaPredictGeneration().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaPrepareCreate'))$('tbaPrepareCreate').onclick=()=>tbaPrepareCreate().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaExecuteCreate'))$('tbaExecuteCreate').onclick=()=>tbaExecuteCreate().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaRefreshAll'))$('tbaRefreshAll').onclick=()=>tbaRefreshGenerations().catch(e=>{$('tbaManagerLog').textContent='ERROR: '+e.message});if($('tbaExport'))$('tbaExport').onclick=tbaExportState;tbaRender();migInit();
+
+/* v3.6A Capability Passport: EIP-712 + ERC-1271 */
+const CAPABILITY_KEY='rustee-capability-v36a';
+const CAPABILITY_NONCE_KEY='rustee-capability-nonce-v36a';
+const CAP_1271_MAGIC='1626ba7e';
+const CAP_SEL_1271='1626ba7e';
+const CAP_SEL_EIP712_DOMAIN='84b0196e';
+let capabilityRuntime={built:null,signed:null};
+
+function capNonce(){try{return BigInt(localStorage.getItem(CAPABILITY_NONCE_KEY)||'1')}catch{return 1n}}
+function capSetNonce(n){localStorage.setItem(CAPABILITY_NONCE_KEY,String(BigInt(n)));return BigInt(n)}
+function capUtf8Hex(s){return '0x'+Array.from(new TextEncoder().encode(String(s))).map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function capKeccakData(hex){return fallbackRpc('web3_sha3',[String(hex).startsWith('0x')?String(hex):'0x'+String(hex)])}
+async function capKeccakText(s){return capKeccakData(capUtf8Hex(s))}
+function capWordHex(v){return BigInt(v).toString(16).padStart(64,'0')}
+function capAddrHex(a){if(!/^0x[0-9a-fA-F]{40}$/.test(String(a)))throw Error('Invalid address in capability');return String(a).slice(2).toLowerCase().padStart(64,'0')}
+function capBytes32Hex(x){const h=String(x).replace(/^0x/,'');if(!/^[0-9a-fA-F]{64}$/.test(h))throw Error('Invalid bytes32');return h.toLowerCase()}
+function capConcat(...xs){return '0x'+xs.map(x=>String(x).replace(/^0x/,'')).join('')}
+function capUsd18(s){const x=String(s).trim();if(!/^\d+(\.\d+)?$/.test(x))throw Error('Invalid USD amount');let [a,b='']=x.split('.');if(b.length>18)throw Error('USD value has more than 18 decimals');return BigInt(a)*10n**18n+BigInt((b+'0'.repeat(18)).slice(0,18))}
+function capActionMask(){let m=0n;if($('capBuy').checked)m|=1n;if($('capSell').checked)m|=2n;if($('capWrap').checked)m|=4n;if($('capUnwrap').checked)m|=8n;if(m===0n)throw Error('Select at least one allowed action');return m}
+function capActionNames(mask){mask=BigInt(mask);const a=[];if(mask&1n)a.push('BUY');if(mask&2n)a.push('SELL');if(mask&4n)a.push('WRAP');if(mask&8n)a.push('UNWRAP');return a}
+function capActiveGeneration(){const x=tbaLoad(),g=x.generations.find(r=>String(r.address||'').toLowerCase()===String(TRADING).toLowerCase());return Number(g?.generation||x.activeGeneration||1)}
+function capAssetAddresses(){
+  const raw=$('capAssets').value.split(',').map(x=>x.trim()).filter(Boolean),out=[];
+  for(const x0 of raw){
+    const x=x0.toUpperCase();
+    let a=null;
+    if(x==='NVDA')a=NVDA;
+    else if(x==='STONKBROKER')a=STONKBROKER;
+    else if(x==='WETH')a=WETH;
+    else if(/^0x[0-9a-fA-F]{40}$/.test(x0))a=x0;
+    else throw Error(`Unknown capability asset "${x0}". Use NVDA, STONKBROKER, WETH, or an ERC-20 address.`);
+    a=a.toLowerCase();
+    if(!out.includes(a))out.push(a);
+  }
+  if(!out.length)throw Error('Enter at least one allowed asset');
+  out.sort();
+  return out;
+}
+async function capHashTypedData(domain,message){
+  const domainType='EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)';
+  const capType='RusteeCapability(address brokerNFT,uint256 tokenId,address tradingAccount,uint32 generation,bytes32 assetsHash,uint256 actions,uint256 maxTradeUsd18,uint256 maxDailyUsd18,uint32 maxTrades,uint32 maxSlippageBps,uint64 validAfter,uint64 validUntil,uint256 nonce)';
+  const [domainTypeHash,capTypeHash,nameHash,versionHash]=await Promise.all([
+    capKeccakText(domainType),capKeccakText(capType),capKeccakText(domain.name),capKeccakText(domain.version)
+  ]);
+  const domainEncoded=capConcat(
+    capBytes32Hex(domainTypeHash),capBytes32Hex(nameHash),capBytes32Hex(versionHash),
+    capWordHex(domain.chainId),capAddrHex(domain.verifyingContract)
+  );
+  const domainSeparator=await capKeccakData(domainEncoded);
+  const structEncoded=capConcat(
+    capBytes32Hex(capTypeHash),capAddrHex(message.brokerNFT),capWordHex(message.tokenId),
+    capAddrHex(message.tradingAccount),capWordHex(message.generation),capBytes32Hex(message.assetsHash),
+    capWordHex(message.actions),capWordHex(message.maxTradeUsd18),capWordHex(message.maxDailyUsd18),
+    capWordHex(message.maxTrades),capWordHex(message.maxSlippageBps),capWordHex(message.validAfter),
+    capWordHex(message.validUntil),capWordHex(message.nonce)
+  );
+  const structHash=await capKeccakData(structEncoded);
+  const digest=await capKeccakData(capConcat('1901',capBytes32Hex(domainSeparator),capBytes32Hex(structHash)));
+  return {domainType,capType,domainSeparator,structHash,digest};
+}
+async function capBuild(){
+  capabilityRuntime={built:null,signed:null};$('capSign').disabled=true;$('capVerify').disabled=true;$('capExport').disabled=true;
+  await resolveAuthorityState(true);
+  const v=await tbaVerifyAccount(TRADING);if(!v.pass)throw Error('Active Trading TBA failed live binding verification');
+  const assets=capAssetAddresses(),canonicalAssets=assets.join(','),assetsHash=await capKeccakText(canonicalAssets);
+  const minutes=Math.floor(Number($('capMinutes').value));if(!(minutes>=1&&minutes<=10080))throw Error('Validity must be 1–10080 minutes');
+  const now=Math.floor(Date.now()/1000),validAfter=now-15,validUntil=now+minutes*60;
+  const maxTrade=capUsd18($('capMaxTrade').value),maxDaily=capUsd18($('capMaxDaily').value);
+  if(maxDaily<maxTrade)throw Error('Maximum daily must be greater than or equal to maximum trade');
+  const maxTrades=Math.floor(Number($('capMaxTrades').value));if(!(maxTrades>=1&&maxTrades<=1000))throw Error('Maximum trades must be 1–1000');
+  const slipPct=Number($('capSlippage').value);if(!(slipPct>0&&slipPct<=10))throw Error('Maximum slippage must be >0% and ≤10%');
+  const slippageBps=Math.round(slipPct*100),actions=capActionMask(),nonce=capNonce(),generation=capActiveGeneration();
+  const domain={name:'Rustee Capability',version:'1',chainId:Number(CHAIN),verifyingContract:TRADING};
+  const message={
+    brokerNFT:NFT,tokenId:BROKER_TOKEN_ID.toString(),tradingAccount:TRADING,generation,
+    assetsHash,actions:actions.toString(),maxTradeUsd18:maxTrade.toString(),maxDailyUsd18:maxDaily.toString(),
+    maxTrades, maxSlippageBps:slippageBps, validAfter, validUntil, nonce:nonce.toString()
+  };
+  const hashes=await capHashTypedData(domain,message);
+  const typedData={
+    types:{
+      EIP712Domain:[
+        {name:'name',type:'string'},{name:'version',type:'string'},{name:'chainId',type:'uint256'},{name:'verifyingContract',type:'address'}
+      ],
+      RusteeCapability:[
+        {name:'brokerNFT',type:'address'},{name:'tokenId',type:'uint256'},{name:'tradingAccount',type:'address'},
+        {name:'generation',type:'uint32'},{name:'assetsHash',type:'bytes32'},{name:'actions',type:'uint256'},
+        {name:'maxTradeUsd18',type:'uint256'},{name:'maxDailyUsd18',type:'uint256'},{name:'maxTrades',type:'uint32'},
+        {name:'maxSlippageBps',type:'uint32'},{name:'validAfter',type:'uint64'},{name:'validUntil',type:'uint64'},{name:'nonce',type:'uint256'}
+      ]
+    },
+    primaryType:'RusteeCapability',domain,message
+  };
+  capabilityRuntime.built={schema:'rustee-capability-passport/v1',createdAt:new Date().toISOString(),owner:OWNER,assets,canonicalAssets,typedData,...hashes};
+  $('capGeneration').textContent='Gen '+generation;
+  $('capBuildLog').textContent=`CAPABILITY BUILT ✓
+Trading TBA: ${TRADING}
+Generation: ${generation}
+Broker NFT: ${NFT} #${BROKER_TOKEN_ID}
+Assets: ${assets.join(', ')}
+Actions: ${capActionNames(actions).join(', ')}
+Max trade: $${$('capMaxTrade').value}
+Max daily: $${$('capMaxDaily').value}
+Max trades: ${maxTrades}
+Max slippage: ${slipPct}%
+Valid after: ${new Date(validAfter*1000).toISOString()}
+Expires: ${new Date(validUntil*1000).toISOString()}
+Nonce: ${nonce}
+Assets hash: ${assetsHash}
+Domain separator: ${hashes.domainSeparator}
+Struct hash: ${hashes.structHash}
+EIP-712 digest: ${hashes.digest}
+
+This passport is account-bound to ${TRADING}.`;
+  $('capSign').disabled=false;
+  return capabilityRuntime.built;
+}
+async function capSign(){
+  const b=capabilityRuntime.built;if(!b)throw Error('Build the capability first');
+  await ensureOwnerAndChain();
+  if(!account||account.toLowerCase()!==OWNER.toLowerCase())throw Error('Connect the current Broker NFT owner');
+  const p=injectedWalletProvider();if(!p)throw Error('No injected wallet provider');
+  const signature=await p.request({method:'eth_signTypedData_v4',params:[OWNER,JSON.stringify(b.typedData)]});
+  if(!/^0x[0-9a-fA-F]+$/.test(String(signature))||String(signature).length<130)throw Error('Wallet returned an invalid typed-data signature');
+  capabilityRuntime.signed={...b,signature,signedAt:new Date().toISOString(),erc1271Verified:false};
+  localStorage.setItem(CAPABILITY_KEY,JSON.stringify(capabilityRuntime.signed));
+  $('capVerify').disabled=false;$('capExport').disabled=false;
+  $('capPassportLog').textContent=`SIGNED CAPABILITY ✓
+Owner: ${OWNER}
+Trading TBA: ${TRADING}
+Digest: ${b.digest}
+Signature: ${signature}
+
+Next: Verify with the Trading TBA using ERC-1271.`;
+}
+function cap1271Calldata(digest,signature){
+  const sig=String(signature).replace(/^0x/,'');if(sig.length%2)throw Error('Malformed signature');
+  return '0x'+CAP_SEL_1271+capBytes32Hex(digest)+capWordHex(64)+capWordHex(sig.length/2)+sig.padEnd(Math.ceil((sig.length/2)/32)*64,'0');
+}
+async function capVerify1271(){
+  const s=capabilityRuntime.signed||(()=>{try{return JSON.parse(localStorage.getItem(CAPABILITY_KEY)||'null')}catch{return null}})();
+  if(!s)throw Error('No signed capability to verify');
+  await resolveAuthorityState(true);
+  if(String(s.typedData.domain.verifyingContract).toLowerCase()!==String(TRADING).toLowerCase())throw Error('Signed capability belongs to a different Trading TBA generation');
+  const ret=await fallbackRpc('eth_call',[{to:TRADING,data:cap1271Calldata(s.digest,s.signature)},'latest']);
+  const magic=String(ret||'').replace(/^0x/,'').slice(0,8).toLowerCase(),ok=magic===CAP_1271_MAGIC;
+  $('cap1271State').textContent=ok?'VALID ✓':'INVALID';
+  if(!ok)throw Error(`Trading TBA did not return ERC-1271 magic value. Returned ${ret}`);
+  s.erc1271Verified=true;s.verifiedAt=new Date().toISOString();capabilityRuntime.signed=s;localStorage.setItem(CAPABILITY_KEY,JSON.stringify(s));
+  $('capPassportLog').textContent=`ERC-1271 VERIFIED ✓
+The active Trading TBA itself accepted the owner's signature for this EIP-712 digest.
+
+Trading TBA: ${TRADING}
+Digest: ${s.digest}
+Return magic: 0x${CAP_1271_MAGIC}
+Expiry: ${new Date(Number(s.typedData.message.validUntil)*1000).toISOString()}
+Nonce: ${s.typedData.message.nonce}
+
+v3.6A does not execute anything from this passport.`;
+  $('capExport').disabled=false;return true;
+}
+async function capProbe1271(){
+  await resolveAuthorityState(true);const code=await fallbackRpc('eth_getCode',[TRADING,'latest']);if(!code||code==='0x')throw Error('Active Trading TBA has no bytecode');
+  $('capProbeLog').textContent=`ERC-1271 interface target
+Account: ${TRADING}
+Selector: 0x${CAP_SEL_1271}
+Expected success magic: 0x${CAP_1271_MAGIC}
+
+A conclusive live PASS requires signing a capability and pressing Verify with Trading TBA.`;
+  $('cap1271State').textContent='READY TO TEST';
+}
+async function capProbe7739(){
+  await resolveAuthorityState(true);
+  try{
+    const ret=await fallbackRpc('eth_call',[{to:TRADING,data:'0x'+CAP_SEL_EIP712_DOMAIN},'latest']);
+    if(!ret||ret==='0x')throw Error('empty return');
+    $('cap7739State').textContent='ERC-5267 PRESENT';
+    $('capProbeLog').textContent=`ERC-5267 eip712Domain() returned data from ${TRADING}.
+This is a prerequisite used by ERC-7739, but it does NOT by itself prove ERC-7739 verification behavior.
+
+Return: ${ret}`;
+  }catch(e){
+    $('cap7739State').textContent='CURRENT TBA: NO';
+    $('capProbeLog').textContent=`Current Trading TBA did not expose ERC-5267 eip712Domain().
+
+That means Rustee must NOT claim full ERC-7739 compatibility for this deployed generation.
+
+v3.6A still prevents ordinary cross-generation replay of its own Capability Passport by putting the exact Trading TBA address in the EIP-712 verifyingContract domain and message. A later experimental Trading generation can implement full ERC-7739.`;
+  }
+}
+function capExport(){
+  const s=capabilityRuntime.signed||(()=>{try{return JSON.parse(localStorage.getItem(CAPABILITY_KEY)||'null')}catch{return null}})();if(!s)throw Error('No signed passport');
+  const blob=new Blob([JSON.stringify({...s,exportedAt:new Date().toISOString(),warning:'v3.6A capability passport is signed intent only; it is not an autonomous execution credential.'},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`rustee-capability-gen-${s.typedData.message.generation}-nonce-${s.typedData.message.nonce}.json`;a.click();URL.revokeObjectURL(a.href);
+}
+function capInvalidate(){
+  const next=capSetNonce(capNonce()+1n);capabilityRuntime={built:null,signed:null};localStorage.removeItem(CAPABILITY_KEY);
+  $('capSign').disabled=true;$('capVerify').disabled=true;$('capExport').disabled=true;$('cap1271State').textContent='UNCHECKED';
+  $('capPassportLog').textContent=`Local capability nonce advanced to ${next}. Future passports will use the new nonce.
+
+Important: v3.6A has no on-chain nonce registry, so this is local invalidation only. On-chain revocation/consumption is a Phase 2 requirement.`;
+}
+function capInit(){
+  if(!$('capBuild'))return;
+  $('capBuild').onclick=()=>capBuild().catch(e=>$('capBuildLog').textContent='ERROR: '+e.message);
+  $('capSign').onclick=()=>capSign().catch(e=>$('capPassportLog').textContent='ERROR: '+e.message);
+  $('capVerify').onclick=()=>capVerify1271().catch(e=>{$('cap1271State').textContent='INVALID';$('capPassportLog').textContent='ERROR: '+e.message});
+  $('capProbe1271').onclick=()=>capProbe1271().catch(e=>$('capProbeLog').textContent='ERROR: '+e.message);
+  $('capProbe7739').onclick=()=>capProbe7739().catch(e=>$('capProbeLog').textContent='ERROR: '+e.message);
+  $('capExport').onclick=()=>{try{capExport()}catch(e){$('capPassportLog').textContent='ERROR: '+e.message}};
+  $('capInvalidate').onclick=capInvalidate;
+  const saved=(()=>{try{return JSON.parse(localStorage.getItem(CAPABILITY_KEY)||'null')}catch{return null}})();
+  if(saved){capabilityRuntime.signed=saved;$('capExport').disabled=false;$('capVerify').disabled=false;$('capGeneration').textContent='Gen '+saved.typedData.message.generation;$('cap1271State').textContent=saved.erc1271Verified?'VALID ✓':'SIGNED';$('capPassportLog').textContent=`Saved capability loaded.
+Trading TBA: ${saved.typedData.domain.verifyingContract}
+Nonce: ${saved.typedData.message.nonce}
+Expiry: ${new Date(Number(saved.typedData.message.validUntil)*1000).toISOString()}
+ERC-1271 verified: ${saved.erc1271Verified?'YES':'NO'}`;}
+}
+
+if($('tbaPredict'))$('tbaPredict').onclick=()=>tbaPredictGeneration().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaPrepareCreate'))$('tbaPrepareCreate').onclick=()=>tbaPrepareCreate().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaExecuteCreate'))$('tbaExecuteCreate').onclick=()=>tbaExecuteCreate().catch(e=>{$('tbaCreateLog').textContent='ERROR: '+e.message});if($('tbaRefreshAll'))$('tbaRefreshAll').onclick=()=>tbaRefreshGenerations().catch(e=>{$('tbaManagerLog').textContent='ERROR: '+e.message});if($('tbaExport'))$('tbaExport').onclick=tbaExportState;tbaRender();migInit();capInit();
 // -----------------------------------------------------------------------------
 
 // --- v3.4.4 Transfer Readiness + Ownership Migration Check --------------------
