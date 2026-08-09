@@ -1,0 +1,47 @@
+name: engine-deployment-integration-ci
+on:
+  push:
+    paths:
+      - "index.html"
+      - "sw.js"
+      - "src/EngineAuthorizedTradingAccount.sol"
+      - "src/RusteeCapabilityRegistryV2.sol"
+      - "src/RusteeTradingEngine.sol"
+      - "test/EngineAuthorizedTradingAccount.t.sol"
+      - "foundry.toml"
+      - ".github/workflows/engine-deployment-integration-ci.yaml"
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Ensure forge-std
+        run: |
+          if [ ! -d lib/forge-std ]; then
+            forge install foundry-rs/forge-std --no-commit
+          fi
+      - name: Build contracts
+        run: forge build --sizes
+      - name: Full Rustee tests
+        run: forge test -vvv
+      - name: Engine-authorized TBA 5,000-run fuzz gate
+        run: forge test --match-contract EngineAuthorizedTradingAccountTest --fuzz-runs 5000 -vv
+      - name: Extract inline application JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.findall(r'<script(?![^>]*type=["\']text/plain["\'])[^>]*>(.*?)</script>',s,re.S|re.I)
+          assert len(m)==1, f'expected one application script, found {len(m)}'
+          Path('/tmp/rustee-app.js').write_text(m[0])
+          PY
+      - name: JavaScript syntax check
+        run: node --check /tmp/rustee-app.js

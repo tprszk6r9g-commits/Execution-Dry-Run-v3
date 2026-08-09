@@ -1,59 +1,18 @@
 name: capability-registry-ci
-
 on:
   push:
-    paths:
-      - "src/RusteeCapabilityRegistry.sol"
-      - "test/RusteeCapabilityRegistry.t.sol"
-      - "script/DeployCapabilityRegistry.s.sol"
-      - "foundry.toml"
-      - ".github/workflows/capability-registry-ci.yaml"
+    paths: ["src/RusteeCapabilityRegistry.sol","test/RusteeCapabilityRegistry.t.sol","script/DeployCapabilityRegistry.s.sol","foundry.toml",".github/workflows/capability-registry-ci.yaml"]
   pull_request:
-    paths:
-      - "src/RusteeCapabilityRegistry.sol"
-      - "test/RusteeCapabilityRegistry.t.sol"
-      - "script/DeployCapabilityRegistry.s.sol"
-      - "foundry.toml"
-      - ".github/workflows/capability-registry-ci.yaml"
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
+permissions: {contents: read}
 jobs:
   foundry:
-    name: Foundry registry qualification
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
-
-      - name: Ensure forge-std
-        shell: bash
-        run: |
-          if [ ! -d lib/forge-std ]; then
-            forge install foundry-rs/forge-std --no-commit
-          fi
-
-      - name: Format check — v3.6B.1 files only
-        run: |
-          forge fmt --check             src/RusteeCapabilityRegistry.sol             test/RusteeCapabilityRegistry.t.sol             script/DeployCapabilityRegistry.s.sol
-
-      - name: Build full Rustee contracts
-        run: forge build --sizes
-
-      - name: Run full Rustee test suite
-        run: forge test -vvv
-
-      - name: Run Capability Registry high-fuzz gate
-        run: |
-          forge test             --match-contract RusteeCapabilityRegistryTest             --fuzz-runs 5000             -vv
-
-      - name: Gas report
-        run: forge test --match-contract RusteeCapabilityRegistryTest --gas-report
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with: {version: stable}
+      - run: test -d lib/forge-std || forge install foundry-rs/forge-std --no-commit
+      - run: forge fmt --check
+      - run: forge build --sizes
+      - run: forge test -vvv
+      - run: forge test --match-contract RusteeCapabilityRegistryTest --fuzz-runs 5000 -vv
