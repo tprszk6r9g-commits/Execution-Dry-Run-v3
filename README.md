@@ -1,5 +1,37 @@
 # Rustee Broker
 
+## Current Release — v3.6B.4 Verified Metadata Controller Security Gate
+
+v3.6B.4 fixes the Step-2 migration handoff after an in-app controller deployment.
+
+### Fix
+
+The transaction security gate now accepts a dynamically deployed `RusteeMetadataController` only after Rustee verifies on-chain:
+
+- the address contains deployed bytecode;
+- `brokerNFT()` equals the exact Rustee Broker NFT;
+- `tokenId()` equals Broker #1;
+- the live Broker NFT/TBA binding remains valid.
+
+The verified controller is then allowed as a signing destination for the metadata migration and later metadata actions.
+
+### Extra hardening
+
+Step 2 now re-verifies the controller immediately before arming the Rabby transaction. Manually replacing the controller field with an arbitrary contract therefore remains blocked.
+
+No fixed allowlist bypass was added and arbitrary contract destinations remain rejected.
+
+### Files changed
+
+- `index.html`
+- `sw.js`
+- `README.md`
+
+No Solidity contract changes are required for v3.6B.4.
+
+---
+
+
 ## Current Release — v3.6B.3 In-App Metadata Controller Deployer
 
 v3.6B.3 adds an iPhone/Rabby deployment path for the already-qualified `RusteeMetadataController`.

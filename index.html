@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-G/IwSFrKN8zxFs/zWyzh+K3Si+COnGaajrkoxmNqNZg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-pWc+IiJxi16Mo+GVDTmODKq1lsfyOu9n4dGbYKVrMhg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
 <title>Rustee Broker v3.5.2 TBA Migration Manager · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
@@ -1923,7 +1923,7 @@ async function resolveAuthorityState(force=false){
   if(!tbaBindingOk)throw Error('SECURITY: one or more ERC-6551 account owners do not match the current Broker NFT owner');
   const metadataController=await detectMetadataController(admin,nft,tokenId);
   const directAdmin=admin.toLowerCase()===tokenOwner.toLowerCase();
-  OWNER=tokenOwner;NFT_ADMIN=admin;METADATA_CONTROLLER=metadataController?.address||null;METADATA_SIGNER=metadataController?tokenOwner:admin;
+  OWNER=tokenOwner;NFT_ADMIN=admin;METADATA_CONTROLLER=metadataController?.address||null;METADATA_SIGNER=metadataController?tokenOwner:admin;if(metadataController)markSecurityVerifiedMetadataController(metadataController.address,nft,tokenId);
   AUTHORITY_STATE={time:Date.now(),nft,tokenId,tokenOwner,admin,metadataController:metadataController?.address||null,metadataMode:metadataController?'NFT_FOLLOWING_CONTROLLER':'DIRECT_ADMIN',metadataSigner:METADATA_SIGNER,tbaOwners,tbaBindingOk,adminFollowsToken:!!metadataController||directAdmin};
   try{renderWalletConnectionState()}catch{}
   try{renderHardBoundAddresses()}catch{}
@@ -4241,6 +4241,7 @@ async function validateSecurityDestination(tx){
   const dynamic=securityDynamicTokens().has(to);
   const brokerNft=(NFT||'').toLowerCase();
   const dynamicNft=!!brokerNft&&to===brokerNft;
+  const verifiedMetadataController=isSecurityVerifiedMetadataControllerSync(to);
 
   // Plain ETH may only be sent directly to one of Rustee's controlled TBAs.
   const value=BigInt(tx.value||'0x0');
@@ -4252,7 +4253,7 @@ async function validateSecurityDestination(tx){
     return true;
   }
 
-  if(!fixed&&!dynamic&&!dynamicNft)throw Error('SECURITY: destination is not a fixed Rustee contract, resolved Broker NFT, or an active canonical/session token');
+  if(!fixed&&!dynamic&&!dynamicNft&&!verifiedMetadataController)throw Error('SECURITY: destination is not a fixed Rustee contract, resolved Broker NFT, verified metadata controller, or an active canonical/session token');
   return true;
 }
 
@@ -4280,7 +4281,8 @@ function assertPreparedWalletDestinationSync(tx){
   const fixed=SECURITY_FIXED_CONTRACTS.includes(to);
   const dynamic=securityDynamicTokens().has(to);
   const brokerNft=(NFT||'').toLowerCase();
-  if(!fixed&&!dynamic&&!(brokerNft&&to===brokerNft))throw Error('SECURITY: destination is not an approved Rustee contract/token');
+  const verifiedMetadataController=isSecurityVerifiedMetadataControllerSync(to);
+  if(!fixed&&!dynamic&&!(brokerNft&&to===brokerNft)&&!verifiedMetadataController)throw Error('SECURITY: destination is not an approved Rustee contract/token or verified metadata controller');
   return true;
 }
 async function armPreparedWalletHandoff(tx,label='Transaction',ttlMs=60000){
@@ -5200,6 +5202,19 @@ const META_CTRL_SEL_TOKEN_ID='17d70f7c';
 const META_CTRL_SEL_ACCEPT='98602204';
 const META_CTRL_SEL_IS_ADMIN='e3e9cb01';
 let METADATA_CONTROLLER=null,METADATA_SIGNER=null,metadataControllerMigrationPrepared=null;
+const SECURITY_VERIFIED_METADATA_CONTROLLERS=new Map();
+function markSecurityVerifiedMetadataController(address,nft,tokenId){
+  const a=String(address||'').toLowerCase(),n=String(nft||'').toLowerCase(),id=BigInt(tokenId);
+  if(!/^0x[0-9a-f]{40}$/.test(a)||!/^0x[0-9a-f]{40}$/.test(n))throw Error('SECURITY: invalid verified metadata controller binding');
+  SECURITY_VERIFIED_METADATA_CONTROLLERS.set(a,{nft:n,tokenId:id,verifiedAt:Date.now()});
+}
+function isSecurityVerifiedMetadataControllerSync(address){
+  const a=String(address||'').toLowerCase(),v=SECURITY_VERIFIED_METADATA_CONTROLLERS.get(a);
+  if(!v)return false;
+  const liveNft=String(NFT||'').toLowerCase();
+  if(!liveNft||BROKER_TOKEN_ID===null)return false;
+  return v.nft===liveNft&&v.tokenId===BigInt(BROKER_TOKEN_ID);
+}
 const AIO_TOKEN_URI=document.getElementById('AIO_TOKEN_URI')?.textContent||'';
 let aioMetadataSimulation=null,aioMetadataVerified=false,aioLastProposalUri=null,aioFreezePrepared=null;
 let metadataStudioCurrent=null,metadataStudioImage='';
@@ -5290,6 +5305,7 @@ async function verifyMetadataControllerCandidate(){
   const [nftRaw,idRaw]=await Promise.all([fallbackRpc('eth_call',[{to:candidate,data:'0x'+META_CTRL_SEL_BROKER_NFT},'latest']),fallbackRpc('eth_call',[{to:candidate,data:'0x'+META_CTRL_SEL_TOKEN_ID},'latest'])]);
   const boundNft=decodeAddressResult(nftRaw,'controller brokerNFT'),boundId=BigInt(idRaw||'0x0');
   if(boundNft.toLowerCase()!==s.nft.toLowerCase()||boundId!==s.tokenId)throw Error('Controller is not bound to Rustee Broker #1.');
+  markSecurityVerifiedMetadataController(candidate,boundNft,boundId);
   $('metaControllerPrepare1').disabled=false;$('metaControllerMigrationLog').textContent=`CONTROLLER VERIFIED ✓\nController: ${candidate}\nBroker NFT: ${boundNft}\nToken ID: #${boundId}\nCurrent NFT-contract admin: ${s.admin}\nCurrent NFT holder: ${s.tokenOwner}\n\nStep 1 must be signed by ${s.admin}.`;
   return {candidate,s}
 }
@@ -5299,7 +5315,7 @@ async function prepareMetadataControllerStep1(){
 }
 async function executeMetadataControllerStep1(){const x=metadataControllerMigrationPrepared;if(!x||x.step!==1)throw Error('Prepare Step 1 first.');const hash=await secureSendTransaction({...x.tx,gas:hexQty(x.gas*120n/100n)},'Metadata authority migration Step 1');await waitReceipt(hash);metadataControllerMigrationPrepared=null;$('metaControllerExecute1').disabled=true;$('metaControllerPrepare2').disabled=false;$('metaControllerMigrationLog').textContent=`STEP 1 CONFIRMED ✓\nTx: ${hash}\n\nNow connect the CURRENT Broker NFT holder and prepare Step 2.`}
 async function prepareMetadataControllerStep2(){
-  clearPreparedWalletHandoff();const candidate=$('metaControllerCandidate').value.trim(),s=await aioReadNftState();if(!account)await connect();if(account.toLowerCase()!==s.tokenOwner.toLowerCase())throw Error('Connect the CURRENT Broker NFT holder for Step 2.');
+  clearPreparedWalletHandoff();const {candidate,s}=await verifyMetadataControllerCandidate();if(!account)await connect();if(account.toLowerCase()!==s.tokenOwner.toLowerCase())throw Error('Connect the CURRENT Broker NFT holder for Step 2.');
   const tx0={from:s.tokenOwner,to:candidate,data:'0x'+META_CTRL_SEL_ACCEPT},gas=BigInt(await rpc('eth_estimateGas',[tx0]));await rpc('eth_call',[tx0,'latest']);await armPreparedWalletHandoff(tx0,'Metadata authority migration Step 2',120000);metadataControllerMigrationPrepared={step:2,time:Date.now(),tx:tx0,gas,candidate};$('metaControllerExecute2').disabled=false;$('metaControllerMigrationLog').textContent=`STEP 2 SIMULATION PASS ✓\nNFT holder: ${s.tokenOwner}\nController: ${candidate}\nAction: accept NFT-contract administration\nEstimated gas: ${gas}\n\nOpen the NFT-holder wallet to sign.`
 }
 async function executeMetadataControllerStep2(){const x=metadataControllerMigrationPrepared;if(!x||x.step!==2)throw Error('Prepare Step 2 first.');const hash=await secureSendTransaction({...x.tx,gas:hexQty(x.gas*120n/100n)},'Metadata authority migration Step 2');await waitReceipt(hash);metadataControllerMigrationPrepared=null;$('metaControllerExecute2').disabled=true;AUTHORITY_STATE=null;await verifyMetadataControllerActivation();$('metaControllerMigrationLog').textContent+=`\nActivation tx: ${hash}`}
