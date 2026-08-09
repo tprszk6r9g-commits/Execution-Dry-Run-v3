@@ -101,8 +101,12 @@ jobs:
           assert len(history.get("byAddress", {})) > 0
           assert integrity.get("generatedAt")
           assert set(integrity.get("sha256", {})) == {
-              "index.html", "data/robinhood-assets.json",
-              "data/robinhood-prices.json", "data/rustee-history.json"
+              "index.html",
+              "manifest.webmanifest",
+              "sw.js",
+              "data/robinhood-assets.json",
+              "data/robinhood-prices.json",
+              "data/rustee-history.json",
           }
 
           print("Assets:", len(assets["assets"]))
