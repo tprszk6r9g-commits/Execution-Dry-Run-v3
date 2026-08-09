@@ -1424,6 +1424,19 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
     <pre id="v375Log">Waiting for exact token pair + verified venue + selector. All autonomous layers remain paused.</pre>
   </div>
 
+  <div class="card warn">
+    <span class="badge">v3.7.6 · EXECUTION REHEARSAL SAFETY GATE</span>
+    <h2>Tiny-value execution rehearsal preflight</h2>
+    <p>This gate validates the already-deployed Generation 10 stack before any execution-layer activation. It performs reads only. It will not unpause the TBA engine path, Trading Engine, Runner or Adapter and it will not broadcast a trade.</p>
+    <div class="riskBoundary"><b>Hard rehearsal cap:</b> the requested Token-in amount must be no more than 0.0001 token units. The Generation 10 → Adapter allowance must be zero before this preflight passes.</div>
+    <label>Requested rehearsal amount (Token in units)</label><input id="v376Amount" inputmode="decimal" placeholder="0.00001" value="0.00001">
+    <div class="actions">
+      <button id="v376Preflight">1 · Execution rehearsal preflight</button>
+      <button id="v376Refresh">Refresh safety state</button>
+    </div>
+    <pre id="v376Log">Run the read-only safety preflight. No activation or trade transaction is available in this build.</pre>
+  </div>
+
   <div class="card">
     <h2>Live verification</h2>
     <div class="actions"><button id="v372Verify">Verify complete stack</button></div>
@@ -5910,6 +5923,30 @@ if($('stratList'))$('stratList').addEventListener('click',e=>{try{const b=e.targ
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){strategyRecorderSchedule();strategyPaperRefreshAll()}});
 strategyRender();
 // -----------------------------------------------------------------------------
+
+// v3.7.6 — read-only execution rehearsal safety gate. Intentionally contains no unpause or trade broadcast path.
+const V376_MAX='0.0001';
+async function v376Balance(token,account){const raw=await fallbackRpc('eth_call',[{to:token,data:'0x'+selectorOf('balanceOf(address)')+addrWord(account)},'latest']);return BigInt(raw||'0x0')}
+async function v376Preflight(){
+  await ensureOwnerAndChain();
+  const core=await v374Core(),ex=v374Load(),perm=v375Load();
+  if(!perm.verified)throw Error('v3.7.5 permission gate is not locally verified. Verify it first.');
+  const txt=String($('v376Amount')?.value||'').trim(); if(!txt)throw Error('Enter a rehearsal amount');
+  const dec=await tokenDecimals(perm.tokenIn),amount=decimalToUnits(txt,dec),cap=decimalToUnits(V376_MAX,dec);
+  if(amount<=0n)throw Error('Rehearsal amount must be greater than zero');
+  if(amount>cap)throw Error('Hard rehearsal cap exceeded: maximum is '+V376_MAX+' token units');
+  const [allowance,tbaBal,ap,rp,ep,tp]=await Promise.all([
+    v375ReadAllowance(),v376Balance(perm.tokenIn,core.tba),
+    v374ReadBool(ex.adapter,'0x'+V374_SEL_PAUSED),v374ReadBool(ex.runner,'0x'+V374_SEL_PAUSED),
+    v374ReadBool(core.engine,'0x'+V374_SEL_PAUSED),v374ReadBool(core.tba,'0x'+selectorOf('enginePaused()'))
+  ]);
+  const permissionOk=await v375Verify();
+  const ok=permissionOk&&allowance===0n&&ap&&rp&&ep&&tp&&tbaBal>=amount;
+  $('v376Log').textContent=`EXECUTION REHEARSAL PREFLIGHT ${ok?'PASS ✓':'BLOCKED ✕'}\nGeneration: 10\nRequested amount: ${txt} (${amount} raw)\nHard cap: ${V376_MAX}\nTBA Token-in balance: ${tbaBal} raw ${tbaBal>=amount?'PASS ✓':'INSUFFICIENT ✕'}\nTBA → Adapter allowance: ${allowance} raw ${allowance===0n?'PASS ✓':'MUST BE ZERO ✕'}\nPermission gate: ${permissionOk?'PASS ✓':'FAIL ✕'}\nTBA engine path paused: ${tp}\nTrading Engine paused: ${ep}\nRunner paused: ${rp}\nAdapter paused: ${ap}\n\n${ok?'SAFE START STATE CONFIRMED. This build intentionally stops before activation/trade.':'Do not activate or trade. Correct every failed item first.'}`;
+  return ok;
+}
+if($('v376Preflight'))$('v376Preflight').onclick=()=>v376Preflight().catch(e=>$('v376Log').textContent='ERROR: '+e.message);
+if($('v376Refresh'))$('v376Refresh').onclick=()=>v376Preflight().catch(e=>$('v376Log').textContent='ERROR: '+e.message);
 
 </script>
 </body></html>
