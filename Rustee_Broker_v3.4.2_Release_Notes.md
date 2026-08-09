@@ -20,6 +20,3 @@ Policy preparation performs authority resolution, Registry read, calldata constr
 - No Solidity source, Foundry config, or existing tests are modified.
 - `DataStreamsPolicyGateV2.sol` remains byte-identical to v3.4.1; its separate compiled `$5` constant is not altered by this dashboard-only release.
 - Metadata Studio and ownership hardening remain intact.
-
-## Operational note
-Changing the Registry's numeric policy is a separate owner-signed on-chain transaction. It does not itself execute a stock-token trade and it does not change the Registry's paused/unpaused state. A prepared policy request expires after 120 seconds and should be re-prepared after any external policy change.

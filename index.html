@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-nHW3jczD9N2s09i/VQY8ifwj5dh4Zi4PnNoh2R3eU6o='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
-<title>Rustee Broker v3.4.2 Live Policy Controls · Robinhood Chain</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-B7jcfXeC3FcYZGQibsCNY5JGM1RY/5CGACsv7G4U3ew='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<title>Rustee Broker v3.4.3 STONKBROKER Trading · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -260,7 +260,7 @@ select{width:100%;padding:15px;background:#051713;color:var(--text);border:1px s
   <div class="rusteeBrand">
     <img class="rusteePortrait" src="assets/rustee-broker-384.webp" alt="Rustee Broker #1">
     <div>
-      <span class="aioTag">v3.4.2 · Live Policy Controls</span>
+      <span class="aioTag">v3.4.3 · STONKBROKER Trading</span>
       <h1>Rustee Broker #1</h1>
       <p>NFT-rooted broker command center for portfolio visibility, guarded trading, ERC-6551 account operations, on-chain identity, metadata administration, security evidence, and recovery.</p>
       <div class="quickDock">
@@ -887,9 +887,10 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 
 <div id="tradePane" class="tabpane">
   <div class="card">
-    <span class="badge">PHASE 4 · MANUAL OWNER-SIGNED TRADING</span>
+    <span class="badge">v3.4.3 · STOCK TOKENS + STONKBROKER</span>
     <h2>Rustee Multi-Asset Trading Terminal</h2>
-    <p>Select a canonical Robinhood Stock Token discovered by the Portfolio Terminal. Buy routes spend ETH from the Vault and deliver the stock token to Trading. Sell routes recover the stock token from Trading, stage it through the owner into Vault, approve the router, and swap it to WETH. For sells, you can leave proceeds as WETH in the Vault or add a final unwrap step so the proceeds become native ETH in the Vault.</p>
+    <p>Trade canonical Robinhood Stock Tokens or the verified <b>STONKBROKER</b> community ERC-20. BUY routes spend native ETH from the Vault through the existing WETH-compatible Uniswap V3 router and deliver output to the Trading TBA. SELL routes recover the selected token from Trading, stage it through Owner into Vault, approve the router, and swap to WETH; an optional final step unwraps WETH to native ETH in Vault.</p>
+    <div class="riskBoundary" style="margin-bottom:12px"><b>STONKBROKER classification:</b> community ERC-20 at <code>0xe934e36A439C94017B64a3FecE66AF12099aBF50</code>. It is intentionally <b>not</b> classified as a Robinhood Stock Token and is not added to the canonical Stock Token Registry. Rustee verifies contract code + symbol live before quoting it.</div>
 
     <div class="tradeHero">
       <div class="tradePanel">
@@ -898,7 +899,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
           <div class="field"><label>Side</label>
             <select id="tradeSide"><option value="BUY">BUY</option><option value="SELL">SELL</option></select>
           </div>
-          <div class="field"><label>Canonical Stock Token</label>
+          <div class="field"><label>Trade Asset</label>
             <select id="tradeAsset"><option value="">Load Portfolio catalog first</option></select>
           </div>
         </div>
@@ -914,7 +915,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
         </div>
 
         <div id="sellSizing" style="display:none">
-          <label>Stock-token amount to sell</label>
+          <label>Token amount to sell</label>
           <input id="tradeTokenAmount" inputmode="decimal" placeholder="0.001">
           <div class="quickAmounts"><button id="tradeUse25">25%</button><button id="tradeUse50">50%</button><button id="tradeUseMax">MAX</button></div>
           <label>Sell proceeds</label>
@@ -928,6 +929,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
         <label>Maximum slippage (%)</label>
         <input id="tradeSlippage" type="number" min="0.10" max="10" step="0.10" value="0.50">
         <div class="holdingMeta">The Limits + Risk profile is the upper bound for manual and Autopilot trade slippage.</div>
+        <div id="stonkTradeStatus" class="riskEffective" style="margin-top:12px"><b>STONKBROKER:</b> select it above to verify the live contract, Trading TBA balance, and WETH route.</div>
 
         <div class="actions" style="margin-top:14px">
           <button class="primary" id="tradeQuote">Compare routes</button>
@@ -957,7 +959,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
         <button id="tradeInspectCustody">Inspect sell custody</button>
         <button id="tradeResumeSell">Resume incomplete sell</button>
       </div>
-      <pre id="tradeRecoveryLog">Recovery check idle. For an interrupted SELL, select SELL + the stock + the original amount, then inspect custody.</pre>
+      <pre id="tradeRecoveryLog">Recovery check idle. For an interrupted SELL, select SELL + the token + the original amount, then inspect custody.</pre>
       <div id="tradePlan" class="tradePlan"><div class="emptyState">Build a plan after obtaining a route quote.</div></div>
       <pre id="tradeExecLog">No live transaction has been prepared. Every step requires a fresh simulation and separate owner-wallet confirmation.</pre>
     </div>
@@ -968,7 +970,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
       <pre id="tradeVerificationLog">No confirmed v3.1 trade verification yet.</pre>
     </div>
 
-    <div class="warnline">Phase 4.1 is an execution interface, not a recommendation engine. It never chooses which stock you should buy or sell. The operator selects the asset, direction, amount, and slippage.</div>
+    <div class="warnline">Phase 4.1 is an execution interface, not a recommendation engine. It never chooses which asset you should buy or sell. The operator selects the asset, direction, amount, and slippage.</div>
   </div>
 </div>
 
@@ -1509,6 +1511,7 @@ const SEL_TOKEN='fc0c546a';
 const POLICY_REGISTRY='0xa36a28f160d9cf0bb924c2ed5a1263dd11e54199';
 const DATA_STREAMS_VERIFIER='0xcE73c8ad08CBDEaCa6078BF0627C8fe0a9a536E7';
 const WETH='0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
+const STONKBROKER='0xe934e36A439C94017B64a3FecE66AF12099aBF50';
 const NVDA='0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC';
 const ROUTER='0xCaf681a66D020601342297493863E78C959E5cb2';
 const QUOTER='0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7';
@@ -2748,29 +2751,32 @@ function tradeReset(){
   ['tradeBestFee','tradeExpected','tradeMinimum'].forEach(id=>$(id).textContent='—');
 }
 function populateTradeAssets(){
-  if(!terminalState.catalog?.length) return;
-  const active=terminalState.catalog
+  const active=(terminalState.catalog||[])
     .map(a=>({a,d:tokenDeployment(a)}))
     .filter(x=>x.d&&x.d.contractAddress)
     .sort((x,y)=>String(x.a.tokenSymbol).localeCompare(String(y.a.tokenSymbol)));
   const current=$('tradeAsset').value;
-  $('tradeAsset').innerHTML='<option value="">Select stock…</option>'+active.map(x=>
+  $('tradeAsset').innerHTML='<option value="">Select asset…</option>'+`<option value="${STONKBROKER}" data-symbol="STONKBROKER">STONKBROKER — Community ERC-20</option>`+active.map(x=>
     `<option value="${escapeHtml(x.d.contractAddress)}" data-symbol="${escapeHtml(x.a.tokenSymbol)}">${escapeHtml(x.a.tokenSymbol)} — ${escapeHtml(x.a.tokenName||'Stock Token')}</option>`
   ).join('');
-  if(active.some(x=>x.d.contractAddress.toLowerCase()===current.toLowerCase())) $('tradeAsset').value=current;
+  if(current&&current.toLowerCase()===STONKBROKER.toLowerCase()) $('tradeAsset').value=STONKBROKER; else if(active.some(x=>x.d.contractAddress.toLowerCase()===current.toLowerCase())) $('tradeAsset').value=current;
 }
 async function ensureTradeCatalog(){
-  if(!terminalState.catalog?.length) await loadRobinhoodCatalog(false);
+  if(!terminalState.catalog?.length){try{await loadRobinhoodCatalog(false)}catch(e){console.warn('Canonical Stock Token catalog unavailable; STONKBROKER remains available',e)}}
   populateTradeAssets();
 }
+
 function selectedTradeAsset(){
   const token=$('tradeAsset').value;
-  if(!token) throw Error('Select a canonical Stock Token');
+  if(!token) throw Error('Select a trade asset');
+  if(token.toLowerCase()===STONKBROKER.toLowerCase()){
+    return {asset:{tokenSymbol:'STONKBROKER',tokenName:'StonkBroker',classification:'COMMUNITY_ERC20'},token:STONKBROKER,symbol:'STONKBROKER',isCommunity:true};
+  }
   const asset=terminalState.catalog.find(a=>{
     const d=tokenDeployment(a);return d&&d.contractAddress.toLowerCase()===token.toLowerCase();
   });
-  if(!asset) throw Error('Selected token is not in the canonical chain-4663 catalog');
-  return {asset,token,symbol:asset.tokenSymbol};
+  if(!asset) throw Error('Selected token is neither STONKBROKER nor a canonical chain-4663 Stock Token');
+  return {asset,token,symbol:asset.tokenSymbol,isCommunity:false};
 }
 function quoteSingleCalldata(tokenIn,tokenOut,amountIn,fee){
   // QuoterV2 quoteExactInputSingle((address,address,uint256,uint24,uint160))
@@ -2803,14 +2809,25 @@ function exactInputPathCalldata(pathHex,recipient,amountIn,minOut){
 }
 function approveCalldata(spender,amount){return '0x'+SEL_APPROVE+addrWord(spender)+word(amount)}
 
+async function validateStonkbrokerForTrade(picked){
+  if(!picked?.isCommunity)return null;
+  const code=await rpc('eth_getCode',[STONKBROKER,'latest']);
+  if(!code||code==='0x')throw Error('STONKBROKER address has no contract code on chain 4663');
+  const [symbol,decimals,balance]=await Promise.all([tokenSymbol(STONKBROKER),tokenDecimals(STONKBROKER),erc20Balance(STONKBROKER,TRADING)]);
+  if(String(symbol).toUpperCase()!=='STONKBROKER')throw Error(`STONKBROKER identity check failed: token symbol returned ${symbol}`);
+  if(!(Number.isInteger(decimals)&&decimals>=0&&decimals<=36))throw Error('STONKBROKER decimals response is invalid');
+  if($('stonkTradeStatus'))$('stonkTradeStatus').innerHTML=`<b>STONKBROKER VERIFIED ✓</b><br>Contract ${short(STONKBROKER)} · ${decimals} decimals · Trading TBA ${unitsToDecimal(balance,decimals,8)} STONKBROKER`;
+  return {symbol,decimals,balance};
+}
 async function quoteTrade(recoveryMode=false){
   await ensureOwnerAndChain();
   await ensureTradeCatalog();
   const picked=selectedTradeAsset();
+  await validateStonkbrokerForTrade(picked);
   const side=$('tradeSide').value;
   $('tradeSelected').textContent=`${side} ${picked.symbol}`;
   const decimals=await tokenDecimals(picked.token);
-  const tiers=[500n,3000n,10000n];
+  const tiers=[100n,500n,3000n,10000n];
   let amountIn,tokenIn,tokenOut,inputSymbol,outputSymbol;
 
   if(side==='BUY'){
@@ -2860,7 +2877,7 @@ async function quoteTrade(recoveryMode=false){
     }catch(e){results.push({kind:'DIRECT',fees:[fee],fee,error:e.message,label:`Direct ${(Number(fee)/10000).toFixed(2)}%`})}
   }
 
-  // 2) Fallback through USDG. Many Robinhood Stock Tokens do not have a
+  // 2) Fallback through USDG when a direct pool is unavailable. Many Robinhood assets do not have a
   // direct WETH pool, so probe WETH -> USDG -> Stock (and reverse for sells).
   // This remains one atomic SwapRouter02 exactInput transaction.
   const middle=USDG;
@@ -2939,8 +2956,8 @@ async function inspectSellCustody(){
   ]);
   const fmt=x=>unitsToDecimal(x,decimals,12);
   const status=vault>=amount?'READY_FROM_VAULT':owner>=amount?'READY_FROM_OWNER':trading>=amount?'STILL_IN_TRADING':'NOT_LOCATED';
-  const human=status==='READY_FROM_VAULT'?'Interrupted stock is in Vault; resume at router approval.'
-    :status==='READY_FROM_OWNER'?'Interrupted stock is in Owner wallet; resume by staging it to Vault.'
+  const human=status==='READY_FROM_VAULT'?'Interrupted token is in Vault; resume at router approval.'
+    :status==='READY_FROM_OWNER'?'Interrupted token is in Owner wallet; resume by staging it to Vault.'
     :status==='STILL_IN_TRADING'?'Selected amount is still available in Trading TBA; use a normal new SELL plan.'
     :'Selected amount is not wholly present in Trading, Owner, or Vault. Do not send another transaction until balances/history are reviewed.';
   $('tradeRecoveryLog').textContent=
@@ -3251,6 +3268,7 @@ $('tradeSide').onchange=()=>{
   tradeReset();
 };
 $('tradeAsset').onchange=tradeReset;
+$('tradeAsset').addEventListener('change',()=>{if($('tradeAsset').value.toLowerCase()===STONKBROKER.toLowerCase()){if($('stonkTradeStatus'))$('stonkTradeStatus').innerHTML='<b>STONKBROKER selected.</b> Tap Compare routes to run live contract + symbol verification and probe WETH liquidity.'}else if($('stonkTradeStatus'))$('stonkTradeStatus').innerHTML='<b>STONKBROKER:</b> select it above to verify the live contract, Trading TBA balance, and WETH route.'});
 $('tradeSlippage').onchange=tradeReset;
 $('tradeSellProceeds').onchange=tradeReset;
 $('tradeUsd').oninput=tradeReset;
@@ -3387,8 +3405,8 @@ async function executeConvert(){
 function renderCommandAccounting(){
   try{const basis=loadCostBasis();let cur=0,cost=0;for(const key of ['OWNER','VAULT','TRADING','REWARDS','IDENTITY'])for(const p of terminalState.positions||[]){const bal=p.balances[key]||0n;if(bal===0n)continue;const v=currentPositionUsd(key,p);if(v!=null)cur+=v;cost+=Number(basis[positionKey(key,p.token)]||0)}const u=cur-cost;$('cmdUnrealizedPnl').textContent=(u>=0?'+':'')+money(u);$('cmdUnrealizedPnl').className=u>=0?'pnlPos':'pnlNeg';const r=realizedPnlTotal();$('cmdRealizedPnl').textContent=(r>=0?'+':'')+money(r);$('cmdRealizedPnl').className=r>=0?'pnlPos':'pnlNeg';const recovery=localStorage.getItem(TRADE_RECOVERY_KEY);const pending=readReceiptLog().some(x=>!['CONFIRMED','FAILED'].includes(x.status));$('cmdRecoveryState').textContent=recovery?'SELL CHECK':pending?'PENDING TX':'Clear ✓';$('cmdRecoveryState').className=recovery||pending?'healthWarn':'healthGood'}catch{}
 }
-function rusteeBackupPayload(){const storage={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('rustee-'))storage[k]=localStorage.getItem(k)}return {project:'Rustee Broker #1',version:'3.4.2-live-policy',chainId:CHAIN,exportedAt:new Date().toISOString(),storage,note:'Browser-side Rustee state only. No private keys or seed phrases are stored by this app.'}}
-function exportRusteeBackup(){const blob=new Blob([JSON.stringify(rusteeBackupPayload(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-broker-v3.4.2-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);$('backupLog').textContent='Backup exported. Rustee localStorage keys only; no wallet secrets.'}
+function rusteeBackupPayload(){const storage={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('rustee-'))storage[k]=localStorage.getItem(k)}return {project:'Rustee Broker #1',version:'3.4.3-stonkbroker-trading',chainId:CHAIN,exportedAt:new Date().toISOString(),storage,note:'Browser-side Rustee state only. No private keys or seed phrases are stored by this app.'}}
+function exportRusteeBackup(){const blob=new Blob([JSON.stringify(rusteeBackupPayload(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-broker-v3.4.3-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);$('backupLog').textContent='Backup exported. Rustee localStorage keys only; no wallet secrets.'}
 async function restoreRusteeBackupFile(file){const data=JSON.parse(await file.text());if(data?.project!=='Rustee Broker #1'||!data.storage||typeof data.storage!=='object')throw Error('Not a Rustee Broker backup');let restored=0;for(const [k,v] of Object.entries(data.storage)){if(!k.startsWith('rustee-')||typeof v!=='string')continue;localStorage.setItem(k,v);restored++}$('backupLog').textContent=`Restored ${restored} Rustee browser-state entries. Reloading local views…`;renderReceipts();renderOperatorTradeLedger();restoreLastTradeVerification();renderCostBasisEditor();renderHistoryMetrics();renderCommandAccounting()}
 
 let allowanceManagerState=new Map();
