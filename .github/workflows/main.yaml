@@ -108,10 +108,15 @@ jobs:
           assert history.get("generatedAt")
           assert len(history.get("byAddress", {})) > 0
           assert integrity.get("generatedAt")
-          assert set(integrity.get("sha256", {})) == {
-              "index.html", "data/robinhood-assets.json",
-              "data/robinhood-prices.json", "data/rustee-history.json"
+          integrity_keys = set(integrity.get("sha256", {}))
+          required_integrity = {
+              "index.html", "app.js",
+              "data/robinhood-assets.json",
+              "data/robinhood-prices.json",
+              "data/rustee-history.json"
           }
+          missing = required_integrity - integrity_keys
+          assert not missing, f"integrity manifest missing required files: {sorted(missing)}"
 
           print("Assets:", len(assets["assets"]))
           print("Quotes:", len(prices["quotesBySymbol"]))
