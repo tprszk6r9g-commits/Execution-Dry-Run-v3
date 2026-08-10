@@ -1,0 +1,57 @@
+name: generation-10-manual-recovery-ci
+
+on:
+  push:
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'src/EngineAuthorizedTradingAccount.sol'
+      - '.github/workflows/generation-10-manual-recovery-ci.yaml'
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'src/EngineAuthorizedTradingAccount.sol'
+      - '.github/workflows/generation-10-manual-recovery-ci.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Generation 10 owner recovery contract surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('src/EngineAuthorizedTradingAccount.sol').read_text()
+          assert 'function execute(address to, uint256 value, bytes calldata data, uint8 operation)' in s
+          assert 'onlyOwner' in s
+          assert 'function executeEngineCall(address target, uint256 value, bytes calldata data)' in s
+          assert 'if (enginePaused) revert EnginePaused();' in s
+          print('PASS: owner recovery execute() is distinct from paused autonomous engine path')
+          PY
+
+      - name: Verify frontend routes engine-authorized Trading TBA through execute
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('app.js').read_text()
+          assert 'function activeTradingUsesOwnerExecute()' in s
+          assert 'async function verifyOwnerExecutableTradingTba(addr)' in s
+          assert "tx={from:OWNER,to:source,data:genericExecuteCalldata(dest,amountUnits,'0x')}" in s
+          assert "tx={from:OWNER,to:source,data:genericExecuteCalldata(token,0n,transferCalldata(dest,amountUnits))}" in s
+          assert 'Autonomous trading activation required: NO' in s
+          print('PASS: Generation 10 manual ETH/ERC-20 recovery uses NFT-owner execute()')
+          PY
+
+      - name: JavaScript syntax check
+        run: node --check app.js
