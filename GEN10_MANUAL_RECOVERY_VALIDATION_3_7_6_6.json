@@ -1,0 +1,11 @@
+{
+  "node_syntax_ok": true,
+  "node_output": "",
+  "gen10_owner_execute_helper": true,
+  "live_binding_owner_check": true,
+  "eth_uses_execute": true,
+  "erc20_uses_execute": true,
+  "legacy_withdraw_preserved": true,
+  "autonomous_activation_not_required_message": true,
+  "new_ci_present": true
+}

@@ -1,3 +1,11 @@
+## v3.7.6.6 — Generation 10 Manual Recovery
+
+The Universal Asset Mover now recognizes engine-authorized Generation 10 TBAs and
+uses their NFT-owner-only ERC-6551 `execute()` recovery path for ETH and ERC-20s.
+Legacy Trading generations keep their existing restricted withdrawal path.
+Autonomous execution does not need to be unpaused. See
+`GEN10_MANUAL_RECOVERY_3_7_6_6.md`.
+
 # Rustee Broker v3.7.6.1 — Qualification + Primary TBA Promotion
 ## v3.7.6.4 — Generation 10 Promotion Fix
 

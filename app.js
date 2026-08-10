@@ -503,6 +503,37 @@ function genericExecuteCalldata(target,value,data){
 }
 function transferCalldata(to,amount){return '0x'+SEL_TRANSFER+addrWord(to)+word(amount)}
 
+function activeTradingGeneration(){
+  try{
+    const x=tbaInitState();
+    const addr=String(TRADING||'').toLowerCase();
+    return x.generations.find(g=>String(g.address||'').toLowerCase()===addr)||null;
+  }catch{return null}
+}
+
+function activeTradingUsesOwnerExecute(){
+  const g=activeTradingGeneration();
+  if(!g)return String(TRADING).toLowerCase()!==String(ORIGINAL_TRADING).toLowerCase();
+  return !!g.engineAuthorized || String(g.scheme||'').toLowerCase().startsWith('engine-authorized-');
+}
+
+async function verifyOwnerExecutableTradingTba(addr){
+  await resolveAuthorityState(true);
+  const [code,binding,ownerRaw]=await Promise.all([
+    fallbackRpc('eth_getCode',[addr,'latest']),
+    tbaReadBinding(addr),
+    fallbackRpc('eth_call',[{to:addr,data:'0x'+SEL_OWNER},'latest'])
+  ]);
+  const owner=tbaDecodeAddress(ownerRaw,'Trading TBA owner');
+  const pass=!!code&&code!=='0x'
+    &&binding.chainId===BigInt(CHAIN)
+    &&binding.nft.toLowerCase()===NFT.toLowerCase()
+    &&binding.tokenId===BROKER_TOKEN_ID
+    &&owner.toLowerCase()===OWNER.toLowerCase();
+  if(!pass)throw Error('Active Trading TBA failed owner/binding recovery verification');
+  return {pass,owner,binding,codeBytes:(code.length-2)/2};
+}
+
 async function readAccountSnapshot(key){
   const address=ACCOUNT_MAP[key];
   const eth=BigInt(await rpc('eth_getBalance',[address,'latest']));
@@ -556,10 +587,17 @@ async function simulateUniversalMove(){
     if(sourceKey==='OWNER'){
       tx={from:OWNER,to:dest,value:hexQty(amountUnits),data:'0x'};
     }else if(sourceKey==='TRADING'){
-      const data='0x'+SEL_WITHDRAW_ETH+word(amountUnits);
-      // Trading withdrawETH always returns to current NFT owner, so only OWNER is valid.
-      if(destKey!=='OWNER') throw Error('Trading TBA withdrawETH can only recover ETH to the current Broker NFT owner');
-      tx={from:OWNER,to:TRADING,data};
+      if(activeTradingUsesOwnerExecute()){
+        // Generation 10+ engine-authorized TBAs preserve unrestricted NFT-owner
+        // recovery through execute(address,uint256,bytes,uint8). This path works
+        // while the autonomous engine, Runner and Adapter remain paused.
+        await verifyOwnerExecutableTradingTba(source);
+        tx={from:OWNER,to:source,data:genericExecuteCalldata(dest,amountUnits,'0x')};
+      }else{
+        // Legacy Trading TBA generations use their restricted recovery ABI.
+        if(destKey!=='OWNER') throw Error('Legacy Trading TBA ETH recovery can only return funds to the current Broker NFT owner');
+        tx={from:OWNER,to:source,data:'0x'+SEL_WITHDRAW_ETH+word(amountUnits)};
+      }
     }else{
       tx={from:OWNER,to:source,data:genericExecuteCalldata(dest,amountUnits,'0x')};
     }
@@ -572,8 +610,15 @@ async function simulateUniversalMove(){
     if(sourceKey==='OWNER'){
       tx={from:OWNER,to:token,data:transferCalldata(dest,amountUnits)};
     }else if(sourceKey==='TRADING'){
-      if(destKey!=='OWNER') throw Error('Trading TBA withdrawToken() sends assets only to the current Broker NFT owner');
-      tx={from:OWNER,to:TRADING,data:withdrawTokenCalldata(token,amountUnits)};
+      if(activeTradingUsesOwnerExecute()){
+        // Engine-authorized Generation 10+ recovery is an owner-signed ERC-6551
+        // execute() call to the token contract; autonomous layers stay paused.
+        await verifyOwnerExecutableTradingTba(source);
+        tx={from:OWNER,to:source,data:genericExecuteCalldata(token,0n,transferCalldata(dest,amountUnits))};
+      }else{
+        if(destKey!=='OWNER') throw Error('Legacy Trading TBA token recovery can only return assets to the current Broker NFT owner');
+        tx={from:OWNER,to:source,data:withdrawTokenCalldata(token,amountUnits)};
+      }
     }else{
       tx={from:OWNER,to:source,data:genericExecuteCalldata(token,0n,transferCalldata(dest,amountUnits))};
     }
@@ -584,10 +629,15 @@ async function simulateUniversalMove(){
   universalMoveState={time:Date.now(),sourceKey,destKey,source,dest,token,amountUnits,symbol,decimals,tx,gas};
   await armPreparedWalletHandoff(tx,`Asset move · ${symbol}`);
   $('executeUniversalMove').disabled=false;$('executeUniversalMove').textContent='Open wallet to sign';
+  const recoveryMode=sourceKey==='TRADING'
+    ?(activeTradingUsesOwnerExecute()?'OWNER-SIGNED ERC-6551 execute()':'LEGACY withdraw recovery')
+    :'OWNER-SIGNED account move';
   $('universalMoveLog').textContent=
     `PASS — exact move simulated and wallet handoff armed.\n`+
     `${ACCOUNT_LABELS[sourceKey]} → ${ACCOUNT_LABELS[destKey]}\n`+
     `Asset: ${symbol}\nAmount: ${unitsToDecimal(amountUnits,decimals,12)}\n`+
+    `Recovery path: ${recoveryMode}\n`+
+    `Autonomous trading activation required: NO\n`+
     `Estimated gas: ${gas}\neth_call: ${result}`;
 }
 async function executeUniversalMove(){

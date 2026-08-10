@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
-<title>Rustee Broker v3.7.6.5 · Stable Mobile Script Loader · Robinhood Chain</title>
+<title>Rustee Broker v3.7.6.6 · Generation 10 Manual Recovery · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -1482,7 +1482,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
   <div class="card">
     <span class="badge">SIMULATE → WALLET CONFIRM → RECEIPT</span>
     <h2>Universal Asset Mover</h2>
-    <p>Move ETH or ERC-20 assets between the main owner wallet and any Rustee TBA, or recover assets from any TBA back to the owner. Trading uses its restricted withdrawal ABI; Vault, Rewards and Identity use the generic owner-only BrokerAccount execution path.</p>
+    <p>Move ETH or ERC-20 assets between the main owner wallet and any Rustee TBA, or recover assets from a TBA. The active engine-authorized Trading TBA (including Generation 10) uses its NFT-owner-only ERC-6551 <code>execute()</code> recovery path; legacy Trading generations retain their restricted withdrawal ABI. Manual recovery does not require unpausing the Trading Engine, Runner or Adapter.</p>
 
     <div class="controlgrid">
       <div class="field"><label>Source account</label>
@@ -1527,7 +1527,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 
   <div class="card">
     <h2>Safety model</h2>
-    <p>Every real move requires the connected Broker NFT owner, chain 4663, a fresh successful <code>eth_estimateGas</code> and <code>eth_call</code> simulation, then a separate wallet confirmation. The app never requests a seed phrase or private key.</p>
+    <p>Every real move requires the connected Broker NFT owner, chain 4663, a fresh successful <code>eth_estimateGas</code> and <code>eth_call</code> simulation, then a separate wallet confirmation. For an engine-authorized Trading TBA, Rustee also re-verifies the live ERC-6551 token binding and current NFT owner before arming the wallet handoff. The autonomous execution layers may remain paused. The app never requests a seed phrase or private key.</p>
   </div>
 </div>
 
