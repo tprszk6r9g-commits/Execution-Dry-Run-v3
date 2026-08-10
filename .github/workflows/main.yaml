@@ -44,7 +44,49 @@ jobs:
         run: python scripts/update_rustee_history.py
 
       - name: Regenerate frontend integrity manifest
-        run: python scripts/update_integrity.py
+        shell: bash
+        run: |
+          python - <<'PY'
+          import datetime as dt
+          import hashlib
+          import json
+          from pathlib import Path
+
+          targets = [
+              Path("index.html"),
+              Path("app.js"),
+              Path("data/robinhood-assets.json"),
+              Path("data/robinhood-prices.json"),
+              Path("data/rustee-history.json"),
+          ]
+
+          missing = [str(p) for p in targets if not p.is_file()]
+          if missing:
+              raise SystemExit("Missing integrity target(s): " + ", ".join(missing))
+
+          hashes = {
+              str(p): hashlib.sha256(p.read_bytes()).hexdigest()
+              for p in targets
+          }
+
+          payload = {
+              "generatedAt": dt.datetime.now(dt.timezone.utc)
+                  .replace(microsecond=0)
+                  .isoformat()
+                  .replace("+00:00", "Z"),
+              "algorithm": "SHA-256",
+              "sha256": hashes,
+          }
+
+          Path("data/integrity.json").write_text(
+              json.dumps(payload, indent=2) + "\n",
+              encoding="utf-8",
+          )
+
+          print("[integrity] manifest regenerated")
+          for path, digest in hashes.items():
+              print(path, digest)
+          PY
 
       - name: Verify AIO metadata payload
         shell: bash
