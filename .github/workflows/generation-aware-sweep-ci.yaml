@@ -1,0 +1,40 @@
+name: generation-aware-sweep-ci
+
+on:
+  push:
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - '.github/workflows/generation-aware-sweep-ci.yaml'
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - '.github/workflows/generation-aware-sweep-ci.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Generation 10 sweep routes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('app.js').read_text()
+          assert "type:'ENGINE_AUTH_TBA_ETH'" in s
+          assert "type:'ENGINE_AUTH_TBA_ERC20'" in s
+          assert "recoveryMode:'OWNER-SIGNED ERC-6551 execute()'" in s
+          assert "genericExecuteCalldata(dest,amountUnits,'0x')" in s
+          assert "genericExecuteCalldata(token,0n,transferCalldata(dest,amountUnits))" in s
+          assert "LEGACY withdrawETH() recovery" in s
+          assert "LEGACY withdrawToken() recovery" in s
+          print("PASS: sweep is generation-aware")
+          PY
+      - name: JavaScript syntax check
+        run: node --check app.js
