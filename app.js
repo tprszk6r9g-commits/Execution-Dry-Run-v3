@@ -35,9 +35,21 @@ let NFT_ADMIN=''; // resolved independently from Broker NFT owner()
 let AUTHORITY_STATE=null;
 const VAULT='0x8ad8bd35d33dd7b4d0de81f809f5b7f92623956d';
 const ORIGINAL_TRADING='0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654';
+// Generation 10 is the qualified production Trading TBA. Explicit rotation state
+// can override this, but a fresh/stale browser must never silently fall back to Gen 1.
+const OFFICIAL_PRIMARY_TRADING='0xfb2aed3d206c71bf0c6a69a40f71727ae62086e9';
 const TBA_ROTATION_KEY='rustee-trading-tba-generations-v35';
-let TRADING=ORIGINAL_TRADING;
-try{const __rt=JSON.parse(localStorage.getItem(TBA_ROTATION_KEY)||'null'),__a=String(__rt?.activeAddress||'');if(/^0x[0-9a-fA-F]{40}$/.test(__a)&&!/^0x0{40}$/i.test(__a))TRADING=__a}catch{}
+let TRADING=OFFICIAL_PRIMARY_TRADING;
+function validTbaAddress(a){return /^0x[0-9a-fA-F]{40}$/.test(String(a||''))&&!/^0x0{40}$/i.test(String(a||''))}
+function syncTradingAddressFromRotation(){
+  try{
+    const x=JSON.parse(localStorage.getItem(TBA_ROTATION_KEY)||'null');
+    const a=String(x?.activeAddress||'');
+    TRADING=validTbaAddress(a)?a:OFFICIAL_PRIMARY_TRADING;
+  }catch{TRADING=OFFICIAL_PRIMARY_TRADING}
+  return TRADING;
+}
+syncTradingAddressFromRotation();
 const REWARDS='0xfd0d881d73ec1476f5da0ab78283149ea21c3b32';
 const IDENTITY='0x496d7d47ae69d65d714413f0dc78c712ed92158d';
 // Broker NFT binding is derived from the deployed ERC-6551 TBA at runtime.
@@ -112,8 +124,27 @@ function vaultExecuteCalldata(routerData,amountIn){
     word(bytes.length/2)+padBytes(bytes);
 }
 async function fallbackRpc(method,params=[]){
-  const r=await fetch(RPC,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});
-  const j=await r.json(); if(j.error) throw Error(j.error.message||JSON.stringify(j.error)); return j.result;
+  // Rabby/iOS can intermittently reject cross-origin fetches with the generic
+  // Safari message "Load failed". Prefer the injected provider whenever it is
+  // already on Robinhood Chain, then fall back to bounded public-RPC retries.
+  try{
+    const p=injectedWalletProvider();
+    if(p){
+      const cid=Number(BigInt(await p.request({method:'eth_chainId'})));
+      if(cid===CHAIN) return await p.request({method,params});
+    }
+  }catch(e){console.warn('Injected RPC read failed; trying public RPC',method,e)}
+  let lastErr=null;
+  for(let attempt=0;attempt<3;attempt++){
+    const ac=new AbortController(); const timer=setTimeout(()=>ac.abort(),7000);
+    try{
+      const r=await fetch(RPC,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params}),signal:ac.signal,cache:'no-store'});
+      if(!r.ok)throw Error(`RPC HTTP ${r.status}`);
+      const j=await r.json(); if(j.error)throw Error(j.error.message||JSON.stringify(j.error));
+      clearTimeout(timer); return j.result;
+    }catch(e){lastErr=e;clearTimeout(timer);if(attempt<2)await new Promise(r=>setTimeout(r,250*(attempt+1)))}
+  }
+  throw Error(`Robinhood Chain RPC unavailable for ${method}: ${lastErr?.message||lastErr||'unknown error'}`);
 }
 async function rpc(method,params=[]){
   const p=injectedWalletProvider();
@@ -354,7 +385,12 @@ async function switchChain(){
       throw e;
     }
   }
-  await restoreWalletConnection();
+  try{await restoreWalletConnection()}catch(e){
+    console.warn('Post-switch refresh delayed',e);
+    renderWalletConnectionState();
+    if($('commandWalletLog'))$('commandWalletLog').textContent=`ROBINHOOD CHAIN SELECTED ✓
+Wallet switched successfully. A background data refresh was delayed: ${e?.message||e}`;
+  }
 }
 async function preflight(){
   await resolveAuthorityState(true);
@@ -3163,7 +3199,7 @@ $('useMaxAsset').onclick=()=>{try{if(!assetState) throw Error('Load token first'
 $('assetToken').oninput=()=>{assetState=null;assetMoveSimulation=null;$('moveAsset').disabled=true};
 $('assetAmount').oninput=()=>{assetMoveSimulation=null;$('moveAsset').disabled=true};
 for(const id of ['usdTarget','ethUsd','slippage']) $(id).oninput=()=>{try{calcInputWei()}catch{} quoteState=null;simulationState=null;$('execute').disabled=true};
-function renderHardBoundAddresses(){if(!$('addresses'))return;$('addresses').textContent=`Current NFT owner: ${OWNER||'Resolving from ownerOf()…'}
+function renderHardBoundAddresses(){try{const x=tbaLoad();if($('nftTradingTbaAddress'))$('nftTradingTbaAddress').textContent=TRADING;if($('nftTradingGeneration'))$('nftTradingGeneration').textContent=`· Gen ${x.activeGeneration??'?'}`;}catch{}if(!$('addresses'))return;$('addresses').textContent=`Current NFT owner: ${OWNER||'Resolving from ownerOf()…'}
 Metadata admin: ${NFT_ADMIN||'Resolving from owner()…'}
 Vault TBA (executor): ${VAULT}
 Trading TBA (stock recipient): ${TRADING}
@@ -3222,10 +3258,19 @@ __bootSay('Boot complete \u2713 — provider: '+(activeWalletName()||'none detec
 
 // --- v3.5 Rotating Trading TBA Manager ----------------------------------------
 let tbaCreateState=null;
-function tbaDefaultState(){return {version:1,activeGeneration:1,activeAddress:ORIGINAL_TRADING,generations:[{generation:1,address:ORIGINAL_TRADING,status:'ACTIVE',scheme:'original-directory',createdAt:null}],updatedAt:null}}
-function tbaLoad(){try{const x=JSON.parse(localStorage.getItem(TBA_ROTATION_KEY)||'null');if(!x||!Array.isArray(x.generations))return tbaDefaultState();return x}catch{return tbaDefaultState()}}
+function tbaDefaultState(){return {version:2,activeGeneration:10,activeAddress:OFFICIAL_PRIMARY_TRADING,generations:[{generation:1,address:ORIGINAL_TRADING,status:'RETIRED',scheme:'original-directory',createdAt:null},{generation:10,address:OFFICIAL_PRIMARY_TRADING,status:'ACTIVE',scheme:'engine-authorized-v3.7.2',createdAt:null,engineAuthorized:true,primaryAppTba:true}],updatedAt:null}}
+function tbaLoad(){
+  try{
+    const x=JSON.parse(localStorage.getItem(TBA_ROTATION_KEY)||'null');
+    if(!x||!Array.isArray(x.generations))return tbaDefaultState();
+    if(!validTbaAddress(x.activeAddress)){
+      x.activeGeneration=10;x.activeAddress=OFFICIAL_PRIMARY_TRADING;
+    }
+    return x;
+  }catch{return tbaDefaultState()}
+}
 function tbaSave(x){x.updatedAt=new Date().toISOString();localStorage.setItem(TBA_ROTATION_KEY,JSON.stringify(x));return x}
-function tbaInitState(){let x=tbaLoad();if(!x.generations.some(g=>Number(g.generation)===1))x.generations.unshift({generation:1,address:ORIGINAL_TRADING,status:'RETIRED',scheme:'original-directory',createdAt:null});/* v3.7.3 bridge: surface completed engine-authorized generations in the shared TBA Manager. This imports only verified/deployed local installer state; it does NOT make the engine generation the legacy dashboard TRADING account. */try{const es=v372Load();const eg=Number(es.generation),ea=String(es.tba||'');if(es.tbaCreated&&Number.isFinite(eg)&&eg>=2&&/^0x[0-9a-fA-F]{40}$/.test(ea)){const i=x.generations.findIndex(g=>Number(g.generation)===eg);let __q=null;try{__q=JSON.parse(localStorage.getItem('rustee-v3.7.6-qualification')||'null')}catch{}const __qualified=!!(__q?.passed&&Number(__q.generation)===eg&&String(__q.tba||'').toLowerCase()===ea.toLowerCase());const imported={generation:eg,address:ea,status:__qualified?'REHEARSAL PASSED':'ENGINE READY',scheme:'engine-authorized-v3.7.2',createdAt:es.createTx?null:null,engineAuthorized:true,engine:es.engine||null,registryV2:es.registry||null,qualification:__qualified?'v3.7.6.1 PASS':null,qualifiedAt:__qualified?__q.passedAt:null};if(i<0)x.generations.push(imported);else if(String(x.generations[i].address||'').toLowerCase()===ea.toLowerCase())x.generations[i]={...x.generations[i],...imported,status:x.generations[i].status==='ACTIVE'?'ACTIVE':'ENGINE READY'};x.generations.sort((a,b)=>Number(a.generation)-Number(b.generation));}}catch{}const active=x.generations.find(g=>String(g.address).toLowerCase()===String(TRADING).toLowerCase());if(active){x.activeGeneration=Number(active.generation);x.activeAddress=active.address;for(const g of x.generations)g.status=String(g.address).toLowerCase()===String(active.address).toLowerCase()?'ACTIVE':(g.status==='ACTIVE'?'RETIRED':g.status)}else{x.activeGeneration=TRADING.toLowerCase()===ORIGINAL_TRADING.toLowerCase()?1:null;x.activeAddress=TRADING}return tbaSave(x)}
+function tbaInitState(){let x=tbaLoad();if(validTbaAddress(x.activeAddress))TRADING=x.activeAddress;else TRADING=OFFICIAL_PRIMARY_TRADING;if(!x.generations.some(g=>Number(g.generation)===1))x.generations.unshift({generation:1,address:ORIGINAL_TRADING,status:'RETIRED',scheme:'original-directory',createdAt:null});/* v3.7.3 bridge: surface completed engine-authorized generations in the shared TBA Manager. This imports only verified/deployed local installer state; it does NOT make the engine generation the legacy dashboard TRADING account. */try{const es=v372Load();const eg=Number(es.generation),ea=String(es.tba||'');if(es.tbaCreated&&Number.isFinite(eg)&&eg>=2&&/^0x[0-9a-fA-F]{40}$/.test(ea)){const i=x.generations.findIndex(g=>Number(g.generation)===eg);let __q=null;try{__q=JSON.parse(localStorage.getItem('rustee-v3.7.6-qualification')||'null')}catch{}const __qualified=!!(__q?.passed&&Number(__q.generation)===eg&&String(__q.tba||'').toLowerCase()===ea.toLowerCase());const imported={generation:eg,address:ea,status:__qualified?'REHEARSAL PASSED':'ENGINE READY',scheme:'engine-authorized-v3.7.2',createdAt:es.createTx?null:null,engineAuthorized:true,engine:es.engine||null,registryV2:es.registry||null,qualification:__qualified?'v3.7.6.1 PASS':null,qualifiedAt:__qualified?__q.passedAt:null};if(i<0)x.generations.push(imported);else if(String(x.generations[i].address||'').toLowerCase()===ea.toLowerCase())x.generations[i]={...x.generations[i],...imported,status:x.generations[i].status==='ACTIVE'?'ACTIVE':'ENGINE READY'};x.generations.sort((a,b)=>Number(a.generation)-Number(b.generation));}}catch{}const active=x.generations.find(g=>String(g.address).toLowerCase()===String(TRADING).toLowerCase());if(active){x.activeGeneration=Number(active.generation);x.activeAddress=active.address;for(const g of x.generations)g.status=String(g.address).toLowerCase()===String(active.address).toLowerCase()?'ACTIVE':(g.status==='ACTIVE'?'RETIRED':g.status)}else{x.activeGeneration=TRADING.toLowerCase()===ORIGINAL_TRADING.toLowerCase()?1:null;x.activeAddress=TRADING}return tbaSave(x)}
 function tbaGenerationSalt(gen){gen=Math.floor(Number(gen));if(!(gen>=2&&gen<=1000000))throw Error('Generation must be between 2 and 1,000,000');const label='RUSTEE_TRADING_GEN_'+String(gen).padStart(8,'0');const bytes=new TextEncoder().encode(label);if(bytes.length>32)throw Error('Generation salt label exceeds bytes32');return '0x'+[...bytes].map(b=>b.toString(16).padStart(2,'0')).join('').padEnd(64,'0')}
 function tbaRegistryCalldata(selector,gen){if(!NFT||BROKER_TOKEN_ID===null)throw Error('Broker NFT binding unresolved');const salt=tbaGenerationSalt(gen);return '0x'+selector+addrWord(STOCK_TRADING_IMPLEMENTATION)+salt.slice(2)+word(CHAIN)+addrWord(NFT)+word(BROKER_TOKEN_ID)}
 function tbaDecodeAddress(raw,label='address'){const h=String(raw||'').replace(/^0x/,'');if(h.length<64)throw Error('Unable to decode '+label);const a='0x'+h.slice(-40);if(!/^0x[0-9a-fA-F]{40}$/.test(a)||/^0x0{40}$/i.test(a))throw Error('Invalid '+label);return a}
@@ -3235,7 +3280,7 @@ async function tbaPredictGeneration(){await resolveAuthorityState(true);const ge
 async function tbaPrepareCreate(){if(!tbaCreateState||tbaCreateState.exists)throw Error('Predict an undeployed generation first');await ensureOwnerAndChain();const data=tbaRegistryCalldata(SEL_6551_CREATE,tbaCreateState.generation),tx0={from:OWNER,to:ERC6551_REGISTRY,data},gas=BigInt(await rpc('eth_estimateGas',[tx0])),ret=await rpc('eth_call',[tx0,'latest']),returned=tbaDecodeAddress(ret,'simulated createAccount return');if(returned.toLowerCase()!==tbaCreateState.predicted.toLowerCase())throw Error('Registry simulation returned a different TBA address');const tx={...tx0,gas:hexQty(gas*120n/100n)};await armPreparedWalletHandoff(tx,`Create Rustee Trading TBA Generation ${tbaCreateState.generation}`,120000);tbaCreateState.prepared={tx,gas,time:Date.now()};$('tbaPrepareCreate').disabled=true;$('tbaExecuteCreate').disabled=false;$('tbaCreateLog').textContent+=`\n\nSIMULATION PASS\nEstimated gas: ${gas}\nReturned TBA: ${returned}\nWallet handoff armed for 120 seconds.`}
 async function tbaExecuteCreate(){const st=tbaCreateState;if(!st?.prepared)throw Error('Prepare + simulate creation first');if(Date.now()-st.prepared.time>120000){st.prepared=null;$('tbaExecuteCreate').disabled=true;throw Error('Creation simulation expired. Prepare again.')}const hash=await secureSendTransaction(st.prepared.tx,`Create Rustee Trading TBA Generation ${st.generation}`);$('tbaExecuteCreate').disabled=true;$('tbaCreateLog').textContent=`SUBMITTED\n${hash}\nWaiting for receipt…`;const receipt=await waitReceipt(hash),v=await tbaVerifyAccount(st.predicted);if(!v.pass)throw Error('Generation deployed but post-deployment binding verification failed');tbaRecordGeneration(st.generation,st.predicted,'READY','v3.5-ascii-salt',{txHash:hash,createdAt:new Date().toISOString()});$('tbaCreateLog').textContent=`CONFIRMED + VERIFIED ✓\nGeneration: ${st.generation}\nAddress: ${st.predicted}\nTx: ${hash}\nBlock: ${Number(BigInt(receipt.blockNumber))}\nBinding: Broker NFT #${BROKER_TOKEN_ID}\nOwner: ${v.owner}\nPolicy Registry: ${v.policyRegistry}\n\nGeneration is READY. Activation is a separate local dashboard action.`;tbaCreateState=null;tbaRender()}
 function tbaRecordGeneration(gen,address,status='READY',scheme='v3.5-ascii-salt',extra={}){const x=tbaLoad(),i=x.generations.findIndex(g=>Number(g.generation)===Number(gen));const row={generation:Number(gen),address,status,scheme,...(i>=0?x.generations[i]:{}),...extra};if(i>=0)x.generations[i]=row;else x.generations.push(row);x.generations.sort((a,b)=>Number(a.generation)-Number(b.generation));tbaSave(x);return row}
-async function tbaActivateGeneration(gen){const x=tbaLoad(),g=x.generations.find(r=>Number(r.generation)===Number(gen));if(!g)throw Error('Unknown generation');const v=await tbaVerifyAccount(g.address);if(!v.pass)throw Error('Cannot activate: live ERC-6551 binding verification failed');for(const r of x.generations)r.status=Number(r.generation)===Number(gen)?'ACTIVE':'RETIRED';x.activeGeneration=Number(gen);x.activeAddress=g.address;tbaSave(x);$('tbaManagerLog').textContent=`Generation ${gen} verified and selected as ACTIVE. Reloading Rustee so every trading/portfolio/security path uses ${g.address}.`;setTimeout(()=>location.reload(),350)}
+async function tbaActivateGeneration(gen){const x=tbaLoad(),g=x.generations.find(r=>Number(r.generation)===Number(gen));if(!g)throw Error('Unknown generation');const v=await tbaVerifyAccount(g.address);if(!v.pass)throw Error('Cannot activate: live ERC-6551 binding verification failed');for(const r of x.generations)r.status=Number(r.generation)===Number(gen)?'ACTIVE':'RETIRED';x.activeGeneration=Number(gen);x.activeAddress=g.address;TRADING=g.address;tbaSave(x);$('tbaManagerLog').textContent=`Generation ${gen} verified and selected as ACTIVE. Reloading Rustee so every trading/portfolio/security path uses ${g.address}.`;setTimeout(()=>location.reload(),350)}
 async function tbaRefreshGenerations(){const x=tbaLoad(),lines=[];for(const g of x.generations){try{const code=await fallbackRpc('eth_getCode',[g.address,'latest']);if(!code||code==='0x'){g.verified=false;lines.push(`Gen ${g.generation}: counterfactual / no code`);continue}const v=await tbaVerifyAccount(g.address);g.verified=v.pass;g.lastVerifiedAt=new Date().toISOString();lines.push(`Gen ${g.generation}: ${v.pass?'PASS':'FAIL'} · ${g.address}`)}catch(e){g.verified=false;lines.push(`Gen ${g.generation}: ERROR ${e.message}`)}}tbaSave(x);$('tbaManagerLog').textContent=lines.join('\n');tbaRender()}
 function tbaRender(){const x=tbaInitState();if($('tbaActiveGeneration'))$('tbaActiveGeneration').textContent='Gen '+(x.activeGeneration??'?');if($('tbaActiveAddress'))$('tbaActiveAddress').textContent=x.activeAddress||TRADING;if($('tbaGenerationCount'))$('tbaGenerationCount').textContent=String(x.generations.length);if($('tbaImplementationShort'))$('tbaImplementationShort').textContent=short(STOCK_TRADING_IMPLEMENTATION);if($('tbaRegistryAddress'))$('tbaRegistryAddress').textContent=ERC6551_REGISTRY;if($('tbaImplementationAddress'))$('tbaImplementationAddress').textContent=STOCK_TRADING_IMPLEMENTATION;if($('tbaPermanentVault'))$('tbaPermanentVault').textContent=VAULT;if($('tbaGenerationInput')){const max=Math.max(1,...x.generations.map(g=>Number(g.generation)||1));if(Number($('tbaGenerationInput').value)<=max)$('tbaGenerationInput').value=String(max+1)}if($('tbaGenerationList'))$('tbaGenerationList').innerHTML=x.generations.map(g=>{const active=String(g.address).toLowerCase()===String(TRADING).toLowerCase(),cls=active?'tbaActive':g.status==='READY'?'tbaReady':'tbaRetired',label=active?'ACTIVE':g.status||'RETIRED';return `<div class="tbaRow"><div><b>Generation ${Number(g.generation)}</b> <span class="tbaStatus ${cls}">${label}</span><div class="tbaAddress">${escapeHtml(g.address)}</div><div class="tbaMeta">${escapeHtml(g.scheme||'unknown scheme')}${g.createdAt?' · created '+escapeHtml(g.createdAt):''}${g.verified===false?' · verification needs attention':''}</div></div><div class="tbaActions">${active?'':g.engineAuthorized?'<span class="tbaMeta">Engine-authorized stack · qualify/promote through Engine Setup</span>':`<button data-tba-activate="${Number(g.generation)}">Verify + make active</button>`}<button data-tba-explorer="${escapeHtml(g.address)}">Explorer ↗</button></div></div>`}).join('')||'<div class="emptyState">No generations.</div>';document.querySelectorAll('[data-tba-activate]').forEach(b=>b.onclick=()=>tbaActivateGeneration(Number(b.dataset.tbaActivate)).catch(e=>{$('tbaManagerLog').textContent='ERROR: '+e.message}));document.querySelectorAll('[data-tba-explorer]').forEach(b=>b.onclick=()=>window.open(BLOCKSCOUT+'/address/'+b.dataset.tbaExplorer,'_blank','noopener'))}
 function tbaExportState(){const x=tbaLoad(),payload={project:'Rustee Broker #1',schema:'rustee-trading-tba-generations/v1',exportedAt:new Date().toISOString(),brokerNft:NFT||null,tokenId:BROKER_TOKEN_ID===null?null:BROKER_TOKEN_ID.toString(),erc6551Registry:ERC6551_REGISTRY,tradingImplementation:STOCK_TRADING_IMPLEMENTATION,permanentVault:VAULT,...x,note:'Generation status is operator/dashboard state. Every deployed TBA remains on-chain and ownerOf()-controlled.'};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rustee-trading-tba-generations.json';a.click();URL.revokeObjectURL(a.href)}
@@ -4195,7 +4240,7 @@ async function v3761Promote(){
   if(String(g.address).toLowerCase()!==String(core.tba).toLowerCase())throw Error('Generation 10 manager address mismatch');
   for(const r of x.generations)r.status=Number(r.generation)===10?'ACTIVE':'RETIRED';
   g.engineAuthorized=true;g.qualification='v3.7.6.1 PASS';g.qualifiedAt=q.passedAt;g.primaryAppTba=true;
-  x.activeGeneration=10;x.activeAddress=core.tba;x.updatedAt=new Date().toISOString();tbaSave(x);
+  x.activeGeneration=10;x.activeAddress=core.tba;TRADING=core.tba;x.updatedAt=new Date().toISOString();tbaSave(x);
   $('v3761Log').textContent=`PRIMARY APP TBA SELECTED ✓\nGeneration 10: ${core.tba}\nGeneration 10 binding: PASS ✓\nQualification: v3.7.6.1 PASS ✓\n\nAutonomous execution remains PAUSED. Reloading Rustee so portfolio/manager/recovery paths use Generation 10.`;
   setTimeout(()=>location.reload(),700);
 }

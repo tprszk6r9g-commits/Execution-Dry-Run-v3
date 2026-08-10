@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
-<title>Rustee Broker v3.7.6.7 · Generation-Aware Sweep · Robinhood Chain</title>
+<title>Rustee Broker v3.7.6.8 · Gen10 Primary + RPC Recovery · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -421,10 +421,10 @@ button,input,select,a,.tabbtn{pointer-events:auto!important;touch-action:manipul
 
   <div class="card">
     <h2>ERC-6551 Broker Accounts</h2>
-    <p>The four accounts remain fixed to Rustee Broker #1. Their live <code>owner()</code> values are checked against the current NFT holder before trading authority is accepted.</p>
+    <p>Vault, Rewards and Identity remain fixed to Rustee Broker #1. The Trading TBA is generation-aware and follows the currently ACTIVE Trading generation. Every live <code>owner()</code> value is checked against the current NFT holder before authority is accepted.</p>
     <div class="nftTbaGrid">
       <div class="nftTba"><b>Vault TBA</b><span>0x8ad8bd35d33dd7b4d0de81f809f5b7f92623956d</span></div>
-      <div class="nftTba"><b>Trading TBA</b><span>0x522f5637f2c556aad9b2245f3b8e6bf4dfd9a654</span></div>
+      <div class="nftTba"><b>Trading TBA <small id="nftTradingGeneration"></small></b><span id="nftTradingTbaAddress">Resolving active generation…</span></div>
       <div class="nftTba"><b>Rewards TBA</b><span>0xfd0d881d73ec1476f5da0ab78283149ea21c3b32</span></div>
       <div class="nftTba"><b>Identity TBA</b><span>0x496d7d47ae69d65d714413f0dc78c712ed92158d</span></div>
     </div>

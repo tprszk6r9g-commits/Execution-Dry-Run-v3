@@ -1,0 +1,8 @@
+{
+  "node_syntax_ok": true,
+  "official_gen10_default": true,
+  "dynamic_identity": true,
+  "rpc_provider_first": true,
+  "gen10_sweep_preserved": true,
+  "explicit_rotation_preserved": true
+}
