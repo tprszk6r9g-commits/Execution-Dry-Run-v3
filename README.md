@@ -1,4 +1,11 @@
 # Rustee Broker v3.7.6.1 — Qualification + Primary TBA Promotion
+## v3.7.6.4 — Generation 10 Promotion Fix
+
+- Fixes the post-qualification **Make Generation 10 primary TBA** path that could show `ERROR: execution reverted`.
+- Promotion now re-checks the exact Generation 10 ERC-6551 token binding and the already-passed Generation 10 rehearsal safety state instead of routing through the legacy generic TBA verifier.
+- Promotion changes **local app/TBA-manager selection only**. It does not redeploy contracts, grant allowance, unpause the TBA engine, Trading Engine, Runner or Adapter, or execute a trade.
+- Generation 10 remains fail-closed and paused after promotion.
+
 
 ## Current release
 

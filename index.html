@@ -5988,14 +5988,20 @@ async function v3761Promote(){
   await ensureOwnerAndChain();
   const q=v376QualLoad(); if(!q?.passed)throw Error('Record a fresh v3.7.6 PASS first');
   const ok=await v376Preflight(false); if(!ok)throw Error('Fresh safe-state verification failed; promotion blocked');
-  const core=await v374Core(),binding=await tbaVerifyAccount(core.tba); if(!binding.pass)throw Error('ERC-6551 live binding verification failed');
+  // v3.7.6.4: Promotion is local app-state only. Do NOT route this through the
+  // legacy generic TBA verifier: Generation 10 already passed the Gen-10 core,
+  // ownerOf(), engine-binding and rehearsal gates above. Re-check those exact
+  // Generation 10 invariants directly, then update only local TBA-manager state.
+  const core=await v374Core();
+  const binding=await tbaReadBinding(core.tba);
+  if(binding.chainId!==BigInt(CHAIN)||binding.nft.toLowerCase()!==String(core.nft).toLowerCase()||binding.tokenId!==BigInt(core.tokenId))throw Error('Generation 10 ERC-6551 binding changed; promotion blocked');
   const x=tbaInitState(); let g=x.generations.find(r=>Number(r.generation)===10);
   if(!g){g={generation:10,address:core.tba,status:'ENGINE READY',scheme:'engine-authorized-v3.7.2',engineAuthorized:true,engine:core.engine,registryV2:core.registry};x.generations.push(g)}
   if(String(g.address).toLowerCase()!==String(core.tba).toLowerCase())throw Error('Generation 10 manager address mismatch');
   for(const r of x.generations)r.status=Number(r.generation)===10?'ACTIVE':'RETIRED';
   g.engineAuthorized=true;g.qualification='v3.7.6.1 PASS';g.qualifiedAt=q.passedAt;g.primaryAppTba=true;
   x.activeGeneration=10;x.activeAddress=core.tba;x.updatedAt=new Date().toISOString();tbaSave(x);
-  $('v3761Log').textContent=`PRIMARY APP TBA SELECTED ✓\nGeneration 10: ${core.tba}\nERC-6551 binding: PASS ✓\nQualification: v3.7.6.1 PASS ✓\n\nAutonomous execution remains PAUSED. Reloading Rustee so portfolio/manager/recovery paths use Generation 10.`;
+  $('v3761Log').textContent=`PRIMARY APP TBA SELECTED ✓\nGeneration 10: ${core.tba}\nGeneration 10 binding: PASS ✓\nQualification: v3.7.6.1 PASS ✓\n\nAutonomous execution remains PAUSED. Reloading Rustee so portfolio/manager/recovery paths use Generation 10.`;
   setTimeout(()=>location.reload(),700);
 }
 if($('v376Preflight'))$('v376Preflight').onclick=()=>v376Preflight(true).catch(e=>$('v376Log').textContent='ERROR: '+e.message);
