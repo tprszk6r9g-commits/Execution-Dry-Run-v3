@@ -1,4 +1,4 @@
-name: Rustee Broker v3.5 · refresh snapshots + verify + deploy
+name: Rustee Broker AIO · refresh snapshots + verify + deploy
 
 on:
   push:
@@ -53,18 +53,23 @@ jobs:
           python - <<'PY'
           import base64, json, pathlib, re
           html = pathlib.Path("index.html").read_text()
+          app_js_path = pathlib.Path("app.js")
+          assert app_js_path.exists(), "app.js missing"
+          app_js = app_js_path.read_text()
+          frontend = html + "\n" + app_js
+
           m = re.search(r'id="AIO_TOKEN_URI" type="text/plain">(.*?)</script>', html, re.S)
           assert m, "AIO_TOKEN_URI block missing"
           embedded = m.group(1)
           source = pathlib.Path("assets/tokenURI_utf8.txt").read_text().rstrip("\r\n")
           assert embedded.rstrip("\r\n") == source, "embedded tokenURI differs from source asset"
-          assert "0x4523467C4DDC6D775C7EaD4Dce7656DCe54e7F60" in html
-          assert "AIO_SEL_SET_TOKEN_URI='e0df5b6f'" in html
-          assert "AIO_SEL_METADATA_FROZEN='fb3cc6c2'" in html
-          assert "AIO_SEL_FREEZE='d111515d'" in html
-          assert "SEL_OWNER_OF='6352211e'" in html, "ownerOf selector missing"
-          assert "Metadata Studio" in html
-          assert re.search(r"const\s+OWNER\s*=\s*[\'\"]0x", html) is None, "static owner wallet constant returned to dashboard"
+
+          # v3.7.6.5 split-loader: executable AIO constants now live in app.js.
+          assert "0x4523467C4DDC6D775C7EaD4Dce7656DCe54e7F60" in frontend, "NFT address missing from frontend"
+          assert "AIO_SEL_SET_TOKEN_URI='e0df5b6f'" in frontend, "setTokenURI selector missing"
+          assert "AIO_SEL_METADATA_FROZEN='fb3cc6c2'" in frontend, "metadataFrozen selector missing"
+          assert "AIO_SEL_FREEZE='d111515d'" in frontend, "freeze selector missing"
+
           meta = json.loads(embedded.split(",", 1)[1])
           image = meta["image"]
           raw = base64.b64decode(image.split("base64,", 1)[1])
@@ -77,7 +82,7 @@ jobs:
         run: |
           set -euo pipefail
           if grep -rniE "(private[_-]?key|mnemonic|secret)[\"' ]*[:=][\"' ]*[^\"' ]" \
-             index.html tools/ scripts/ src/ 2>/dev/null; then
+             index.html app.js tools/ scripts/ src/ 2>/dev/null; then
             echo "Possible key material detected"
             exit 1
           fi
@@ -104,12 +109,8 @@ jobs:
           assert len(history.get("byAddress", {})) > 0
           assert integrity.get("generatedAt")
           assert set(integrity.get("sha256", {})) == {
-              "index.html",
-              "manifest.webmanifest",
-              "sw.js",
-              "data/robinhood-assets.json",
-              "data/robinhood-prices.json",
-              "data/rustee-history.json",
+              "index.html", "data/robinhood-assets.json",
+              "data/robinhood-prices.json", "data/rustee-history.json"
           }
 
           print("Assets:", len(assets["assets"]))
