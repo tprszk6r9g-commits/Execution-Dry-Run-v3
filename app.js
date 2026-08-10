@@ -1133,8 +1133,16 @@ async function buildSingleStep(sourceKey,destKey,asset,amountUnits,symbol,decima
         buildTx:()=>({from:OWNER,to:dest,value:hexQty(amountUnits),data:'0x'})}];
     }
     if(sourceKey==='TRADING'){
+      if(activeTradingUsesOwnerExecute()){
+        await verifyOwnerExecutableTradingTba(source);
+        return [{type:'ENGINE_AUTH_TBA_ETH',sourceKey:'TRADING',destKey,symbol:'ETH',decimals:18,amountUnits,
+          route:`Trading TBA → ${ACCOUNT_LABELS[destKey]}`,
+          recoveryMode:'OWNER-SIGNED ERC-6551 execute()',
+          buildTx:()=>({from:OWNER,to:source,data:genericExecuteCalldata(dest,amountUnits,'0x')})}];
+      }
       const withdraw={type:'TRADING_WITHDRAW_ETH',sourceKey:'TRADING',destKey:'OWNER',symbol:'ETH',decimals:18,amountUnits,
         route:'Trading TBA → Main Wallet',
+        recoveryMode:'LEGACY withdrawETH() recovery',
         buildTx:()=>({from:OWNER,to:TRADING,data:'0x'+SEL_WITHDRAW_ETH+word(amountUnits)})};
       if(destKey==='OWNER') return [withdraw];
       const deposit={type:'OWNER_FORWARD_ETH',sourceKey:'OWNER',destKey,symbol:'ETH',decimals:18,amountUnits,
@@ -1155,8 +1163,16 @@ async function buildSingleStep(sourceKey,destKey,asset,amountUnits,symbol,decima
       buildTx:()=>({from:OWNER,to:token,data:transferCalldata(dest,amountUnits)})}];
   }
   if(sourceKey==='TRADING'){
+    if(activeTradingUsesOwnerExecute()){
+      await verifyOwnerExecutableTradingTba(source);
+      return [{type:'ENGINE_AUTH_TBA_ERC20',sourceKey:'TRADING',destKey,token,symbol,decimals,amountUnits,
+        route:`Trading TBA → ${ACCOUNT_LABELS[destKey]}`,
+        recoveryMode:'OWNER-SIGNED ERC-6551 execute()',
+        buildTx:()=>({from:OWNER,to:source,data:genericExecuteCalldata(token,0n,transferCalldata(dest,amountUnits))})}];
+    }
     const withdraw={type:'TRADING_WITHDRAW_TOKEN',sourceKey:'TRADING',destKey:'OWNER',token,symbol,decimals,amountUnits,
       route:'Trading TBA → Main Wallet',
+      recoveryMode:'LEGACY withdrawToken() recovery',
       buildTx:()=>({from:OWNER,to:TRADING,data:withdrawTokenCalldata(token,amountUnits)})};
     if(destKey==='OWNER') return [withdraw];
     const forward={type:'OWNER_FORWARD_ERC20',sourceKey:'OWNER',destKey,token,symbol,decimals,amountUnits,

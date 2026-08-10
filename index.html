@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/rustee-broker-192.png">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://rpc.mainnet.chain.robinhood.com https://api.robinhood.com https://robinhoodchain.blockscout.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
-<title>Rustee Broker v3.7.6.6 · Generation 10 Manual Recovery · Robinhood Chain</title>
+<title>Rustee Broker v3.7.6.7 · Generation-Aware Sweep · Robinhood Chain</title>
 <style>
 :root{--bg:#031a15;--panel:#073128;--panel2:#041f1a;--line:#2c6a5c;--txt:#eafff8;--muted:#9fc5ba;--teal:#45e6ca;--orange:#ff9d3f;--red:#ff8888;--green:#8df0b8}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#031713,#06271f);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -1821,7 +1821,7 @@ withdrawETH(uint256) selector: 0xf14210a6</pre>
 
       <div class="opsPanel">
         <h3>One-Tap Sweep Planner</h3>
-        <p class="sourceNote">Sweep ETH, WETH, and discovered canonical Stock Tokens from one TBA—or all four TBAs—back to the Broker NFT owner. Unknown tokens/NFTs are never moved automatically.</p>
+        <p class="sourceNote">Sweep ETH, WETH, and discovered canonical Stock Tokens from one TBA—or all Rustee TBAs—back to the Broker NFT owner. Generation 10 and other engine-authorized Trading TBAs use the same NFT-owner-only ERC-6551 execute() recovery path proven by Move Assets. Legacy Trading generations keep their restricted withdrawal path. Unknown tokens/NFTs are never moved automatically.</p>
 
         <label>Scope</label>
         <select id="sweepScope">

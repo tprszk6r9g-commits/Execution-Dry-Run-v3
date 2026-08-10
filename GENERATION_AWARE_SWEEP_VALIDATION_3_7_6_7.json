@@ -1,0 +1,9 @@
+{
+  "node_syntax_ok": true,
+  "node_output": "",
+  "gen10_eth_sweep_execute": true,
+  "gen10_token_sweep_execute": true,
+  "owner_binding_verification": true,
+  "legacy_paths_preserved": true,
+  "move_assets_gen10_fix_preserved": true
+}
